@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.ImageFormat
-import android.hardware.camera2.CameraCharacteristics
 import android.os.Bundle
 import android.widget.Toast
 import androidx.core.content.ContextCompat
@@ -26,7 +25,7 @@ class PermissionsFragment : Fragment() {
 
         if (hasPermissions(requireContext())) {
             // If permissions have already been granted, proceed
-            nativateToCamera();
+            navigateToCamera()
         } else {
             // Request camera-related permissions
             requestPermissions(PERMISSIONS_REQUIRED, PERMISSIONS_REQUEST_CODE)
@@ -39,14 +38,14 @@ class PermissionsFragment : Fragment() {
         if (requestCode == PERMISSIONS_REQUEST_CODE) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Takes the user to the success fragment when permission is granted
-                nativateToCamera();
+                navigateToCamera()
             } else {
                 Toast.makeText(context, "Permission request denied", Toast.LENGTH_LONG).show()
             }
         }
     }
 
-    private fun nativateToCamera()
+    private fun navigateToCamera()
     {
         lifecycleScope.launchWhenStarted {
             Navigation.findNavController(requireActivity(), R.id.fragment_container)
@@ -59,14 +58,6 @@ class PermissionsFragment : Fragment() {
     }
 
     companion object {
-        /** Helper function used to convert a lens orientation enum into a human-readable string */
-        private fun lensOrientationString(value: Int) = when(value) {
-            CameraCharacteristics.LENS_FACING_BACK -> "Back"
-            CameraCharacteristics.LENS_FACING_FRONT -> "Front"
-            CameraCharacteristics.LENS_FACING_EXTERNAL -> "External"
-            else -> "Unknown"
-        }
-
         /** Convenience method used to check if all permissions required by this app are granted */
         fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED

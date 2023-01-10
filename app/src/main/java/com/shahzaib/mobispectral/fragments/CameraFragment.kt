@@ -18,7 +18,6 @@ import android.view.*
 import androidx.core.graphics.drawable.toDrawable
 import androidx.exifinterface.media.ExifInterface
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.Navigation
@@ -79,19 +78,6 @@ class CameraFragment : Fragment() {
     /** [Handler] corresponding to [cameraThread] */
     private val cameraHandler = Handler(cameraThread.looper)
 
-    /** Performs recording animation of flashing screen */
-    private val animationTask: Runnable by lazy {
-        Runnable {
-            // Flash white animation
-            fragmentCameraBinding.overlay.background = Color.argb(150, 255, 255, 255).toDrawable()
-            // Wait for ANIMATION_FAST_MILLIS
-            fragmentCameraBinding.overlay.postDelayed({
-                // Remove white flash animation
-                fragmentCameraBinding.overlay.background = null
-            }, MainActivity.ANIMATION_FAST_MILLIS)
-        }
-    }
-
     /** [HandlerThread] where all buffer reading operations run */
     private val imageReaderThread = HandlerThread("imageReaderThread").apply { start() }
 
@@ -107,11 +93,7 @@ class CameraFragment : Fragment() {
     /** Live data listener for changes in the device orientation relative to the camera */
     private lateinit var relativeOrientation: OrientationLiveData
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _fragmentCameraBinding = FragmentCameraBinding.inflate(inflater, container, false)
         return fragmentCameraBinding.root
     }
@@ -124,12 +106,12 @@ class CameraFragment : Fragment() {
             v.translationY = (-insets.systemWindowInsetBottom).toFloat()
             insets.consumeSystemWindowInsets()
         }
-        fragmentCameraBinding.information?.setOnClickListener {
+        fragmentCameraBinding.information.setOnClickListener {
             val builder: AlertDialog.Builder = AlertDialog.Builder(context)
             builder.setMessage("Clicking the camera capture button captures both RGB and NIR image back to back, as to make it easy to align the two images")
             builder.setTitle("Information")
             builder.setPositiveButton("Okay",
-                DialogInterface.OnClickListener { dialog: DialogInterface?, which: Int ->
+                DialogInterface.OnClickListener { dialog: DialogInterface?, _: Int ->
                     dialog?.cancel()
                 })
 
@@ -170,7 +152,7 @@ class CameraFragment : Fragment() {
 
         // Used to rotate the output media to match device orientation
         relativeOrientation = OrientationLiveData(requireContext(), characteristics).apply {
-            observe(viewLifecycleOwner, Observer { orientation ->
+            observe(viewLifecycleOwner, { orientation ->
                 Log.d(TAG, "Orientation changed: $orientation")
             })
         }
@@ -188,14 +170,8 @@ class CameraFragment : Fragment() {
         camera = openCamera(cameraManager, args.cameraId, cameraHandler)
 
         // Initialize an image reader which will be used to capture still photos
-        val size = characteristics.get(
-            CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP
-        )!!
-                .getOutputSizes(args.pixelFormat).maxByOrNull { it.height * it.width }!!
-//        val size2 = characteristics.get(
-//            CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)!!
-//            .getOutputSizes(args.pixelFormat)[15]
-//        Log.i("Pixel Sizes", size2.toString())
+        val size = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)!!
+            .getOutputSizes(args.pixelFormat).maxByOrNull { it.height * it.width }!!
         imageReader = ImageReader.newInstance(
             600, 800, args.pixelFormat, IMAGE_BUFFER_SIZE
         )
@@ -339,12 +315,8 @@ class CameraFragment : Fragment() {
      * Starts a [CameraCaptureSession] and returns the configured session (as the result of the
      * suspend coroutine
      */
-    private suspend fun createCaptureSession(
-        device: CameraDevice,
-        targets: List<Surface>,
-        handler: Handler? = null
-    ): CameraCaptureSession = suspendCoroutine { cont ->
-
+    private suspend fun createCaptureSession(device: CameraDevice, targets: List<Surface>, handler: Handler? = null)
+            : CameraCaptureSession = suspendCoroutine { cont ->
         // Create a capture session using the predefined targets; this also involves defining the
         // session state callback to be notified of when the session is ready
         device.createCaptureSession(targets, object : CameraCaptureSession.StateCallback() {
@@ -385,21 +357,7 @@ class CameraFragment : Fragment() {
         ).apply { addTarget(imageReader.surface) }
         session.capture(captureRequest.build(), object : CameraCaptureSession.CaptureCallback() {
 
-            override fun onCaptureStarted(
-                session: CameraCaptureSession,
-                request: CaptureRequest,
-                timestamp: Long,
-                frameNumber: Long
-            ) {
-                super.onCaptureStarted(session, request, timestamp, frameNumber)
-//                fragmentCameraBinding.viewFinder.post(animationTask)
-            }
-
-            override fun onCaptureCompleted(
-                session: CameraCaptureSession,
-                request: CaptureRequest,
-                result: TotalCaptureResult
-            ) {
+            override fun onCaptureCompleted(session: CameraCaptureSession, request: CaptureRequest, result: TotalCaptureResult) {
                 super.onCaptureCompleted(session, request, result)
                 val resultTimestamp = result.get(CaptureResult.SENSOR_TIMESTAMP)
                 Log.d(TAG, "Capture result received: $resultTimestamp")
@@ -442,11 +400,8 @@ class CameraFragment : Fragment() {
 
                         // Build the result and resume progress
                         cont.resume(
-                            CombinedCaptureResult(
-                                image, result, exifOrientation, imageReader.imageFormat
-                            )
+                            CombinedCaptureResult(image, result, exifOrientation, imageReader.imageFormat)
                         )
-
                         // There is no need to break out of the loop, this coroutine will suspend
                     }
                 }
@@ -457,7 +412,6 @@ class CameraFragment : Fragment() {
     /** Helper function used to save a [CombinedCaptureResult] into a [File] */
     private suspend fun saveResult(result: CombinedCaptureResult): File = suspendCoroutine { cont ->
         when (result.format) {
-
             // When the format is JPEG or DEPTH JPEG we can simply save the bytes as-is
             ImageFormat.JPEG, ImageFormat.DEPTH_JPEG -> {
                 val buffer = result.image.planes[0].buffer

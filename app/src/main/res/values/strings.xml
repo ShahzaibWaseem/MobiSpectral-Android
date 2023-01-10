@@ -4,4 +4,9 @@
     <string name="capture">Capture</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="analysis_button_text">Analysis</string>
+    <string name="classify_text">Click on the image to classify</string>
+    <string name="get_hypercube_string">Get Hypercube</string>
+    <string name="information_button_string">Information Button</string>
+    <string name="reconstructing_hypercube_string">Reconstructing Hypercube...</string>
 </resources>

@@ -5,7 +5,6 @@ import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.graphics.Matrix
 import android.os.Bundle
-import android.os.Handler
 import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
@@ -21,7 +20,6 @@ import androidx.navigation.fragment.navArgs
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.example.android.camera.utils.GenericListAdapter
-import com.example.android.camera.utils.decodeExifOrientation
 import com.google.android.material.tabs.TabLayoutMediator
 import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.databinding.FragmentImageviewerBinding
@@ -55,12 +53,6 @@ class ImageViewerFragment : Fragment() {
         }
     }
 
-    /** Bitmap transformation derived from passed arguments */
-    private val bitmapTransformation: Matrix by lazy { decodeExifOrientation(args.orientation) }
-
-    /** Flag indicating that there is depth data available for this image */
-    private val isDepth: Boolean by lazy { args.depth }
-
     /** Data backing our Bitmap viewpager */
     private val bitmapList: MutableList<Bitmap> = mutableListOf()
 
@@ -80,12 +72,8 @@ class ImageViewerFragment : Fragment() {
                 Glide.with(view).load(item).into(view)
             }
         }
-        TabLayoutMediator(
-            fragmentImageviewerBinding.tabLayout,
-            fragmentImageviewerBinding.viewpager
-        ) { tab, position ->
-
-        }.attach()
+        TabLayoutMediator(fragmentImageviewerBinding.tabLayout,
+            fragmentImageviewerBinding.viewpager) { _, _ -> }.attach()
         return fragmentImageviewerBinding.root
     }
 
@@ -93,16 +81,15 @@ class ImageViewerFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         lifecycleScope.launch(Dispatchers.IO) {
-
             // Load input image file
-            val (rgbbuffer, nirbuffer) = loadInputBuffer()
+            val (bufferRGB, bufferNIR) = loadInputBuffer()
 
             // Load the main JPEG image
-            val rgbImageBitmap = decodeBitmap(rgbbuffer, 0, rgbbuffer.size, "RGB")
-            val nirImageBitmap = decodeBitmap(nirbuffer, 0, nirbuffer.size, "NIR")
+            val rgbImageBitmap = decodeBitmap(bufferRGB, 0, bufferRGB.size, "RGB")
+            val nirImageBitmap = decodeBitmap(bufferNIR, 0, bufferNIR.size, "NIR")
 
-            val rgbByteArray = BitmaptoByteArray(rgbImageBitmap)
-            var nirByteArray = BitmaptoByteArray(nirImageBitmap)
+            val rgbByteArray = bitmapToByteArray(rgbImageBitmap)
+            var nirByteArray = bitmapToByteArray(nirImageBitmap)
             Log.i("RGB NIR ByteArray Sizes", "${rgbByteArray.size}, ${nirByteArray.size}")
             nirByteArray = getBand(nirByteArray, 1)
             Log.i("RGB NIR ByteArray Sizes", "${rgbByteArray.size}, ${nirByteArray.size}")
@@ -118,10 +105,7 @@ class ImageViewerFragment : Fragment() {
                         ImageViewerFragmentDirections
                             .actionImageViewerFragmentToReconstructionFragment2(
                                 serializeByteArraytoString(rgbImageBitmap),
-                                serializeByteArraytoString(
-                                    nirImageBitmap
-                                )
-                            )
+                                serializeByteArraytoString(nirImageBitmap))
                     )
                 }
             }
@@ -136,13 +120,13 @@ class ImageViewerFragment : Fragment() {
         }
     }
 
-    fun BitmaptoByteArray(bitmap: Bitmap): ByteArray {
+    private fun bitmapToByteArray(bitmap: Bitmap): ByteArray {
         val bos = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bos)
         return bos.toByteArray()
     }
 
-    fun getBand(imageBuff: ByteArray, bandNumber: Int): ByteArray {
+    private fun getBand(imageBuff: ByteArray, bandNumber: Int): ByteArray {
         val width = 640
         val height = 480
 
@@ -153,13 +137,13 @@ class ImageViewerFragment : Fragment() {
 
         var tempValue :Byte
 
-        var buff_idx = 0
+        var buffIdx = 0
         Log.i("Size", "${imageBuff.size}")
-        for (i in 0 .. 56983) {
+        for (i in startOffset .. 56983) {
 //            Log.i("Indices", "$i, $buff_idx")
             tempValue = imageBuff[i]
-            byteBuffer.put(bandNumber * buff_idx, tempValue)
-            buff_idx += 1
+            byteBuffer.put(bandNumber * buffIdx, tempValue)
+            buffIdx += 1
         }
 
         val byteArray = ByteArray(byteBuffer.capacity())
@@ -192,7 +176,7 @@ class ImageViewerFragment : Fragment() {
         view.adapter!!.notifyDataSetChanged()
     }
 
-    fun serializeByteArraytoString(bitmap: Bitmap): String {
+    private fun serializeByteArraytoString(bitmap: Bitmap): String {
         val byteArrayOutputStream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
         val byteArray = byteArrayOutputStream.toByteArray()
@@ -201,15 +185,15 @@ class ImageViewerFragment : Fragment() {
 
     /** Utility function used to decode a [Bitmap] from a byte array */
     private fun decodeBitmap(buffer: ByteArray, start: Int, length: Int, RGB: String): Bitmap {
-        var bitmap: Bitmap
+        val bitmap: Bitmap
 
         // Load bitmap from given buffer
-        val decodedbitmap = BitmapFactory.decodeByteArray(buffer, start, length, bitmapOptions)
+        val decodedBitmap = BitmapFactory.decodeByteArray(buffer, start, length, bitmapOptions)
         bitmap = if (RGB == "RGB")
-            Bitmap.createBitmap(decodedbitmap, 83, 100,
+            Bitmap.createBitmap(decodedBitmap, 83, 100,
                 640, 480, Matrix().apply { postScale(-1.0F, 1.0F); postRotate(90F) }, true)
         else
-            Bitmap.createBitmap(decodedbitmap, 0, 0, decodedbitmap.width, decodedbitmap.height,
+            Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height,
                 Matrix().apply { postScale(-1.0F, 1.0F); postRotate(90F) }, false)
 
         // Transform bitmap orientation using provided metadata
@@ -217,34 +201,7 @@ class ImageViewerFragment : Fragment() {
     }
 
     companion object {
-        private val TAG = ImageViewerFragment::class.java.simpleName
-
         /** Maximum size of [Bitmap] decoded */
         private const val DOWNSAMPLE_SIZE: Int = 1024  // 1MP
-
-        /** These are the magic numbers used to separate the different JPG data chunks */
-        private val JPEG_DELIMITER_BYTES = arrayOf(-1, -39)
-
-        /**
-         * Utility function used to find the markers indicating separation between JPEG data chunks
-         */
-        private fun findNextJpegEndMarker(jpegBuffer: ByteArray, start: Int): Int {
-
-            // Sanitize input arguments
-            assert(start >= 0) { "Invalid start marker: $start" }
-            assert(jpegBuffer.size > start) {
-                "Buffer size (${jpegBuffer.size}) smaller than start marker ($start)" }
-
-            // Perform a linear search until the delimiter is found
-            for (i in start until jpegBuffer.size - 1) {
-                if (jpegBuffer[i].toInt() == JPEG_DELIMITER_BYTES[0] &&
-                        jpegBuffer[i + 1].toInt() == JPEG_DELIMITER_BYTES[1]) {
-                    return i + 2
-                }
-            }
-
-            // If we reach this, it means that no marker was found
-            throw RuntimeException("Separator marker not found in buffer (${jpegBuffer.size})")
-        }
     }
 }

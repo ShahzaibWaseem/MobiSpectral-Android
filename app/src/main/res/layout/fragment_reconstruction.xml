@@ -12,8 +12,8 @@
         android:layout_height="wrap_content"
         android:fontFamily="@font/roboto_slab_bold"
         android:gravity="center"
-        android:text="MobiSpectral"
-        android:textSize="50dp"
+        android:text="@string/app_name"
+        android:textSize="50sp"
         app:layout_constraintBottom_toTopOf="@+id/guideline"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -73,7 +73,7 @@
 
         <Button
             android:id="@+id/analysisButton"
-            android:text="Analysis"
+            android:text="@string/analysis_button_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:layout_constraintStart_toStartOf="parent"
@@ -86,7 +86,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/roboto_medium"
             android:gravity="center"
-            android:textSize="35dp"
+            android:textSize="35sp"
             app:layout_constraintTop_toBottomOf="@+id/analysisButton"
             tools:layout_editor_absoluteX="0dp" />
 
@@ -96,7 +96,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/roboto_medium"
             android:gravity="center"
-            android:textSize="25dp"
+            android:textSize="25sp"
             app:layout_constraintTop_toBottomOf="@+id/textViewClass"
             tools:layout_editor_absoluteX="0dp" />
 
@@ -106,8 +106,8 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/roboto_medium"
             android:gravity="center"
-            android:text="Click on the image to classify"
-            android:textSize="25dp"
+            android:text="@string/classify_text"
+            android:textSize="25sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textViewReconTime"
             tools:layout_editor_absoluteX="0dp" />

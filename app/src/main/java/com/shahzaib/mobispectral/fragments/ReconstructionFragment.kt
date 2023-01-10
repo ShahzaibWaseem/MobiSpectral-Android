@@ -28,14 +28,14 @@ import java.nio.ByteBuffer
 import java.nio.FloatBuffer
 
 class ReconstructionFragment : Fragment() {
-    private lateinit var pred_HS: FloatArray
-    private val HS_bands: MutableList<Bitmap> = mutableListOf()
+    private lateinit var predictedHS: FloatArray
+    private val bandsHS: MutableList<Bitmap> = mutableListOf()
     private val args: ReconstructionFragmentArgs by navArgs()
-    var reconstructionDuration = 0L
-    var classificationDuration = 0L
-    val height = 640
-    val width = 480
-    val numberOfBands = 60
+    private var reconstructionDuration = 0L
+    private var classificationDuration = 0L
+    private val height = 640
+    private val width = 480
+    private val numberOfBands = 60
     var phoneHeight = 0
     var phoneWidth = 0
 
@@ -48,26 +48,17 @@ class ReconstructionFragment : Fragment() {
             ViewGroup.LayoutParams.MATCH_PARENT
         )
     }
-    private fun createORTSession(
-        context: Context,
-        assetName: String,
-        ortEnvironment: OrtEnvironment
-    ) : OrtSession {
+
+    private fun createORTSession(ortEnvironment: OrtEnvironment) : OrtSession {
         val modelBytes = resources.openRawResource(R.raw.classifier).readBytes()
         return ortEnvironment.createSession(modelBytes)
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         OpenCVLoader.initDebug()
         super.onCreateView(inflater, container, savedInstanceState)
         _fragmentReconstructionBinding = FragmentReconstructionBinding.inflate(
-            inflater,
-            container,
-            false
-        )
+            inflater, container, false)
         val wm: WindowManager= context?.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val display = wm.defaultDisplay
         Log.i("INIT Phone Size", "height: ${display.height}, width: ${display.width}")
@@ -80,7 +71,7 @@ class ReconstructionFragment : Fragment() {
         generateHypercube()
         fragmentReconstructionBinding.viewpager.apply {
             offscreenPageLimit=2
-            adapter = GenericListAdapter(HS_bands,
+            adapter = GenericListAdapter(bandsHS,
                 itemViewFactory = { imageViewFactory() }) { view, item, idx ->
                 view as ImageView
                 Log.i("Image View Factory", "ImageinViewPager$idx")
@@ -88,16 +79,12 @@ class ReconstructionFragment : Fragment() {
                 Glide.with(view).load(item).into(view)
             }
         }
-        TabLayoutMediator(
-            fragmentReconstructionBinding.tabLayout,
-            fragmentReconstructionBinding.viewpager
-        ) { tab, position ->
-
-        }.attach()
+        TabLayoutMediator(fragmentReconstructionBinding.tabLayout,
+            fragmentReconstructionBinding.viewpager) { _, _ ->}.attach()
 
         val viewpagerThread = Thread {
             for (i in 0 until numberOfBands) {
-                addItemToViewPager(fragmentReconstructionBinding.viewpager, getBand(pred_HS, i))
+                addItemToViewPager(fragmentReconstructionBinding.viewpager, getBand(predictedHS, i))
             }
         }
 
@@ -123,44 +110,42 @@ class ReconstructionFragment : Fragment() {
         Log.i("Phones Size", "width: $phoneWidth, height: $phoneHeight")
 
         val ortEnvironment = OrtEnvironment.getEnvironment()
-        val ortSession = context?.let { createORTSession(it, "classifier.onnx", ortEnvironment) }
+        val ortSession = context?.let { createORTSession(ortEnvironment) }
 
-        overlay.setOnTouchListener(object : View.OnTouchListener {
-            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-                val coordinates = IntArray(2)
-                overlay.getLocationOnScreen(coordinates)
-                val overlayWidth = (overlay.right - overlay.left).toFloat()
-                val overlayHeight = (overlay.bottom - overlay.top).toFloat()
-                Log.i("Phones Size", "width: $phoneWidth, height: $phoneHeight")
-                Log.i(
-                    "Overlay sizes",
-                    "left ${overlay.left} event x: ${event?.x!!} = ${overlay.left + event.x}"
-                )
-                Log.i(
-                    "Overlay sizes",
-                    "top ${overlay.top} Bottom ${overlay.bottom} event y: ${event.y} = ${overlay.top + event.y}"
-                )
-                Log.i("Overlay sizes", "width: $overlayWidth, height: $overlayHeight")
+        overlay.setOnTouchListener { _, event ->
+            val coordinates = IntArray(2)
+            overlay.getLocationOnScreen(coordinates)
+            val overlayWidth = (overlay.right - overlay.left).toFloat()
+            val overlayHeight = (overlay.bottom - overlay.top).toFloat()
+            Log.i("Phones Size", "width: $phoneWidth, height: $phoneHeight")
+            Log.i(
+                "Overlay sizes",
+                "left ${overlay.left} event x: ${event?.x!!} = ${overlay.left + event.x}"
+            )
+            Log.i(
+                "Overlay sizes",
+                "top ${overlay.top} Bottom ${overlay.bottom} event y: ${event.y} = ${overlay.top + event.y}"
+            )
+            Log.i("Overlay sizes", "width: $overlayWidth, height: $overlayHeight")
 
-                val xCoord = (event.x / overlayWidth) * width.toFloat()
-                val yCoord = (event.y / overlayHeight) * height.toFloat()
+            val xCoord = (event.x / overlayWidth) * width.toFloat()
+            val yCoord = (event.y / overlayHeight) * height.toFloat()
 
-                Log.i(
-                    "Overlay size",
-                    "percentage x: ${event.x / overlayWidth}, percentage y : ${event.y / overlayHeight}"
-                )
+            Log.i(
+                "Overlay size",
+                "percentage x: ${event.x / overlayWidth}, percentage y : ${event.y / overlayHeight}"
+            )
 
-                val inputSignature = getSignature(pred_HS, xCoord.toInt(), yCoord.toInt())
-                val output = ortSession?.let { runPrediction(inputSignature, it, ortEnvironment) }
-                val outputString: String =
-                    if (output == 1L) "Organic Apple" else "Non-Organic Apple"
-                fragmentReconstructionBinding.textViewClass.text = outputString
-                return false
-            }
-        })
+            val inputSignature = getSignature(predictedHS, xCoord.toInt(), yCoord.toInt())
+            val output = ortSession?.let { runPrediction(inputSignature, it, ortEnvironment) }
+            val outputString: String =
+                if (output == 1L) "Organic Apple" else "Non-Organic Apple"
+            fragmentReconstructionBinding.textViewClass.text = outputString
+            false
+        }
     }
 
-    fun getSignature(pred_HS: FloatArray, x: Int, y: Int): FloatArray {
+    private fun getSignature(predHS: FloatArray, x: Int, y: Int): FloatArray {
         val signature = FloatArray(numberOfBands)
         Log.i("Touch Coords", "$x, $y")
         val leftX = width - x
@@ -172,9 +157,9 @@ class ReconstructionFragment : Fragment() {
         val series = LineGraphSeries<DataPoint>()
 
         for (i in 0 until numberOfBands) {
-            signature[i] = pred_HS[idx]
-            print("${pred_HS[idx]}, ")
-            series.appendData(DataPoint(i.toDouble(), pred_HS[idx].toDouble()), true, 60)
+            signature[i] = predHS[idx]
+            print("${predHS[idx]}, ")
+            series.appendData(DataPoint(i.toDouble(), predHS[idx].toDouble()), true, 60)
             idx += leftX + width*leftY + (width*y + x)
         }
         val graphView = fragmentReconstructionBinding.graphView
@@ -191,29 +176,29 @@ class ReconstructionFragment : Fragment() {
         return signature
     }
 
-    fun generateHypercube() {
-        val reconstructorModel = context?.let { Reconstruction(it, "mobile_mst_apple_wb.pt") }!!
+    private fun generateHypercube() {
+        val reconstructionModel = context?.let { Reconstruction(it, "mobile_mst_apple_wb.pt") }!!
 
-        val decoded_rgb = Base64.decode(args.rgbImage, Base64.DEFAULT)
-        var rgbBitmap = BitmapFactory.decodeByteArray(decoded_rgb, 0, decoded_rgb.size)
+        val decodedRGB = Base64.decode(args.rgbImage, Base64.DEFAULT)
+        var rgbBitmap = BitmapFactory.decodeByteArray(decodedRGB, 0, decodedRGB.size)
         rgbBitmap = Bitmap.createBitmap(
             rgbBitmap, 0, 0, rgbBitmap.width, rgbBitmap.height,
             null, true
         )
 
-        val decoded_nir = Base64.decode(args.nirImage, Base64.DEFAULT)
-        var nirBitmap = BitmapFactory.decodeByteArray(decoded_nir, 0, decoded_nir.size)
+        val decodedNIR = Base64.decode(args.nirImage, Base64.DEFAULT)
+        var nirBitmap = BitmapFactory.decodeByteArray(decodedNIR, 0, decodedNIR.size)
         nirBitmap = Bitmap.createBitmap(
             nirBitmap, 0, 0, nirBitmap.width, nirBitmap.height,
             null, true
         )
         val startTime = System.currentTimeMillis()
 
-        val modelRunningThread = Thread { pred_HS = reconstructorModel.predict(rgbBitmap, nirBitmap) }
+        val modelRunningThread = Thread { predictedHS = reconstructionModel.predict(rgbBitmap, nirBitmap) }
 
         modelRunningThread.start()
 
-//        pred_HS = reconstructorModel.predict(rgbBitmap, nirBitmap)
+//        predHS = reconstructionModel.predict(rgbBitmap, nirBitmap)
 
         try {
             modelRunningThread.join()
@@ -223,26 +208,18 @@ class ReconstructionFragment : Fragment() {
         }
 
 
-        Log.i("Pred_HS Size", pred_HS.size.toString())
+        Log.i("predHS Size", predictedHS.size.toString())
 
         val endTime = System.currentTimeMillis()
         reconstructionDuration = (endTime - startTime)/1000
         println("Reconstruction Time: $reconstructionDuration s")
     }
 
-    private fun runPrediction(
-        input: FloatArray,
-        ortSession: OrtSession,
-        ortEnvironment: OrtEnvironment
-    ): Long {
+    private fun runPrediction(input: FloatArray, ortSession: OrtSession, ortEnvironment: OrtEnvironment): Long {
         val inputName = ortSession.inputNames?.iterator()?.next()
         val floatBufferInputs = FloatBuffer.wrap(input)
         val inputTensor = OnnxTensor.createTensor(
-            ortEnvironment, floatBufferInputs, longArrayOf(
-                1,
-                60
-            )
-        )
+            ortEnvironment, floatBufferInputs, longArrayOf(1, 60))
 
         val startTime = System.currentTimeMillis()
         val results = ortSession.run(mapOf(inputName to inputTensor))
@@ -259,7 +236,7 @@ class ReconstructionFragment : Fragment() {
         return output[0]
     }
 
-    fun getBand(pred_HS: FloatArray, bandNumber: Int, reverseScale: Boolean = false): Bitmap {
+    private fun getBand(pred_HS: FloatArray, bandNumber: Int, reverseScale: Boolean = false): Bitmap {
         val alpha :Byte = (255).toByte()
 
         val byteBuffer = ByteBuffer.allocate((width + 1) * (height + 1) * 4)
@@ -279,14 +256,14 @@ class ReconstructionFragment : Fragment() {
             false -> { v: Float -> (((v - minValue) / delta * 255)).toInt().toByte() }
             true -> { v: Float -> (255 - (v - minValue) / delta * 255).toInt().toByte() }
         }
-        var buff_idx = 0
+        var buffIdx = 0
         for (i in startOffset .. endOffset) {
             tempValue = conversion(pred_HS[i])
-            byteBuffer.put(4 * buff_idx, tempValue)
-            byteBuffer.put(4 * buff_idx + 1, tempValue)
-            byteBuffer.put(4 * buff_idx + 2, tempValue)
-            byteBuffer.put(4 * buff_idx + 3, alpha)
-            buff_idx += 1
+            byteBuffer.put(4 * buffIdx, tempValue)
+            byteBuffer.put(4 * buffIdx + 1, tempValue)
+            byteBuffer.put(4 * buffIdx + 2, tempValue)
+            byteBuffer.put(4 * buffIdx + 3, alpha)
+            buffIdx += 1
         }
 
         bmp.copyPixelsFromBuffer(byteBuffer)
@@ -298,7 +275,7 @@ class ReconstructionFragment : Fragment() {
     }
 
     private fun addItemToViewPager(view: ViewPager2, item: Bitmap) = view.post {
-        HS_bands.add(item)
+        bandsHS.add(item)
         view.adapter!!.notifyDataSetChanged()
     }
 }

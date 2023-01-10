@@ -10,26 +10,25 @@ import org.pytorch.IValue
 import org.pytorch.torchvision.TensorImageUtils
 
 class Reconstruction(context: Context, modelPath: String) {
-    var model: Module? = null
-    val height: Long = 640
-    val width: Long = 480
+    private var model: Module? = null
+    private val height: Long = 640
+    private val width: Long = 480
 
-    var mean = floatArrayOf(0.0f, 0.0f, 0.0f)
-    var std = floatArrayOf(1.0f, 1.0f, 1.0f)
+    private var mean = floatArrayOf(0.0f, 0.0f, 0.0f)
+    private var std = floatArrayOf(1.0f, 1.0f, 1.0f)
 
     init {
         Log.i("Model Load", Utils.assetFilePath(context, modelPath).toString())
         model = Module.load(Utils.assetFilePath(context, modelPath))
     }
 
-    fun preprocess(bitmap: Bitmap?, size: Int): Tensor {
-        var bitmap = bitmap
+    private fun preprocess(bitmap: Bitmap?): Tensor {
         return TensorImageUtils.bitmapToFloat32Tensor(bitmap, mean, std)
     }
 
-    fun getOneBand(tensor: Tensor): Tensor {
+    private fun getOneBand(tensor: Tensor): Tensor {
         val tensorDoubleArray = tensor.dataAsFloatArray
-        var floatArray = FloatArray((width*height).toInt())
+        val floatArray = FloatArray((width*height).toInt())
         Log.i("Tensor size", "${tensorDoubleArray.size}")
         for (i in 0 until (height*width).toInt()){
             floatArray[i] = tensorDoubleArray[i]
@@ -42,19 +41,7 @@ class Reconstruction(context: Context, modelPath: String) {
         return Tensor.fromBlob(floatArray, size)
     }
 
-    fun argMax(inputs: FloatArray): Int {
-        var maxIndex = -1
-        var maxvalue = 0.0f
-        for (i in inputs.indices) {
-            if (inputs[i] > maxvalue) {
-                maxIndex = i
-                maxvalue = inputs[i]
-            }
-        }
-        return maxIndex
-    }
-
-    fun concatenate(rgbTensor: Tensor, nirTensor: Tensor): Tensor {
+    private fun concatenate(rgbTensor: Tensor, nirTensor: Tensor): Tensor {
         val rgbArray = rgbTensor.dataAsFloatArray
         val nirArray = nirTensor.dataAsFloatArray
         val concatenated = FloatArray(rgbArray.size + nirArray.size)
@@ -71,24 +58,24 @@ class Reconstruction(context: Context, modelPath: String) {
 
     fun predict(rgbBitmap: Bitmap, nirBitmap: Bitmap): FloatArray {
         val startTime = System.currentTimeMillis()
-        val rgb_tensor: Tensor = preprocess(rgbBitmap, 512)
-        val nir_tensor: Tensor = getOneBand(preprocess(nirBitmap, 512))
-        Log.i("TensorShape", "${rgb_tensor.shape().toList().toString()}, ${nir_tensor.shape().toList().toString()}")
+        val rgbTensor: Tensor = preprocess(rgbBitmap)
+        val nirTensor: Tensor = getOneBand(preprocess(nirBitmap))
+        Log.i("TensorShape", "${rgbTensor.shape().toList()}, ${nirTensor.shape().toList()}")
 
-        val image_tensor: Tensor = concatenate(rgb_tensor, nir_tensor)
+        val imageTensor: Tensor = concatenate(rgbTensor, nirTensor)
 
-        Log.i("Concatenated", image_tensor.shape().toList().toString())
+        Log.i("Concatenated", imageTensor.shape().toList().toString())
 
-        val data: FloatArray = image_tensor.getDataAsFloatArray()
-        val inputs: IValue = IValue.from(image_tensor)
+//        val data: FloatArray = image_tensor.getDataAsFloatArray()
+        val inputs: IValue = IValue.from(imageTensor)
 
         val outputs: Tensor = model?.forward(inputs)?.toTensor()!!
-        val reconstructed_HS: FloatArray = outputs.dataAsFloatArray
+        val reconstructedHS: FloatArray = outputs.dataAsFloatArray
         val endTime = System.currentTimeMillis()
         val duration = endTime - startTime
 
         println(duration)
 
-        return reconstructed_HS
+        return reconstructedHS
     }
 }
