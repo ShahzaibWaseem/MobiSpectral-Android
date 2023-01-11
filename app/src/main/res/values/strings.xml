@@ -9,4 +9,6 @@
     <string name="get_hypercube_string">Get Hypercube</string>
     <string name="information_button_string">Information Button</string>
     <string name="reconstructing_hypercube_string">Reconstructing Hypercube...</string>
+    <string name="reconstruction_time_string">Reconstruction Time: ? s</string>
+    <string name="classification_string">Organic/Non-organic Apple Classification</string>
 </resources>

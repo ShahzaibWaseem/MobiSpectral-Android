@@ -78,7 +78,8 @@
             android:layout_height="wrap_content"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/textViewClass"/>
 
         <TextView
             android:id="@+id/textViewClass"
@@ -86,8 +87,10 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/roboto_medium"
             android:gravity="center"
-            android:textSize="35sp"
+            android:textSize="22sp"
+            android:text="@string/classification_string"
             app:layout_constraintTop_toBottomOf="@+id/analysisButton"
+            app:layout_constraintBottom_toTopOf="@+id/textViewReconTime"
             tools:layout_editor_absoluteX="0dp" />
 
         <TextView
@@ -97,7 +100,9 @@
             android:fontFamily="@font/roboto_medium"
             android:gravity="center"
             android:textSize="25sp"
+            android:text="@string/reconstruction_time_string"
             app:layout_constraintTop_toBottomOf="@+id/textViewClass"
+            app:layout_constraintBottom_toTopOf="@+id/textViewClassTime"
             tools:layout_editor_absoluteX="0dp" />
 
         <TextView
@@ -108,8 +113,8 @@
             android:gravity="center"
             android:text="@string/classify_text"
             android:textSize="25sp"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textViewReconTime"
+            app:layout_constraintBottom_toBottomOf="parent"
             tools:layout_editor_absoluteX="0dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
@@ -121,6 +126,5 @@
         android:visibility="invisible"
         app:layout_constraintTop_toBottomOf="@+id/guideline2"
         app:layout_constraintBottom_toBottomOf="parent"/>
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

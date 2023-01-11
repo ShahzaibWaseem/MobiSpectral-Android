@@ -16,7 +16,7 @@ class ReconstructionDialogFragment: DialogFragment() {
         super.onCreateDialog(savedInstanceState)
         _fragmentReconstructionDialogBinding = FragmentReconstructionDialogBinding.inflate(layoutInflater)
         _fragmentReconstructionDialogBinding!!.progressBar.visibility = View.VISIBLE
-        _fragmentReconstructionDialogBinding!!.progressBar.setProgress(30)
+        _fragmentReconstructionDialogBinding!!.progressBar.progress = 30
         alertDialog = AlertDialog.Builder(requireContext())
             .setCancelable(false)
             .create()

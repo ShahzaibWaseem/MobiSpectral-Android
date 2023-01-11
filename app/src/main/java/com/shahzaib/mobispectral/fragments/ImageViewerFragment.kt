@@ -97,9 +97,6 @@ class ImageViewerFragment : Fragment() {
             addItemToViewPager(fragmentImageviewerBinding.viewpager, nirImageBitmap)
 
             fragmentImageviewerBinding.button.setOnClickListener {
-                val reconstructionDialogFragment = ReconstructionDialogFragment()
-                reconstructionDialogFragment.show(childFragmentManager, ReconstructionDialogFragment.TAG)
-
                 lifecycleScope.launch(Dispatchers.Main) {
                     navController.navigate(
                         ImageViewerFragmentDirections
@@ -140,7 +137,6 @@ class ImageViewerFragment : Fragment() {
         var buffIdx = 0
         Log.i("Size", "${imageBuff.size}")
         for (i in startOffset .. 56983) {
-//            Log.i("Indices", "$i, $buff_idx")
             tempValue = imageBuff[i]
             byteBuffer.put(bandNumber * buffIdx, tempValue)
             buffIdx += 1
