@@ -43,8 +43,8 @@ class ImageViewerFragment : Fragment() {
     private val navController: NavController by lazy {
         Navigation.findNavController(requireActivity(), R.id.fragment_container)
     }
-    private var _fragmentImageviewerBinding: FragmentImageviewerBinding? = null
-    private val fragmentImageviewerBinding get() = _fragmentImageviewerBinding!!
+    private var _fragmentImageViewerBinding: FragmentImageviewerBinding? = null
+    private val fragmentImageViewerBinding get() = _fragmentImageViewerBinding!!
     /** Default Bitmap decoding options */
     private val bitmapOptions = BitmapFactory.Options().apply {
         inJustDecodeBounds = false
@@ -64,8 +64,8 @@ class ImageViewerFragment : Fragment() {
     }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View {
-        _fragmentImageviewerBinding = FragmentImageviewerBinding.inflate(inflater, container, false)
-        fragmentImageviewerBinding.viewpager.apply {
+        _fragmentImageViewerBinding = FragmentImageviewerBinding.inflate(inflater, container, false)
+        fragmentImageViewerBinding.viewpager.apply {
             offscreenPageLimit=2
             adapter = GenericListAdapter(bitmapList,
                 itemViewFactory = { imageViewFactory() }) { view, item, _ ->
@@ -73,9 +73,9 @@ class ImageViewerFragment : Fragment() {
                 Glide.with(view).load(item).into(view)
             }
         }
-        TabLayoutMediator(fragmentImageviewerBinding.tabLayout,
-            fragmentImageviewerBinding.viewpager) { _, _ -> }.attach()
-        return fragmentImageviewerBinding.root
+        TabLayoutMediator(fragmentImageViewerBinding.tabLayout,
+            fragmentImageViewerBinding.viewpager) { _, _ -> }.attach()
+        return fragmentImageViewerBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -94,10 +94,10 @@ class ImageViewerFragment : Fragment() {
             Log.i("RGB NIR ByteArray Sizes", "${rgbByteArray.size}, ${nirByteArray.size}")
             nirByteArray = getNIRBand(nirByteArray)
             Log.i("RGB NIR ByteArray Sizes", "${rgbByteArray.size}, ${nirByteArray.size}")
-            addItemToViewPager(fragmentImageviewerBinding.viewpager, rgbImageBitmap)
-            addItemToViewPager(fragmentImageviewerBinding.viewpager, nirImageBitmap)
+            addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap)
+            addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap)
 
-            fragmentImageviewerBinding.button.setOnClickListener {
+            fragmentImageViewerBinding.button.setOnClickListener {
                 lifecycleScope.launch(Dispatchers.Main) {
                     navController.navigate(
                         ImageViewerFragmentDirections
@@ -107,7 +107,7 @@ class ImageViewerFragment : Fragment() {
                     )
                 }
             }
-            fragmentImageviewerBinding.reloadButton.setOnClickListener {
+            fragmentImageViewerBinding.reloadButton.setOnClickListener {
                 lifecycleScope.launch(Dispatchers.Main) {
                     navController.navigate(
                         ImageViewerFragmentDirections

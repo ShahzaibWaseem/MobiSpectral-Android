@@ -4,12 +4,13 @@ import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import android.annotation.SuppressLint
+import android.app.AlertDialog
+import android.content.DialogInterface
 import android.graphics.*
 import android.os.Bundle
 import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -30,7 +31,7 @@ import java.nio.FloatBuffer
 import java.util.*
 import kotlin.concurrent.schedule
 
-class ReconstructionFragment : Fragment() {
+class ReconstructionFragment: Fragment() {
     private lateinit var predictedHS: FloatArray
     private val bandsHS: MutableList<Bitmap> = mutableListOf()
     private val args: ReconstructionFragmentArgs by navArgs()
@@ -71,10 +72,21 @@ class ReconstructionFragment : Fragment() {
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        fragmentReconstructionBinding.information.setOnClickListener {
+            val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+            builder.setMessage(R.string.reconstruction_analysis_information_string)
+            builder.setTitle("Information")
+            builder.setPositiveButton("Okay") {
+                dialog: DialogInterface?, _: Int -> dialog?.cancel()
+            }
+
+            val alertDialog = builder.create()
+            alertDialog.show()
+        }
         fragmentReconstructionBinding.viewpager.apply {
             offscreenPageLimit=2
             adapter = GenericListAdapter(bandsHS, itemViewFactory = { imageViewFactory() })
-            { view, item, idx ->
+            { view, item, _ ->
                 view as ImageView
                 view.setOnTouchListener { v, event ->
                     clickedX = (event!!.x / v!!.width) * imageWidth
@@ -142,8 +154,6 @@ class ReconstructionFragment : Fragment() {
     }
 
     private fun inference() {
-        fragmentReconstructionBinding.textViewReconTime.text = "Reconstruction Time: $reconstructionDuration s"
-
         val ortEnvironment = OrtEnvironment.getEnvironment()
         val ortSession = context?.let { createORTSession(ortEnvironment) }
 
@@ -156,7 +166,7 @@ class ReconstructionFragment : Fragment() {
 
     private fun getSignature(predictedHS: FloatArray, SignatureX: Int, SignatureY: Int): FloatArray {
         val signature = FloatArray(numberOfBands)
-        Log.i("Touch Coords", "$SignatureX, $SignatureY")
+        Log.i("Touch Coordinates", "$SignatureX, $SignatureY")
         val leftX = imageWidth - SignatureX
         val leftY = imageHeight - SignatureY
 
@@ -201,7 +211,8 @@ class ReconstructionFragment : Fragment() {
 
         val endTime = System.currentTimeMillis()
         reconstructionDuration = (endTime - startTime)/1000
-        println("Reconstruction Time: $reconstructionDuration s")
+        println(getString(R.string.reconstruction_time_string, reconstructionDuration))
+        fragmentReconstructionBinding.textViewReconTime.text = getString(R.string.reconstruction_time_string, reconstructionDuration)
     }
 
     private fun classifyHypercube(input: FloatArray, ortSession: OrtSession,
@@ -216,8 +227,8 @@ class ReconstructionFragment : Fragment() {
         val endTime = System.currentTimeMillis()
 
         classificationDuration = (endTime - startTime)
-        println("Classification Time: $classificationDuration ms")
-        fragmentReconstructionBinding.textViewClassTime.text = "Classification Duration: $classificationDuration ms"
+        println(getString(R.string.classification_time_string, classificationDuration))
+        fragmentReconstructionBinding.textViewClassTime.text = getString(R.string.classification_time_string, classificationDuration)
 
         var output = results[0].value
         output = output as LongArray

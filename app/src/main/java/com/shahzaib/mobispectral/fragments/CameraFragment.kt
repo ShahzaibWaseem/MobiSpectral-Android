@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
-import android.graphics.Color
 import android.graphics.ImageFormat
 import android.hardware.camera2.*
 import android.media.Image
@@ -15,7 +14,6 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
 import android.view.*
-import androidx.core.graphics.drawable.toDrawable
 import androidx.exifinterface.media.ExifInterface
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -25,7 +23,6 @@ import androidx.navigation.fragment.navArgs
 import com.example.android.camera.utils.OrientationLiveData
 import com.example.android.camera.utils.computeExifOrientation
 import com.example.android.camera.utils.getPreviewOutputSize
-import com.shahzaib.mobispectral.MainActivity
 import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.databinding.FragmentCameraBinding
 import kotlinx.coroutines.Dispatchers
@@ -44,7 +41,6 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 class CameraFragment : Fragment() {
-
     /** Android ViewBinding */
     private var _fragmentCameraBinding: FragmentCameraBinding? = null
 
@@ -108,12 +104,11 @@ class CameraFragment : Fragment() {
         }
         fragmentCameraBinding.information.setOnClickListener {
             val builder: AlertDialog.Builder = AlertDialog.Builder(context)
-            builder.setMessage("Clicking the camera capture button captures both RGB and NIR image back to back, as to make it easy to align the two images")
+            builder.setMessage(R.string.capture_information_string)
             builder.setTitle("Information")
-            builder.setPositiveButton("Okay",
-                DialogInterface.OnClickListener { dialog: DialogInterface?, _: Int ->
-                    dialog?.cancel()
-                })
+            builder.setPositiveButton("Okay") {
+                dialog: DialogInterface?, _: Int -> dialog?.cancel()
+            }
 
             val alertDialog = builder.create()
             alertDialog.show()
@@ -336,8 +331,8 @@ class CameraFragment : Fragment() {
      * template. It performs synchronization between the [CaptureResult] and the [Image] resulting
      * from the single capture, and outputs a [CombinedCaptureResult] object.
      */
-    private suspend fun takePhoto():
-            CombinedCaptureResult = suspendCoroutine { cont ->
+    private suspend fun takePhoto(): CombinedCaptureResult
+            = suspendCoroutine { cont ->
 
         // Flush any images left in the image reader
         @Suppress("ControlFlowWithEmptyBody")
