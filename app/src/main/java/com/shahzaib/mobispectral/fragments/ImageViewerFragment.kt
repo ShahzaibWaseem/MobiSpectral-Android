@@ -32,6 +32,9 @@ import java.nio.ByteBuffer
 import kotlin.math.max
 
 class ImageViewerFragment : Fragment() {
+    private val width = 640
+    private val height = 480
+    private val correctionMatrix = Matrix().apply { postScale(-1.0F, 1.0F); postRotate(90F) }
 
     /** AndroidX navigation arguments */
     private val args: ImageViewerFragmentArgs by navArgs()
@@ -59,10 +62,8 @@ class ImageViewerFragment : Fragment() {
     private fun imageViewFactory() = ImageView(requireContext()).apply {
         layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
     }
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
+                              savedInstanceState: Bundle?): View {
         _fragmentImageviewerBinding = FragmentImageviewerBinding.inflate(inflater, container, false)
         fragmentImageviewerBinding.viewpager.apply {
             offscreenPageLimit=2
@@ -85,13 +86,13 @@ class ImageViewerFragment : Fragment() {
             val (bufferRGB, bufferNIR) = loadInputBuffer()
 
             // Load the main JPEG image
-            val rgbImageBitmap = decodeBitmap(bufferRGB, 0, bufferRGB.size, "RGB")
-            val nirImageBitmap = decodeBitmap(bufferNIR, 0, bufferNIR.size, "NIR")
+            val rgbImageBitmap = decodeBitmap(bufferRGB, bufferRGB.size, "RGB")
+            val nirImageBitmap = decodeBitmap(bufferNIR, bufferNIR.size, "NIR")
 
             val rgbByteArray = bitmapToByteArray(rgbImageBitmap)
             var nirByteArray = bitmapToByteArray(nirImageBitmap)
             Log.i("RGB NIR ByteArray Sizes", "${rgbByteArray.size}, ${nirByteArray.size}")
-            nirByteArray = getBand(nirByteArray, 1)
+            nirByteArray = getNIRBand(nirByteArray)
             Log.i("RGB NIR ByteArray Sizes", "${rgbByteArray.size}, ${nirByteArray.size}")
             addItemToViewPager(fragmentImageviewerBinding.viewpager, rgbImageBitmap)
             addItemToViewPager(fragmentImageviewerBinding.viewpager, nirImageBitmap)
@@ -101,8 +102,8 @@ class ImageViewerFragment : Fragment() {
                     navController.navigate(
                         ImageViewerFragmentDirections
                             .actionImageViewerFragmentToReconstructionFragment2(
-                                serializeByteArraytoString(rgbImageBitmap),
-                                serializeByteArraytoString(nirImageBitmap))
+                                serializeByteArrayToString(rgbImageBitmap),
+                                serializeByteArrayToString(nirImageBitmap))
                     )
                 }
             }
@@ -123,22 +124,18 @@ class ImageViewerFragment : Fragment() {
         return bos.toByteArray()
     }
 
-    private fun getBand(imageBuff: ByteArray, bandNumber: Int): ByteArray {
-        val width = 640
-        val height = 480
-
-        val byteBuffer = ByteBuffer.allocate((width + 1) * (height + 1) * bandNumber)
+    private fun getNIRBand(imageBuff: ByteArray): ByteArray {
+        val byteBuffer = ByteBuffer.allocate(imageBuff.size)
+        var buffIdx = 0
+        var pixelValueBuff: Byte
 
         val startOffset = 0
-        val endOffset = (bandNumber) * width * height - 1
+        val endOffset = imageBuff.size - 1
 
-        var tempValue :Byte
-
-        var buffIdx = 0
-        Log.i("Size", "${imageBuff.size}")
-        for (i in startOffset .. 56983) {
-            tempValue = imageBuff[i]
-            byteBuffer.put(bandNumber * buffIdx, tempValue)
+        Log.i("Image Buff Size", "${imageBuff.size}, EndOffset $endOffset, byteBuffer ${byteBuffer.capacity()}")
+        for (i in startOffset .. endOffset) {
+            pixelValueBuff = imageBuff[i]
+            byteBuffer.put(1 * buffIdx, pixelValueBuff)
             buffIdx += 1
         }
 
@@ -172,7 +169,8 @@ class ImageViewerFragment : Fragment() {
         view.adapter!!.notifyDataSetChanged()
     }
 
-    private fun serializeByteArraytoString(bitmap: Bitmap): String {
+    /** Utility function to convert images into String to be decoded in ReconstructionFragment **/
+    private fun serializeByteArrayToString(bitmap: Bitmap): String {
         val byteArrayOutputStream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
         val byteArray = byteArrayOutputStream.toByteArray()
@@ -180,17 +178,15 @@ class ImageViewerFragment : Fragment() {
     }
 
     /** Utility function used to decode a [Bitmap] from a byte array */
-    private fun decodeBitmap(buffer: ByteArray, start: Int, length: Int, RGB: String): Bitmap {
+    private fun decodeBitmap(buffer: ByteArray, length: Int, RGB: String): Bitmap {
         val bitmap: Bitmap
 
         // Load bitmap from given buffer
-        val decodedBitmap = BitmapFactory.decodeByteArray(buffer, start, length, bitmapOptions)
+        val decodedBitmap = BitmapFactory.decodeByteArray(buffer, 0, length, bitmapOptions)
         bitmap = if (RGB == "RGB")
-            Bitmap.createBitmap(decodedBitmap, 83, 100,
-                640, 480, Matrix().apply { postScale(-1.0F, 1.0F); postRotate(90F) }, true)
+            Bitmap.createBitmap(decodedBitmap, 83, 100, width, height, correctionMatrix, true)
         else
-            Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height,
-                Matrix().apply { postScale(-1.0F, 1.0F); postRotate(90F) }, false)
+            Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, correctionMatrix, false)
 
         // Transform bitmap orientation using provided metadata
         return bitmap

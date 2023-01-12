@@ -1,6 +1,5 @@
 package com.shahzaib.mobispectral
 
-import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity

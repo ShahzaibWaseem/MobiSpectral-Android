@@ -10,7 +10,6 @@ import com.shahzaib.mobispectral.databinding.FragmentReconstructionDialogBinding
 class ReconstructionDialogFragment: DialogFragment() {
     private lateinit var alertDialog: AlertDialog
     private var _fragmentReconstructionDialogBinding: FragmentReconstructionDialogBinding? = null
-    private val fragmentReconstructionDialogBinding get() = _fragmentReconstructionDialogBinding!!
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         super.onCreateDialog(savedInstanceState)
@@ -23,10 +22,6 @@ class ReconstructionDialogFragment: DialogFragment() {
 
         alertDialog.setView(_fragmentReconstructionDialogBinding!!.root)
         return alertDialog
-    }
-
-    fun startDialog() {
-        alertDialog.show()
     }
 
     fun dismissDialog() {

@@ -4,12 +4,12 @@ import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import android.annotation.SuppressLint
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.*
 import android.os.Bundle
 import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -36,11 +36,12 @@ class ReconstructionFragment : Fragment() {
     private val args: ReconstructionFragmentArgs by navArgs()
     private var reconstructionDuration = 0L
     private var classificationDuration = 0L
-    private val height = 640
-    private val width = 480
+    private val imageHeight = 640
+    private val imageWidth = 480
     private val numberOfBands = 60
-    private var phoneHeight = 0
-    private var phoneWidth = 0
+    private var outputLabelString: String = ""
+    private var clickedX = 0.0F
+    private var clickedY = 0.0F
 
     private val reconstructionDialogFragment = ReconstructionDialogFragment()
 
@@ -49,9 +50,7 @@ class ReconstructionFragment : Fragment() {
 
     private fun imageViewFactory() = ImageView(requireContext()).apply {
         layoutParams = ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
     }
 
     private fun createORTSession(ortEnvironment: OrtEnvironment) : OrtSession {
@@ -64,24 +63,39 @@ class ReconstructionFragment : Fragment() {
         OpenCVLoader.initDebug()
         super.onCreateView(inflater, container, savedInstanceState)
         _fragmentReconstructionBinding = FragmentReconstructionBinding.inflate(
-            inflater, container, false)
+                inflater, container, false)
+        reconstructionDialogFragment.isCancelable = false
         return fragmentReconstructionBinding.root
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         fragmentReconstructionBinding.viewpager.apply {
             offscreenPageLimit=2
             adapter = GenericListAdapter(bandsHS, itemViewFactory = { imageViewFactory() })
-            {view, item, idx ->
+            { view, item, idx ->
                 view as ImageView
-                Log.i("Image View Factory", "ImageinViewPager$idx")
-                view.setTag("ImageinViewPager$idx")
+                view.setOnTouchListener { v, event ->
+                    clickedX = (event!!.x / v!!.width) * imageWidth
+                    clickedY = (event.y / v.height) * imageHeight
+                    Log.i("View Dimensions", "$clickedX, $clickedY, ${v.width}, ${v.height}")
+                    val bitmapOverlay = Bitmap.createBitmap(item.width, item.height, item.config)
+                    val canvas = Canvas(bitmapOverlay)
+                    canvas.drawBitmap(item, Matrix(), null)
+                    val paint = Paint(Color.WHITE)
+                    paint.style = Paint.Style.STROKE
+                    canvas.drawCircle(clickedX, clickedY, 10F, paint)
+                    view.setImageBitmap(bitmapOverlay)
+                    inference()
+                    true
+                }
                 Glide.with(view).load(item).into(view)
             }
         }
         TabLayoutMediator(fragmentReconstructionBinding.tabLayout,
-                fragmentReconstructionBinding.viewpager) { _, _ ->}.attach()
+                fragmentReconstructionBinding.viewpager) { tab, _ ->
+                    tab.view.isClickable = false }.attach()
 
         fragmentReconstructionBinding.analysisButton.setOnClickListener {
             fragmentReconstructionBinding.textConstraintView.visibility = View.INVISIBLE
@@ -90,7 +104,6 @@ class ReconstructionFragment : Fragment() {
         reconstructionDialogFragment.show(childFragmentManager, ReconstructionDialogFragment.TAG)
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     override fun onStart() {
         super.onStart()
 
@@ -108,6 +121,12 @@ class ReconstructionFragment : Fragment() {
             graphView.viewport.setMaxY(0.4)
             graphView.gridLabelRenderer.setHumanRounding(true)
 
+            graphView.setOnLongClickListener{
+                fragmentReconstructionBinding.textConstraintView.visibility = View.VISIBLE
+                fragmentReconstructionBinding.graphView.visibility = View.INVISIBLE
+                false
+            }
+
             val viewpagerThread = Thread {
                 for (i in 0 until numberOfBands) {
                     addItemToViewPager(fragmentReconstructionBinding.viewpager, getBand(predictedHS, i))
@@ -115,72 +134,47 @@ class ReconstructionFragment : Fragment() {
             }
 
             viewpagerThread.start()
-
             try { viewpagerThread.join() }
             catch (exception: InterruptedException) { exception.printStackTrace() }
+
             reconstructionDialogFragment.dismissDialog()
         }
+    }
 
-        fragmentReconstructionBinding.textViewReconTime.text = "Reconstruction Time: $reconstructionDuration s\n"
-
-        val overlay = fragmentReconstructionBinding.overlay
-        phoneHeight = overlay.measuredHeight
-        phoneWidth = overlay.measuredWidth
-        Log.i("Phones Size", "width: $phoneWidth, height: $phoneHeight")
+    private fun inference() {
+        fragmentReconstructionBinding.textViewReconTime.text = "Reconstruction Time: $reconstructionDuration s"
 
         val ortEnvironment = OrtEnvironment.getEnvironment()
         val ortSession = context?.let { createORTSession(ortEnvironment) }
 
-        overlay.setOnTouchListener { _, event ->
-            val coordinates = IntArray(2)
-            overlay.getLocationOnScreen(coordinates)
-            val overlayWidth = (overlay.right - overlay.left).toFloat()
-            val overlayHeight = (overlay.bottom - overlay.top).toFloat()
-            Log.i("Phones Size", "width: $phoneWidth, height: $phoneHeight")
-            Log.i("Overlay sizes",
-                "left ${overlay.left} event x: ${event?.x!!} = ${overlay.left + event.x}")
-            Log.i("Overlay sizes",
-                "top ${overlay.top} Bottom ${overlay.bottom} event y: ${event.y} = ${overlay.top + event.y}")
-            Log.i("Overlay sizes", "width: $overlayWidth, height: $overlayHeight")
-
-            var xCoord = (event.x / overlayWidth) * width.toFloat()
-            var yCoord = (event.y / overlayHeight) * height.toFloat()
-
-//            xCoord = if(xCoord>overlayWidth) xCoord else width.toFloat()
-//            yCoord = if(yCoord>overlayHeight) yCoord else height.toFloat()
-
-            Log.i("Overlay size",
-                "percentage x: ${event.x / overlayWidth}, percentage y : ${event.y / overlayHeight}")
-
-            val inputSignature = getSignature(predictedHS, xCoord.toInt(), yCoord.toInt())
-            val output = ortSession?.let { runPrediction(inputSignature, it, ortEnvironment) }
-            val outputString: String =
-                if (output == 1L) "Organic Apple" else "Non-Organic Apple"
-            fragmentReconstructionBinding.textViewClass.text = outputString
-            false
-        }
+        val inputSignature = getSignature(predictedHS, clickedX.toInt(), clickedY.toInt())
+        val outputLabel = ortSession?.let { classifyHypercube(inputSignature, it, ortEnvironment) }
+        outputLabelString = if (outputLabel == 1L) "Organic Apple" else "Non-Organic Apple"
+        fragmentReconstructionBinding.textViewClass.text = outputLabelString
+        fragmentReconstructionBinding.graphView.title = "$outputLabelString Signature at (x: ${clickedX.toInt()}, y: ${clickedY.toInt()})"
     }
 
-    private fun getSignature(predHS: FloatArray, x: Int, y: Int): FloatArray {
+    private fun getSignature(predictedHS: FloatArray, SignatureX: Int, SignatureY: Int): FloatArray {
         val signature = FloatArray(numberOfBands)
-        Log.i("Touch Coords", "$x, $y")
-        val leftX = width - x
-        val leftY = height - y
+        Log.i("Touch Coords", "$SignatureX, $SignatureY")
+        val leftX = imageWidth - SignatureX
+        val leftY = imageHeight - SignatureY
 
-        var idx = width*y + x
+        var idx = if (imageWidth*SignatureY <= imageWidth) imageWidth*SignatureY else imageWidth
+        idx += SignatureX
 
         print("Signature is:")
         val series = LineGraphSeries<DataPoint>()
 
         for (i in 0 until numberOfBands) {
-            signature[i] = predHS[idx]
-            print("${predHS[idx]}, ")
-            series.appendData(DataPoint(i.toDouble(), predHS[idx].toDouble()), true, 60)
-            idx += leftX + width*leftY + (width*y + x)
+            signature[i] = predictedHS[idx]
+            print("${predictedHS[idx]}, ")
+            series.appendData(DataPoint(i.toDouble(), predictedHS[idx].toDouble()), true, 60)
+            idx += leftX + imageWidth*leftY + (imageWidth*SignatureY + SignatureX)
         }
         val graphView = fragmentReconstructionBinding.graphView
         graphView.removeAllSeries()         // remove all previous series
-        graphView.title = "Signature at (x: $x, y: $y)"
+        graphView.title = "$outputLabelString Signature at (x: $SignatureX, y: $SignatureY)"
         series.dataPointsRadius = 10F
         series.thickness = 10
         graphView.addSeries(series)
@@ -203,19 +197,19 @@ class ReconstructionFragment : Fragment() {
         val startTime = System.currentTimeMillis()
         predictedHS = reconstructionModel.predict(rgbBitmap, nirBitmap)
 
-        Log.i("predHS Size", predictedHS.size.toString())
+        Log.i("predictedHS Size", predictedHS.size.toString())
 
         val endTime = System.currentTimeMillis()
         reconstructionDuration = (endTime - startTime)/1000
         println("Reconstruction Time: $reconstructionDuration s")
     }
 
-    private fun runPrediction(input: FloatArray, ortSession: OrtSession,
-                              ortEnvironment: OrtEnvironment): Long {
+    private fun classifyHypercube(input: FloatArray, ortSession: OrtSession,
+                                  ortEnvironment: OrtEnvironment): Long {
         val inputName = ortSession.inputNames?.iterator()?.next()
         val floatBufferInputs = FloatBuffer.wrap(input)
         val inputTensor = OnnxTensor.createTensor(
-            ortEnvironment, floatBufferInputs, longArrayOf(1, 60))
+                ortEnvironment, floatBufferInputs, longArrayOf(1, 60))
 
         val startTime = System.currentTimeMillis()
         val results = ortSession.run(mapOf(inputName to inputTensor))
@@ -223,7 +217,7 @@ class ReconstructionFragment : Fragment() {
 
         classificationDuration = (endTime - startTime)
         println("Classification Time: $classificationDuration ms")
-        fragmentReconstructionBinding.textViewClassTime.text = "Classification Duration: $classificationDuration ms\n"
+        fragmentReconstructionBinding.textViewClassTime.text = "Classification Duration: $classificationDuration ms"
 
         var output = results[0].value
         output = output as LongArray
@@ -232,18 +226,18 @@ class ReconstructionFragment : Fragment() {
         return output[0]
     }
 
-    private fun getBand(pred_HS: FloatArray, bandNumber: Int, reverseScale: Boolean = false): Bitmap {
+    private fun getBand(predictedHS: FloatArray, bandNumber: Int, reverseScale: Boolean = false): Bitmap {
         val alpha :Byte = (255).toByte()
 
-        val byteBuffer = ByteBuffer.allocate((width + 1) * (height + 1) * 4)
-        var bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val byteBuffer = ByteBuffer.allocate((imageWidth + 1) * (imageHeight + 1) * 4)
+        var bmp = Bitmap.createBitmap(imageWidth, imageHeight, Bitmap.Config.ARGB_8888)
 
-        val startOffset = bandNumber * width * height
-        val endOffset = (bandNumber+1) * width * height - 1
+        val startOffset = bandNumber * imageWidth * imageHeight
+        val endOffset = (bandNumber+1) * imageWidth * imageHeight - 1
 
         // mapping smallest value to 0 and largest value to 255
-        val maxValue = pred_HS.maxOrNull() ?: 1.0f
-        val minValue = pred_HS.minOrNull() ?: 0.0f
+        val maxValue = predictedHS.maxOrNull() ?: 1.0f
+        val minValue = predictedHS.minOrNull() ?: 0.0f
         val delta = maxValue-minValue
         var tempValue :Byte
 
@@ -254,7 +248,7 @@ class ReconstructionFragment : Fragment() {
         }
         var buffIdx = 0
         for (i in startOffset .. endOffset) {
-            tempValue = conversion(pred_HS[i])
+            tempValue = conversion(predictedHS[i])
             byteBuffer.put(4 * buffIdx, tempValue)
             byteBuffer.put(4 * buffIdx + 1, tempValue)
             byteBuffer.put(4 * buffIdx + 2, tempValue)
@@ -263,7 +257,7 @@ class ReconstructionFragment : Fragment() {
         }
 
         bmp.copyPixelsFromBuffer(byteBuffer)
-        bmp = Bitmap.createBitmap(bmp, 0, 0, width, height, null, true)
+        bmp = Bitmap.createBitmap(bmp, 0, 0, imageWidth, imageHeight, null, true)
         return bmp
     }
 

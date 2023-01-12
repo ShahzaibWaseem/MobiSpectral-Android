@@ -66,7 +66,6 @@ class Reconstruction(context: Context, modelPath: String) {
 
         Log.i("Concatenated", imageTensor.shape().toList().toString())
 
-//        val data: FloatArray = image_tensor.getDataAsFloatArray()
         val inputs: IValue = IValue.from(imageTensor)
 
         val outputs: Tensor = model?.forward(inputs)?.toTensor()!!
