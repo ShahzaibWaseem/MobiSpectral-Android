@@ -291,6 +291,7 @@ class CameraFragment : Fragment() {
      * Starts a [CameraCaptureSession] and returns the configured session (as the result of the
      * suspend coroutine
      */
+    @Suppress("DEPRECATION")
     private suspend fun createCaptureSession(device: CameraDevice, targets: List<Surface>, handler: Handler? = null)
             : CameraCaptureSession = suspendCoroutine { cont ->
         // Create a capture session using the predefined targets; this also involves defining the
