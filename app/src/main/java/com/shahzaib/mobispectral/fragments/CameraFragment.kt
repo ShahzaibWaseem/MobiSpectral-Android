@@ -4,6 +4,9 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.graphics.ImageFormat
 import android.hardware.camera2.*
 import android.media.Image
@@ -14,6 +17,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
 import android.view.*
+import android.widget.Toast
 import androidx.exifinterface.media.ExifInterface
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -28,10 +32,8 @@ import com.shahzaib.mobispectral.databinding.FragmentCameraBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import java.io.Closeable
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
+import java.io.*
+import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
@@ -147,9 +149,9 @@ class CameraFragment : Fragment() {
 
         // Used to rotate the output media to match device orientation
         relativeOrientation = OrientationLiveData(requireContext(), characteristics).apply {
-            observe(viewLifecycleOwner, { orientation ->
+            observe(viewLifecycleOwner) { orientation ->
                 Log.d(TAG, "Orientation changed: $orientation")
-            })
+            }
         }
     }
 
@@ -167,9 +169,14 @@ class CameraFragment : Fragment() {
         // Initialize an image reader which will be used to capture still photos
         val size = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)!!
             .getOutputSizes(args.pixelFormat).maxByOrNull { it.height * it.width }!!
+        characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)?.forEach {
+            println("Autofocus modes$it")
+        }
+        println("Autofocus modes Depth" + CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_DEPTH_OUTPUT.toString())
         imageReader = ImageReader.newInstance(
             600, 800, args.pixelFormat, IMAGE_BUFFER_SIZE
         )
+
 
         // Creates list of Surfaces where the camera will output frames
         val targets = listOf(fragmentCameraBinding.viewFinder.holder.surface, imageReader.surface)
@@ -179,7 +186,9 @@ class CameraFragment : Fragment() {
 
         val captureRequest = camera.createCaptureRequest(
             CameraDevice.TEMPLATE_PREVIEW
-        ).apply { addTarget(fragmentCameraBinding.viewFinder.holder.surface) }
+        ).apply { addTarget(fragmentCameraBinding.viewFinder.holder.surface)
+            set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
+            set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_AUTO) }
 
         // This will keep sending the capture request as frequently as possible until the
         // session is torn down or session.stopRepeating() is called
@@ -201,60 +210,47 @@ class CameraFragment : Fragment() {
                 // Disable click listener to prevent multiple requests simultaneously in flight
                 it.isEnabled = false
 
-                // Perform I/O heavy operations in a different scope
-                lifecycleScope.launch(Dispatchers.IO) {
-                    takePhoto().use { result ->
-                        Log.d(TAG, "Result received: $result")
-
-                        // Save the result to disk
-                        val output = saveResult(result)
-                        Log.d(TAG, "Image saved: ${output.absolutePath}")
-
-                        // If the result is a JPEG file, update EXIF metadata with orientation info
-                        if (output.extension == "jpg") {
-                            val exif = ExifInterface(output.absolutePath)
-                            exif.setAttribute(
-                                ExifInterface.TAG_ORIENTATION, result.orientation.toString()
-                            )
-                            exif.saveAttributes()
-                            Log.d(TAG, "EXIF metadata saved: ${output.absolutePath}")
-                        }
-
-                        // Display the photo taken to user
-                        lifecycleScope.launch(Dispatchers.Main) {
-                            navController.navigate(
-                                CameraFragmentDirections.actionCameraFragmentSelf(
-                                    "2", ImageFormat.JPEG
-                                )
-                            )
-                        }
-                    }
-
-                    // Re-enable click listener after photo is taken
-                    it.post { it.isEnabled = true }
-                }
+                savePhoto(args.cameraId)
+                // Re-enable click listener after photo is taken
+                it.post { it.isEnabled = true }
             }
         }
         else {
-            // Perform I/O heavy operations in a different scope
-            lifecycleScope.launch(Dispatchers.IO) {
-                takePhoto().use { result ->
-                    Log.d(TAG, "Result received: $result")
+            savePhoto(args.cameraId)
+        }
+    }
 
-                    // Save the result to disk
-                    val output = saveResult(result)
-                    Log.d(TAG, "Image saved: ${output.absolutePath}")
+    private fun savePhoto(cameraId: String) {
+        // Perform I/O heavy operations in a different scope
+        lifecycleScope.launch(Dispatchers.IO) {
+            takePhoto().use { result ->
+                Log.d(TAG, "Result received: $result")
 
-                    // If the result is a JPEG file, update EXIF metadata with orientation info
-                    if (output.extension == "jpg") {
-                        val exif = ExifInterface(output.absolutePath)
-                        exif.setAttribute(
-                            ExifInterface.TAG_ORIENTATION, result.orientation.toString()
+                // Save the result to disk
+                val output = saveResult(result)
+                Log.d(TAG, "Image saved: ${output.absolutePath}")
+
+                // If the result is a JPEG file, update EXIF metadata with orientation info
+                if (output.extension == "jpg") {
+                    val exif = ExifInterface(output.absolutePath)
+                    exif.setAttribute(
+                        ExifInterface.TAG_ORIENTATION, result.orientation.toString()
+                    )
+                    exif.saveAttributes()
+                    Log.d(TAG, "EXIF metadata saved: ${output.absolutePath}")
+                }
+
+                if (cameraId == "1"){
+                    // Display the photo taken to user
+                    lifecycleScope.launch(Dispatchers.Main) {
+                        navController.navigate(
+                            CameraFragmentDirections.actionCameraFragmentSelf(
+                                "2", ImageFormat.JPEG
+                            )
                         )
-                        exif.saveAttributes()
-                        Log.d(TAG, "EXIF metadata saved: ${output.absolutePath}")
                     }
-
+                }
+                else {
                     // Display the photo taken to user
                     lifecycleScope.launch(Dispatchers.Main) {
                         navController.navigate(
@@ -315,7 +311,6 @@ class CameraFragment : Fragment() {
         // Create a capture session using the predefined targets; this also involves defining the
         // session state callback to be notified of when the session is ready
         device.createCaptureSession(targets, object : CameraCaptureSession.StateCallback() {
-
             override fun onConfigured(session: CameraCaptureSession) = cont.resume(session)
 
             override fun onConfigureFailed(session: CameraCaptureSession) {
@@ -351,9 +346,9 @@ class CameraFragment : Fragment() {
             CameraDevice.TEMPLATE_STILL_CAPTURE
         ).apply { addTarget(imageReader.surface) }
         session.capture(captureRequest.build(), object : CameraCaptureSession.CaptureCallback() {
-
             override fun onCaptureCompleted(session: CameraCaptureSession, request: CaptureRequest, result: TotalCaptureResult) {
                 super.onCaptureCompleted(session, request, result)
+
                 val resultTimestamp = result.get(CaptureResult.SENSOR_TIMESTAMP)
                 Log.d(TAG, "Capture result received: $resultTimestamp")
 
@@ -368,7 +363,6 @@ class CameraFragment : Fragment() {
                 @Suppress("BlockingMethodInNonBlockingContext")
                 lifecycleScope.launch(cont.context) {
                     while (true) {
-
                         // Dequeue images while timestamps don't match
                         val image = imageQueue.take()
                         // if (image.timestamp != resultTimestamp) continue
@@ -404,6 +398,53 @@ class CameraFragment : Fragment() {
         }, cameraHandler)
     }
 
+    private fun isDark(bitmap: Bitmap): Boolean {
+        val histogram = IntArray(256)
+
+        for (i in 0..255) {
+            histogram[i] = 0
+        }
+
+        var dark = false
+        val darkThreshold: Float = 0.25F
+        var darkPixels = 0
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        for (pixel in pixels) {
+            val color = pixel
+            val r: Int = Color.red(color)
+            val g: Int = Color.green(color)
+            val b: Int = Color.blue(color)
+            val brightness = (0.2126*r + 0.7152*g + 0.0722*b).toInt()
+            histogram[brightness]++
+        }
+
+        for (i in 0..9)
+            darkPixels += histogram[i]
+        if (darkPixels > (bitmap.height * bitmap.width) * darkThreshold) {
+            dark = true
+        }
+        Log.i("Dark", "DarkPixels: $darkPixels")
+        return dark
+    }
+
+    private fun getOutputImage(output: ByteBuffer): Bitmap? {
+        output.rewind()
+        val outputWidth = 600
+        val outputHeight = 800
+        val bitmap = Bitmap.createBitmap(outputWidth, outputHeight, Bitmap.Config.ARGB_8888)
+        val pixels = IntArray(outputWidth * outputHeight)
+        for (i in 0 until outputWidth * outputHeight) {
+            val a = 0xFF
+            val r: Float = output.getFloat() * 255.0f
+            val g: Float = output.getFloat() * 255.0f
+            val b: Float = output.getFloat() * 255.0f
+            pixels[i] = a shl 24 or (r.toInt() shl 16) or (g.toInt() shl 8) or b.toInt()
+        }
+        bitmap.setPixels(pixels, 0, outputWidth, 0, 0, outputWidth, outputHeight)
+        return bitmap
+    }
+
     /** Helper function used to save a [CombinedCaptureResult] into a [File] */
     private suspend fun saveResult(result: CombinedCaptureResult): File = suspendCoroutine { cont ->
         when (result.format) {
@@ -418,6 +459,19 @@ class CameraFragment : Fragment() {
                     val output = createFile(requireContext(), "jpg", nir)
                     FileOutputStream(output).use { it.write(bytes) }
                     cont.resume(output)
+
+                    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+
+                    if (isDark(bitmap)) {
+                        Log.i("Dark", "The bitmap is too dark")
+                        fragmentCameraBinding.illumination.text = resources.getString(R.string.formatted_illumination_string, "Inadequate")
+                        fragmentCameraBinding.illumination.setTextColor(resources.getColor(R.color.design_default_color_error))
+                        Toast.makeText(context, "The bitmap is too dark", Toast.LENGTH_SHORT).show()
+                    }
+                    else {
+                        fragmentCameraBinding.illumination.text = resources.getString(R.string.formatted_illumination_string, "Adequate")
+                        fragmentCameraBinding.illumination.setTextColor(resources.getColor(R.color.design_default_color_secondary))
+                    }
                     Log.i("Filename", output.toString())
                 } catch (exc: IOException) {
                     Log.e(TAG, "Unable to write JPEG image to file", exc)
@@ -430,6 +484,7 @@ class CameraFragment : Fragment() {
                 val dngCreator = DngCreator(characteristics, result.metadata)
                 try {
                     val output = createFile(requireContext(), "dng", "")
+
                     FileOutputStream(output).use { dngCreator.writeImage(it, result.image) }
                     cont.resume(output)
                 } catch (exc: IOException) {
