@@ -33,7 +33,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.*
-import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
@@ -99,11 +98,7 @@ class CameraFragment : Fragment() {
     @SuppressLint("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragmentCameraBinding.captureButton.setOnApplyWindowInsetsListener { v, insets ->
-            v.translationX = (-insets.systemWindowInsetRight).toFloat()
-            v.translationY = (-insets.systemWindowInsetBottom).toFloat()
-            insets.consumeSystemWindowInsets()
-        }
+
         fragmentCameraBinding.information.setOnClickListener {
             val builder: AlertDialog.Builder = AlertDialog.Builder(context)
             builder.setMessage(R.string.capture_information_string)
@@ -410,8 +405,7 @@ class CameraFragment : Fragment() {
         var darkPixels = 0
         val pixels = IntArray(bitmap.width * bitmap.height)
         bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-        for (pixel in pixels) {
-            val color = pixel
+        for (color in pixels) {
             val r: Int = Color.red(color)
             val g: Int = Color.green(color)
             val b: Int = Color.blue(color)
@@ -427,24 +421,6 @@ class CameraFragment : Fragment() {
         Log.i("Dark", "DarkPixels: $darkPixels")
         return dark
     }
-
-    private fun getOutputImage(output: ByteBuffer): Bitmap? {
-        output.rewind()
-        val outputWidth = 600
-        val outputHeight = 800
-        val bitmap = Bitmap.createBitmap(outputWidth, outputHeight, Bitmap.Config.ARGB_8888)
-        val pixels = IntArray(outputWidth * outputHeight)
-        for (i in 0 until outputWidth * outputHeight) {
-            val a = 0xFF
-            val r: Float = output.getFloat() * 255.0f
-            val g: Float = output.getFloat() * 255.0f
-            val b: Float = output.getFloat() * 255.0f
-            pixels[i] = a shl 24 or (r.toInt() shl 16) or (g.toInt() shl 8) or b.toInt()
-        }
-        bitmap.setPixels(pixels, 0, outputWidth, 0, 0, outputWidth, outputHeight)
-        return bitmap
-    }
-
     /** Helper function used to save a [CombinedCaptureResult] into a [File] */
     private suspend fun saveResult(result: CombinedCaptureResult): File = suspendCoroutine { cont ->
         when (result.format) {

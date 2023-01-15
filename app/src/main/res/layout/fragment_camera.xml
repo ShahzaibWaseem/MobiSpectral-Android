@@ -63,19 +63,6 @@
         android:orientation="horizontal"
         app:layout_constraintGuide_percent="0.75" />
 
-    <ImageButton
-        android:id="@+id/capture_button"
-        android:layout_width="96dp"
-        android:layout_height="96dp"
-        android:layout_gravity="center"
-        android:scaleType="fitCenter"
-        android:background="@drawable/ic_shutter"
-        android:contentDescription="@string/capture"
-        app:layout_constraintTop_toBottomOf="@+id/illumination"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
     <TextView
         android:id="@+id/illumination"
         android:layout_width="match_parent"
@@ -86,5 +73,16 @@
         app:layout_constraintBottom_toTopOf="@+id/capture_button"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+    <ImageButton
+        android:id="@+id/capture_button"
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:background="@drawable/ic_shutter"
+        android:contentDescription="@string/capture"
+        app:layout_constraintTop_toBottomOf="@+id/illumination"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
