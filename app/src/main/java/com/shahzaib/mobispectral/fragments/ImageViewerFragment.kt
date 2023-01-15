@@ -22,6 +22,7 @@ import com.bumptech.glide.Glide
 import com.example.android.camera.utils.GenericListAdapter
 import com.google.android.material.tabs.TabLayoutMediator
 import com.shahzaib.mobispectral.R
+import com.shahzaib.mobispectral.Utils
 import com.shahzaib.mobispectral.databinding.FragmentImageviewerBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,9 +32,7 @@ import java.io.File
 import java.nio.ByteBuffer
 import kotlin.math.max
 
-class ImageViewerFragment : Fragment() {
-    private val width = 640
-    private val height = 480
+class ImageViewerFragment: Fragment() {
     private val correctionMatrix = Matrix().apply { postScale(-1.0F, 1.0F); postRotate(90F) }
 
     /** AndroidX navigation arguments */
@@ -94,8 +93,8 @@ class ImageViewerFragment : Fragment() {
             Log.i("RGB NIR ByteArray Sizes", "${rgbByteArray.size}, ${nirByteArray.size}")
             nirByteArray = getNIRBand(nirByteArray)
             Log.i("RGB NIR ByteArray Sizes", "${rgbByteArray.size}, ${nirByteArray.size}")
-            addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap)
-            addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap)
+            addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 0)
+            addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 1)
 
             fragmentImageViewerBinding.button.setOnClickListener {
                 lifecycleScope.launch(Dispatchers.Main) {
@@ -111,7 +110,8 @@ class ImageViewerFragment : Fragment() {
                 lifecycleScope.launch(Dispatchers.Main) {
                     navController.navigate(
                         ImageViewerFragmentDirections
-                            .actionImageViewerFragmentToCameraFragment("1", ImageFormat.JPEG)
+                            .actionImageViewerFragmentToCameraFragment(
+                                Utils.getCameraIDs(requireContext()).first, ImageFormat.JPEG)
                     )
                 }
             }
@@ -164,9 +164,9 @@ class ImageViewerFragment : Fragment() {
     }
 
     /** Utility function used to add an item to the viewpager and notify it, in the main thread */
-    private fun addItemToViewPager(view: ViewPager2, item: Bitmap) = view.post {
+    private fun addItemToViewPager(view: ViewPager2, item: Bitmap, position: Int) = view.post {
         bitmapList.add(item)
-        view.adapter!!.notifyDataSetChanged()
+        view.adapter!!.notifyItemChanged(position)
     }
 
     /** Utility function to convert images into String to be decoded in ReconstructionFragment **/
@@ -184,7 +184,7 @@ class ImageViewerFragment : Fragment() {
         // Load bitmap from given buffer
         val decodedBitmap = BitmapFactory.decodeByteArray(buffer, 0, length, bitmapOptions)
         bitmap = if (RGB == "RGB")
-            Bitmap.createBitmap(decodedBitmap, 83, 100, width, height, correctionMatrix, true)
+            Bitmap.createBitmap(decodedBitmap, Utils.aligningFactorX, Utils.aligningFactorY, Utils.torchHeight, Utils.torchWidth, correctionMatrix, true)
         else
             Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, correctionMatrix, false)
 

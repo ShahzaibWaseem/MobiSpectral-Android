@@ -3,7 +3,6 @@ package com.shahzaib.mobispectral
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
-
 import org.pytorch.Tensor
 import org.pytorch.Module
 import org.pytorch.IValue
@@ -11,9 +10,6 @@ import org.pytorch.torchvision.TensorImageUtils
 
 class Reconstruction(context: Context, modelPath: String) {
     private var model: Module? = null
-    private val height: Long = 640
-    private val width: Long = 480
-
     private var mean = floatArrayOf(0.0f, 0.0f, 0.0f)
     private var std = floatArrayOf(1.0f, 1.0f, 1.0f)
 
@@ -28,16 +24,12 @@ class Reconstruction(context: Context, modelPath: String) {
 
     private fun getOneBand(tensor: Tensor): Tensor {
         val tensorDoubleArray = tensor.dataAsFloatArray
-        val floatArray = FloatArray((width*height).toInt())
+        val floatArray = FloatArray((Utils.torchWidth*Utils.torchHeight))
         Log.i("Tensor size", "${tensorDoubleArray.size}")
-        for (i in 0 until (height*width).toInt()){
+        for (i in 0 until (Utils.torchWidth*Utils.torchHeight)){
             floatArray[i] = tensorDoubleArray[i]
         }
-        val size = LongArray(4)
-        size[0] = 1
-        size[1] = 1
-        size[2] = height
-        size[3] = width
+        val size = longArrayOf(1, 1, Utils.torchHeight.toLong(), Utils.torchWidth.toLong())
         return Tensor.fromBlob(floatArray, size)
     }
 
@@ -48,11 +40,7 @@ class Reconstruction(context: Context, modelPath: String) {
         System.arraycopy(rgbArray, 0, concatenated, 0, rgbArray.size)
         System.arraycopy(nirArray, 0, concatenated, rgbArray.size, nirArray.size)
         Log.i("Concatenated Array Size", "${concatenated.size}")
-        val size = LongArray(4)
-        size[0] = 1
-        size[1] = 4
-        size[2] = height
-        size[3] = width
+        val size = longArrayOf(1, 4, Utils.torchHeight.toLong(), Utils.torchWidth.toLong())
         return Tensor.fromBlob(concatenated, size)
     }
 

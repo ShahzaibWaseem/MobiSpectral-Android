@@ -11,18 +11,14 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.Navigation
 import androidx.lifecycle.lifecycleScope
 import com.shahzaib.mobispectral.R
-
-private const val PERMISSIONS_REQUEST_CODE = 10
-private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.CAMERA)
+import com.shahzaib.mobispectral.Utils
 
 /**
  * This [Fragment] requests permissions and, once granted, it will navigate to the next fragment
  */
 class PermissionsFragment : Fragment() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         if (hasPermissions(requireContext())) {
             // If permissions have already been granted, proceed
             navigateToCamera()
@@ -32,8 +28,8 @@ class PermissionsFragment : Fragment() {
         }
     }
 
-    override fun onRequestPermissionsResult(
-            requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>,
+                                            grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSIONS_REQUEST_CODE) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -45,19 +41,17 @@ class PermissionsFragment : Fragment() {
         }
     }
 
-    private fun navigateToCamera()
-    {
+    private fun navigateToCamera() {
         lifecycleScope.launchWhenStarted {
             Navigation.findNavController(requireActivity(), R.id.fragment_container)
-
                 .navigate(PermissionsFragmentDirections.actionPermissionsFragmentToCameraFragment2(
-                    "1", ImageFormat.JPEG))
-//            Navigation.findNavController(requireActivity(), R.id.fragment_container).navigate(
-//                    PermissionsFragmentDirections.actionPermissionsToSelector())
+                    Utils.getCameraIDs(requireContext()).first, ImageFormat.JPEG))
         }
     }
 
     companion object {
+        private const val PERMISSIONS_REQUEST_CODE = 10
+        private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.CAMERA)
         /** Convenience method used to check if all permissions required by this app are granted */
         fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED

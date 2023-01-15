@@ -24,6 +24,7 @@ import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
 import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.Reconstruction
+import com.shahzaib.mobispectral.Utils
 import com.shahzaib.mobispectral.databinding.FragmentReconstructionBinding
 import org.opencv.android.OpenCVLoader
 import java.nio.ByteBuffer
@@ -37,8 +38,6 @@ class ReconstructionFragment: Fragment() {
     private val args: ReconstructionFragmentArgs by navArgs()
     private var reconstructionDuration = 0L
     private var classificationDuration = 0L
-    private val imageHeight = 640
-    private val imageWidth = 480
     private val numberOfBands = 60
     private var outputLabelString: String = ""
     private var clickedX = 0.0F
@@ -51,7 +50,7 @@ class ReconstructionFragment: Fragment() {
 
     private fun imageViewFactory() = ImageView(requireContext()).apply {
         layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
     }
 
     private fun createORTSession(ortEnvironment: OrtEnvironment) : OrtSession {
@@ -64,7 +63,7 @@ class ReconstructionFragment: Fragment() {
         OpenCVLoader.initDebug()
         super.onCreateView(inflater, container, savedInstanceState)
         _fragmentReconstructionBinding = FragmentReconstructionBinding.inflate(
-                inflater, container, false)
+            inflater, container, false)
         reconstructionDialogFragment.isCancelable = false
         return fragmentReconstructionBinding.root
     }
@@ -77,7 +76,7 @@ class ReconstructionFragment: Fragment() {
             builder.setMessage(R.string.reconstruction_analysis_information_string)
             builder.setTitle("Information")
             builder.setPositiveButton("Okay") {
-                dialog: DialogInterface?, _: Int -> dialog?.cancel()
+                    dialog: DialogInterface?, _: Int -> dialog?.cancel()
             }
 
             val alertDialog = builder.create()
@@ -89,8 +88,8 @@ class ReconstructionFragment: Fragment() {
             { view, item, _ ->
                 view as ImageView
                 view.setOnTouchListener { v, event ->
-                    clickedX = (event!!.x / v!!.width) * imageWidth
-                    clickedY = (event.y / v.height) * imageHeight
+                    clickedX = (event!!.x / v!!.width) * Utils.torchWidth
+                    clickedY = (event.y / v.height) * Utils.torchHeight
                     Log.i("View Dimensions", "$clickedX, $clickedY, ${v.width}, ${v.height}")
                     val bitmapOverlay = Bitmap.createBitmap(item.width, item.height, item.config)
                     val canvas = Canvas(bitmapOverlay)
@@ -106,8 +105,8 @@ class ReconstructionFragment: Fragment() {
             }
         }
         TabLayoutMediator(fragmentReconstructionBinding.tabLayout,
-                fragmentReconstructionBinding.viewpager) { tab, _ ->
-                    tab.view.isClickable = false }.attach()
+            fragmentReconstructionBinding.viewpager) { tab, _ ->
+            tab.view.isClickable = false }.attach()
 
         fragmentReconstructionBinding.analysisButton.setOnClickListener {
             fragmentReconstructionBinding.textConstraintView.visibility = View.INVISIBLE
@@ -141,7 +140,7 @@ class ReconstructionFragment: Fragment() {
 
             val viewpagerThread = Thread {
                 for (i in 0 until numberOfBands) {
-                    addItemToViewPager(fragmentReconstructionBinding.viewpager, getBand(predictedHS, i))
+                    addItemToViewPager(fragmentReconstructionBinding.viewpager, getBand(predictedHS, i), i)
                 }
             }
 
@@ -167,10 +166,10 @@ class ReconstructionFragment: Fragment() {
     private fun getSignature(predictedHS: FloatArray, SignatureX: Int, SignatureY: Int): FloatArray {
         val signature = FloatArray(numberOfBands)
         Log.i("Touch Coordinates", "$SignatureX, $SignatureY")
-        val leftX = imageWidth - SignatureX
-        val leftY = imageHeight - SignatureY
+        val leftX = Utils.torchWidth - SignatureX
+        val leftY = Utils.torchHeight - SignatureY
 
-        var idx = if (imageWidth*SignatureY <= imageWidth) imageWidth*SignatureY else imageWidth
+        var idx = if (Utils.torchWidth*SignatureY <= Utils.torchWidth) Utils.torchWidth*SignatureY else Utils.torchWidth
         idx += SignatureX
 
         print("Signature is:")
@@ -180,7 +179,7 @@ class ReconstructionFragment: Fragment() {
             signature[i] = predictedHS[idx]
             print("${predictedHS[idx]}, ")
             series.appendData(DataPoint(i.toDouble(), predictedHS[idx].toDouble()), true, 60)
-            idx += leftX + imageWidth*leftY + (imageWidth*SignatureY + SignatureX)
+            idx += leftX + Utils.torchWidth*leftY + (Utils.torchWidth*SignatureY + SignatureX)
         }
         val graphView = fragmentReconstructionBinding.graphView
         graphView.removeAllSeries()         // remove all previous series
@@ -197,12 +196,12 @@ class ReconstructionFragment: Fragment() {
         val decodedRGB = Base64.decode(args.rgbImage, Base64.DEFAULT)
         var rgbBitmap = BitmapFactory.decodeByteArray(decodedRGB, 0, decodedRGB.size)
         rgbBitmap = Bitmap.createBitmap(rgbBitmap, 0, 0, rgbBitmap.width, rgbBitmap.height,
-                null, true)
+            null, true)
 
         val decodedNIR = Base64.decode(args.nirImage, Base64.DEFAULT)
         var nirBitmap = BitmapFactory.decodeByteArray(decodedNIR, 0, decodedNIR.size)
         nirBitmap = Bitmap.createBitmap(nirBitmap, 0, 0, nirBitmap.width, nirBitmap.height,
-                null, true)
+            null, true)
 
         val startTime = System.currentTimeMillis()
         predictedHS = reconstructionModel.predict(rgbBitmap, nirBitmap)
@@ -220,7 +219,7 @@ class ReconstructionFragment: Fragment() {
         val inputName = ortSession.inputNames?.iterator()?.next()
         val floatBufferInputs = FloatBuffer.wrap(input)
         val inputTensor = OnnxTensor.createTensor(
-                ortEnvironment, floatBufferInputs, longArrayOf(1, 60))
+            ortEnvironment, floatBufferInputs, longArrayOf(1, 60))
 
         val startTime = System.currentTimeMillis()
         val results = ortSession.run(mapOf(inputName to inputTensor))
@@ -240,11 +239,11 @@ class ReconstructionFragment: Fragment() {
     private fun getBand(predictedHS: FloatArray, bandNumber: Int, reverseScale: Boolean = false): Bitmap {
         val alpha :Byte = (255).toByte()
 
-        val byteBuffer = ByteBuffer.allocate((imageWidth + 1) * (imageHeight + 1) * 4)
-        var bmp = Bitmap.createBitmap(imageWidth, imageHeight, Bitmap.Config.ARGB_8888)
+        val byteBuffer = ByteBuffer.allocate((Utils.torchWidth + 1) * (Utils.torchHeight + 1) * 4)
+        var bmp = Bitmap.createBitmap(Utils.torchWidth, Utils.torchHeight, Bitmap.Config.ARGB_8888)
 
-        val startOffset = bandNumber * imageWidth * imageHeight
-        val endOffset = (bandNumber+1) * imageWidth * imageHeight - 1
+        val startOffset = bandNumber * Utils.torchWidth * Utils.torchHeight
+        val endOffset = (bandNumber+1) * Utils.torchWidth * Utils.torchHeight - 1
 
         // mapping smallest value to 0 and largest value to 255
         val maxValue = predictedHS.maxOrNull() ?: 1.0f
@@ -268,12 +267,13 @@ class ReconstructionFragment: Fragment() {
         }
 
         bmp.copyPixelsFromBuffer(byteBuffer)
-        bmp = Bitmap.createBitmap(bmp, 0, 0, imageWidth, imageHeight, null, true)
+        bmp = Bitmap.createBitmap(bmp, 0, 0, Utils.torchWidth, Utils.torchHeight, null, true)
         return bmp
     }
 
-    private fun addItemToViewPager(view: ViewPager2, item: Bitmap) = view.post {
+    /** Utility function used to add an item to the viewpager and notify it, in the main thread */
+    private fun addItemToViewPager(view: ViewPager2, item: Bitmap, position: Int) = view.post {
         bandsHS.add(item)
-        view.adapter!!.notifyDataSetChanged()
+        view.adapter!!.notifyItemChanged(position)
     }
 }

@@ -16,8 +16,10 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
+import android.util.Size
 import android.view.*
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -28,6 +30,7 @@ import com.example.android.camera.utils.OrientationLiveData
 import com.example.android.camera.utils.computeExifOrientation
 import com.example.android.camera.utils.getPreviewOutputSize
 import com.shahzaib.mobispectral.R
+import com.shahzaib.mobispectral.Utils
 import com.shahzaib.mobispectral.databinding.FragmentCameraBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -90,8 +93,14 @@ class CameraFragment : Fragment() {
     /** Live data listener for changes in the device orientation relative to the camera */
     private lateinit var relativeOrientation: OrientationLiveData
 
+    private lateinit var cameraIdRGB: String
+    private lateinit var cameraIdNIR: String
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _fragmentCameraBinding = FragmentCameraBinding.inflate(inflater, container, false)
+        cameraIdRGB = Utils.getCameraIDs(requireContext()).first
+        cameraIdNIR = Utils.getCameraIDs(requireContext()).second
+        Log.i("CameraIDs Fragment", "RGB $cameraIdRGB, NIR $cameraIdNIR")
         return fragmentCameraBinding.root
     }
 
@@ -114,28 +123,14 @@ class CameraFragment : Fragment() {
         fragmentCameraBinding.viewFinder.holder.addCallback(object : SurfaceHolder.Callback {
             override fun surfaceDestroyed(holder: SurfaceHolder) = Unit
 
-            override fun surfaceChanged(
-                holder: SurfaceHolder,
-                format: Int,
-                width: Int,
-                height: Int
-            ) = Unit
+            override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int,
+                                        height: Int) = Unit
 
             override fun surfaceCreated(holder: SurfaceHolder) {
                 // Selects appropriate preview size and configures view finder
-                val previewSize = getPreviewOutputSize(
-                    fragmentCameraBinding.viewFinder.display,
-                    characteristics,
-                    SurfaceHolder::class.java
-                )
-                Log.d(
-                    TAG,
-                    "View finder size: ${fragmentCameraBinding.viewFinder.width} x ${fragmentCameraBinding.viewFinder.height}"
-                )
-                Log.d(TAG, "Selected preview size: $previewSize")
-                fragmentCameraBinding.viewFinder.setAspectRatio(
-                    previewSize.height, previewSize.width
-                )
+                val previewSize = getPreviewOutputSize(fragmentCameraBinding.viewFinder.display,
+                    characteristics, SurfaceHolder::class.java)
+                fragmentCameraBinding.viewFinder.setAspectRatio(previewSize.height, previewSize.width)
 
                 // To ensure that size is set, initialize camera in the view's thread
                 view.post { initializeCamera() }
@@ -161,17 +156,12 @@ class CameraFragment : Fragment() {
         // Open the selected camera
         camera = openCamera(cameraManager, args.cameraId, cameraHandler)
 
-        // Initialize an image reader which will be used to capture still photos
-        val size = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)!!
-            .getOutputSizes(args.pixelFormat).maxByOrNull { it.height * it.width }!!
-        characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)?.forEach {
-            println("Autofocus modes$it")
-        }
-        println("Autofocus modes Depth" + CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_DEPTH_OUTPUT.toString())
-        imageReader = ImageReader.newInstance(
-            600, 800, args.pixelFormat, IMAGE_BUFFER_SIZE
-        )
+        val size = Size(Utils.previewWidth, Utils.previewHeight)
+        Log.i("Size", "$size")
 
+        imageReader = ImageReader.newInstance(
+            size.width, size.height, args.pixelFormat, IMAGE_BUFFER_SIZE
+        )
 
         // Creates list of Surfaces where the camera will output frames
         val targets = listOf(fragmentCameraBinding.viewFinder.holder.surface, imageReader.surface)
@@ -189,16 +179,16 @@ class CameraFragment : Fragment() {
         // session is torn down or session.stopRepeating() is called
         session.setRepeatingRequest(captureRequest.build(), null, cameraHandler)
 
-        if (args.cameraId == "2") {
+        if (args.cameraId == cameraIdNIR) {
             fragmentCameraBinding.captureButton.performClick()
             fragmentCameraBinding.captureButton.isPressed = true
             fragmentCameraBinding.captureButton.invalidate()
         }
 
         // Listen to the capture button
-        if (args.cameraId == "1") {
+        if (args.cameraId == cameraIdRGB) {
             fragmentCameraBinding.captureButton.setOnClickListener {
-                if (args.cameraId == "2") {
+                if (args.cameraId == cameraIdNIR) {
                     fragmentCameraBinding.captureButton.isPressed = false
                     fragmentCameraBinding.captureButton.invalidate()
                 }
@@ -235,12 +225,12 @@ class CameraFragment : Fragment() {
                     Log.d(TAG, "EXIF metadata saved: ${output.absolutePath}")
                 }
 
-                if (cameraId == "1"){
+                if (cameraId == cameraIdRGB){
                     // Display the photo taken to user
                     lifecycleScope.launch(Dispatchers.Main) {
                         navController.navigate(
                             CameraFragmentDirections.actionCameraFragmentSelf(
-                                "2", ImageFormat.JPEG
+                                cameraIdNIR, ImageFormat.JPEG
                             )
                         )
                     }
@@ -401,7 +391,7 @@ class CameraFragment : Fragment() {
         }
 
         var dark = false
-        val darkThreshold: Float = 0.25F
+        val darkThreshold = 0.25F
         var darkPixels = 0
         val pixels = IntArray(bitmap.width * bitmap.height)
         bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
@@ -430,9 +420,9 @@ class CameraFragment : Fragment() {
                 val bytes = ByteArray(buffer.remaining()).apply { buffer.get(this) }
                 Log.i("Filename Size", bytes.size.toString())
                 try {
-                    val nir = if (args.cameraId == "2") "NIR" else "RGB"
+                    val nir = if (args.cameraId == cameraIdNIR) "NIR" else "RGB"
 
-                    val output = createFile(requireContext(), "jpg", nir)
+                    val output = createFile(requireContext(), nir)
                     FileOutputStream(output).use { it.write(bytes) }
                     cont.resume(output)
 
@@ -441,30 +431,16 @@ class CameraFragment : Fragment() {
                     if (isDark(bitmap)) {
                         Log.i("Dark", "The bitmap is too dark")
                         fragmentCameraBinding.illumination.text = resources.getString(R.string.formatted_illumination_string, "Inadequate")
-                        fragmentCameraBinding.illumination.setTextColor(resources.getColor(R.color.design_default_color_error))
+                        fragmentCameraBinding.illumination.setTextColor(ContextCompat.getColor(requireContext(), R.color.design_default_color_error))
                         Toast.makeText(context, "The bitmap is too dark", Toast.LENGTH_SHORT).show()
                     }
                     else {
                         fragmentCameraBinding.illumination.text = resources.getString(R.string.formatted_illumination_string, "Adequate")
-                        fragmentCameraBinding.illumination.setTextColor(resources.getColor(R.color.design_default_color_secondary))
+                        fragmentCameraBinding.illumination.setTextColor(ContextCompat.getColor(requireContext(), R.color.design_default_color_secondary))
                     }
                     Log.i("Filename", output.toString())
                 } catch (exc: IOException) {
                     Log.e(TAG, "Unable to write JPEG image to file", exc)
-                    cont.resumeWithException(exc)
-                }
-            }
-
-            // When the format is RAW we use the DngCreator utility library
-            ImageFormat.RAW_SENSOR -> {
-                val dngCreator = DngCreator(characteristics, result.metadata)
-                try {
-                    val output = createFile(requireContext(), "dng", "")
-
-                    FileOutputStream(output).use { dngCreator.writeImage(it, result.image) }
-                    cont.resume(output)
-                } catch (exc: IOException) {
-                    Log.e(TAG, "Unable to write DNG image to file", exc)
                     cont.resumeWithException(exc)
                 }
             }
@@ -523,10 +499,10 @@ class CameraFragment : Fragment() {
          *
          * @return [File] created.
          */
-        private fun createFile(context: Context, extension: String, nir: String): File {
+        private fun createFile(context: Context, nir: String): File {
             val sdf = SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS", Locale.US)
             Log.i("Filename", sdf.toString())
-            val file = File(context.filesDir, "IMG_${sdf.format(Date())}_$nir.$extension")
+            val file = File(context.filesDir, "IMG_${sdf.format(Date())}_$nir.jpg")
             if (nir == "RGB")
                 rgbAbsolutePath = file.absolutePath
             return file
