@@ -18,6 +18,7 @@ object Utils {
     const val torchWidth = 480
     const val aligningFactorX = 83
     const val aligningFactorY = 100
+
     fun assetFilePath(context: Context, assetName: String): String? {
         val file = File(context.filesDir, assetName)
         if (file.exists() && file.length() > 0) {
