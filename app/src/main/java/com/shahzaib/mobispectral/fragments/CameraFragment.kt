@@ -457,24 +457,6 @@ class CameraFragment : Fragment() {
         }
     }
 
-//    private fun foodDetected(objectDetector: FirebaseVisionObjectDetector, image: FirebaseVisionImage): Boolean {
-//        var objectDetected = false
-//        objectDetector.processImage(image)
-//            .addOnSuccessListener { objects ->
-//                for (obj in objects) {
-//                    if (obj.classificationCategory == FirebaseVisionObject.CATEGORY_FOOD) {
-//                        objectDetected = true
-//                        Log.d("ObjectDetection", "An apple is detected in the image")
-//                    }
-//                }
-//            }
-//            .addOnFailureListener { e ->
-//                objectDetected = false
-//                Log.e("ObjectDetection", "An error occurred while detecting objects", e)
-//            }
-//        return objectDetected
-//    }
-
     override fun onStop() {
         super.onStop()
         try {
