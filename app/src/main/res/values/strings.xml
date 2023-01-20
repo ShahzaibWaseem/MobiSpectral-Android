@@ -18,4 +18,11 @@
     <string name="formatted_object_string">Object %s Detected</string>
     <string name="tab_layout_description">Tab layout</string>
     <string name="reload_capture_fragment_string">Re-capture the images</string>
+    <string name="application_picker_string">Select the application you want to launch</string>
+    <string name="advanced_option_string">Advanced Option (with Signature Analysis)</string>
+    <string name="simple_option_string">Simple Option (no Signature Analysis)</string>
+    <string name="launch_application_button">Launch Application</string>
+    <string name="nmsl_string">NMSL @</string>
+    <string name="sfu_string">SFU</string>
+
 </resources>

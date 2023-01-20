@@ -27,7 +27,6 @@ import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.Reconstruction
 import com.shahzaib.mobispectral.Utils
 import com.shahzaib.mobispectral.databinding.FragmentReconstructionBinding
-import org.opencv.android.OpenCVLoader
 import java.nio.ByteBuffer
 import java.nio.FloatBuffer
 import java.util.*
@@ -64,7 +63,6 @@ class ReconstructionFragment: Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View {
-        OpenCVLoader.initDebug()
         super.onCreateView(inflater, container, savedInstanceState)
         _fragmentReconstructionBinding = FragmentReconstructionBinding.inflate(
             inflater, container, false)
