@@ -14,6 +14,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.navArgs
 import androidx.viewpager2.widget.ViewPager2
@@ -31,6 +32,7 @@ import java.nio.ByteBuffer
 import java.nio.FloatBuffer
 import java.util.*
 import kotlin.concurrent.schedule
+import kotlin.math.roundToInt
 
 class ReconstructionFragment: Fragment() {
     private lateinit var predictedHS: FloatArray
@@ -42,8 +44,10 @@ class ReconstructionFragment: Fragment() {
     private var outputLabelString: String = ""
     private var clickedX = 0.0F
     private var clickedY = 0.0F
-
+    private val bandsChosen = mutableListOf<Int>()
     private val reconstructionDialogFragment = ReconstructionDialogFragment()
+    private val randomColor = Random()
+    private var color = Color.argb(255, randomColor.nextInt(256), randomColor.nextInt(256), randomColor.nextInt(256))
 
     private var _fragmentReconstructionBinding: FragmentReconstructionBinding? = null
     private val fragmentReconstructionBinding get() = _fragmentReconstructionBinding!!
@@ -78,8 +82,10 @@ class ReconstructionFragment: Fragment() {
             builder.setPositiveButton("Okay") {
                     dialog: DialogInterface?, _: Int -> dialog?.cancel()
             }
-
             val alertDialog = builder.create()
+            alertDialog.setOnShowListener {
+                alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(requireContext(), R.color.sfu_primary))
+            }
             alertDialog.show()
         }
         fragmentReconstructionBinding.viewpager.apply {
@@ -87,26 +93,36 @@ class ReconstructionFragment: Fragment() {
             adapter = GenericListAdapter(bandsHS, itemViewFactory = { imageViewFactory() })
             { view, item, _ ->
                 view as ImageView
+                view.scaleType = ImageView.ScaleType.FIT_XY
+                var bitmapOverlay = Bitmap.createBitmap(item.width, item.height, item.config)
+                var canvas = Canvas(bitmapOverlay)
+                canvas.drawBitmap(item, Matrix(), null)
+
                 view.setOnTouchListener { v, event ->
                     clickedX = (event!!.x / v!!.width) * Utils.torchWidth
                     clickedY = (event.y / v.height) * Utils.torchHeight
                     Log.i("View Dimensions", "$clickedX, $clickedY, ${v.width}, ${v.height}")
-                    val bitmapOverlay = Bitmap.createBitmap(item.width, item.height, item.config)
-                    val canvas = Canvas(bitmapOverlay)
-                    canvas.drawBitmap(item, Matrix(), null)
-                    val paint = Paint(Color.WHITE)
+                    color = Color.argb(255, randomColor.nextInt(256), randomColor.nextInt(256), randomColor.nextInt(256))
+                    val paint = Paint()
+                    paint.color = color
                     paint.style = Paint.Style.STROKE
                     canvas.drawCircle(clickedX, clickedY, 10F, paint)
                     view.setImageBitmap(bitmapOverlay)
                     inference()
-                    true
+                    false
+                }
+                view.setOnLongClickListener {
+                    bitmapOverlay = Bitmap.createBitmap(item.width, item.height, item.config)
+                    canvas = Canvas(bitmapOverlay)
+                    canvas.drawBitmap(item, Matrix(), null)
+                    view.setImageBitmap(bitmapOverlay)
+                    fragmentReconstructionBinding.graphView.removeAllSeries()         // remove all previous series
+
+                    false
                 }
                 Glide.with(view).load(item).into(view)
             }
         }
-        TabLayoutMediator(fragmentReconstructionBinding.tabLayout,
-            fragmentReconstructionBinding.viewpager) { tab, _ ->
-            tab.view.isClickable = false }.attach()
 
         fragmentReconstructionBinding.analysisButton.setOnClickListener {
             fragmentReconstructionBinding.textConstraintView.visibility = View.INVISIBLE
@@ -119,15 +135,21 @@ class ReconstructionFragment: Fragment() {
         super.onStart()
 
         Timer().schedule(1000) {
-            val reconstructionThread = Thread { generateHypercube() }
+            val reconstructionThread = Thread {
+                if (!::predictedHS.isInitialized)
+                    generateHypercube()
+            }
             reconstructionThread.start()
             try { reconstructionThread.join() }
             catch (exception: InterruptedException) { exception.printStackTrace() }
 
             val graphView = _fragmentReconstructionBinding!!.graphView
+            graphView.gridLabelRenderer.horizontalAxisTitle = "Wavelength λ (nm)"
+            graphView.gridLabelRenderer.verticalAxisTitle = "Reflectance"
             graphView.title = "Click on the image to show the signature"
             graphView.viewport.isXAxisBoundsManual = true
-            graphView.viewport.setMaxX(60.0)
+            graphView.viewport.setMaxX(1000.0)
+            graphView.viewport.setMinX(400.0)
             graphView.viewport.isYAxisBoundsManual = true
             graphView.viewport.setMaxY(0.4)
             graphView.gridLabelRenderer.setHumanRounding(true)
@@ -140,9 +162,17 @@ class ReconstructionFragment: Fragment() {
 
             val viewpagerThread = Thread {
                 for (i in 0 until numberOfBands) {
+                    if (i % 8 > 0) continue
+                    Log.i("Bands Chosen", "$i")
+                    bandsChosen.add(i)
                     addItemToViewPager(fragmentReconstructionBinding.viewpager, getBand(predictedHS, i), i)
                 }
             }
+
+            TabLayoutMediator(fragmentReconstructionBinding.tabLayout,
+                fragmentReconstructionBinding.viewpager) { tab, position ->
+                tab.text = ACTUAL_BAND_WAVELENGTHS[bandsChosen[position]].roundToInt().toString() + " nm"
+            }.attach()
 
             viewpagerThread.start()
             try { viewpagerThread.join() }
@@ -178,14 +208,15 @@ class ReconstructionFragment: Fragment() {
         for (i in 0 until numberOfBands) {
             signature[i] = predictedHS[idx]
             print("${predictedHS[idx]}, ")
-            series.appendData(DataPoint(i.toDouble(), predictedHS[idx].toDouble()), true, 60)
+            series.appendData(DataPoint(ACTUAL_BAND_WAVELENGTHS[i], predictedHS[idx].toDouble()), true, 60)
             idx += leftX + Utils.torchWidth*leftY + (Utils.torchWidth*SignatureY + SignatureX)
         }
         val graphView = fragmentReconstructionBinding.graphView
-        graphView.removeAllSeries()         // remove all previous series
+//        graphView.removeAllSeries()         // remove all previous series
         graphView.title = "$outputLabelString Signature at (x: $SignatureX, y: $SignatureY)"
         series.dataPointsRadius = 10F
         series.thickness = 10
+        series.color = color
         graphView.addSeries(series)
 
         return signature
@@ -275,5 +306,9 @@ class ReconstructionFragment: Fragment() {
     private fun addItemToViewPager(view: ViewPager2, item: Bitmap, position: Int) = view.post {
         bandsHS.add(item)
         view.adapter!!.notifyItemChanged(position)
+    }
+
+    companion object {
+        private val ACTUAL_BAND_WAVELENGTHS = listOf(426.19, 434.87, 443.56, 452.25, 460.96, 469.68, 478.41, 487.14, 495.89, 504.64, 513.4, 522.18, 530.96, 539.75, 548.55, 557.36, 566.18, 575.01, 583.85, 592.7, 601.55, 610.42, 619.3, 628.18, 637.08, 645.98, 654.89, 663.81, 672.75, 681.69, 690.64, 699.6, 708.57, 717.54, 726.53, 735.53, 744.53, 753.55, 762.57, 771.61, 780.65, 789.7, 798.77, 807.84, 816.92, 826.01, 835.11, 844.22, 853.33, 862.46, 871.6, 880.74, 889.9, 899.06, 908.24, 917.42, 926.61, 935.81, 945.02, 954.24)
     }
 }

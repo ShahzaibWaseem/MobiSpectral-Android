@@ -16,6 +16,7 @@
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
         android:visibility="visible"
+        android:indeterminateTint="@color/sfu_primary"
         app:layout_constraintBottom_toTopOf="@id/textView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
@@ -27,6 +28,8 @@
         android:layout_marginTop="16dp"
         android:text="@string/reconstructing_hypercube_string"
         android:textSize="18sp"
+        android:fontFamily="@font/roboto_medium"
+        android:gravity="center"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/progressBar"

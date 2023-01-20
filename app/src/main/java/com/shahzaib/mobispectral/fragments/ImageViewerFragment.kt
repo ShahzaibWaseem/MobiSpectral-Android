@@ -69,11 +69,14 @@ class ImageViewerFragment: Fragment() {
             adapter = GenericListAdapter(bitmapList,
                 itemViewFactory = { imageViewFactory() }) { view, item, _ ->
                 view as ImageView
+                view.scaleType = ImageView.ScaleType.FIT_XY
                 Glide.with(view).load(item).into(view)
             }
         }
         TabLayoutMediator(fragmentImageViewerBinding.tabLayout,
-            fragmentImageViewerBinding.viewpager) { _, _ -> }.attach()
+            fragmentImageViewerBinding.viewpager) { tab, position ->
+            tab.text = if (position==0) "RGB" else "NIR"
+        }.attach()
         return fragmentImageViewerBinding.root
     }
 
