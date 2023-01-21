@@ -24,5 +24,5 @@
     <string name="launch_application_button">Launch Application</string>
     <string name="nmsl_string">NMSL @</string>
     <string name="sfu_string">SFU</string>
-
+    <string name="simple_mode_signature_string">"Chosen Center Pixel (x: %1d, y: %2d)"</string>
 </resources>

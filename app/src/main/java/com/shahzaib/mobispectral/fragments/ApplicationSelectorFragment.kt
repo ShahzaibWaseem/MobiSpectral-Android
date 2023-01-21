@@ -16,7 +16,7 @@ import com.shahzaib.mobispectral.databinding.FragmentApplicationselectorBinding
 
 class ApplicationSelectorFragment : Fragment() {
     private lateinit var fragmentApplicationselectorBinding: FragmentApplicationselectorBinding
-    private val applicationArray: Array<String> = arrayOf("Organic Non-Organic Classification", "Olive Oil Adulteration")
+    private val applicationArray: Array<String> = arrayOf("Organic Non-Organic Apple Classification", "Olive Oil Adulteration", "Organic Non-Organic Kiwi Classification")
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View {

@@ -5,7 +5,9 @@ import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.content.Context
 import android.content.DialogInterface
+import android.content.SharedPreferences
 import android.graphics.*
 import android.os.Bundle
 import android.util.Base64
@@ -32,6 +34,7 @@ import java.nio.FloatBuffer
 import java.util.*
 import kotlin.concurrent.schedule
 import kotlin.math.roundToInt
+import kotlin.properties.Delegates
 
 class ReconstructionFragment: Fragment() {
     private lateinit var predictedHS: FloatArray
@@ -51,13 +54,30 @@ class ReconstructionFragment: Fragment() {
     private var _fragmentReconstructionBinding: FragmentReconstructionBinding? = null
     private val fragmentReconstructionBinding get() = _fragmentReconstructionBinding!!
 
+    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var mobiSpectralApplication: String
+    private lateinit var reconstructionFile: String
+    private var classificationFile by Delegates.notNull<Int>()
+    private lateinit var mobiSpectralControlOption: String
+    private var advancedControlOption by Delegates.notNull<Boolean>()
+
+    private val classificationLabels = mapOf(
+        Pair("Organic Non-Organic Apple Classification", 0L) to "Non-Organic Apple",
+        Pair("Organic Non-Organic Apple Classification", 1L) to "Organic Apple",
+        Pair("Organic Non-Organic Kiwi Classification", 0L) to "Non-Organic Kiwi",
+        Pair("Organic Non-Organic Kiwi Classification", 1L) to "Organic Kiwi",
+        Pair("Olive Oil Adulteration", 0L) to "50% EVOO, 50% SFO",
+        Pair("Olive Oil Adulteration", 1L) to "75% EVOO, 25% SFO",
+        Pair("Olive Oil Adulteration", 2L) to "100% EVOO, 0% SFO"
+    )
+
     private fun imageViewFactory() = ImageView(requireContext()).apply {
         layoutParams = ViewGroup.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
     }
 
     private fun createORTSession(ortEnvironment: OrtEnvironment) : OrtSession {
-        val modelBytes = resources.openRawResource(R.raw.classifier).readBytes()
+        val modelBytes = resources.openRawResource(classificationFile).readBytes()
         return ortEnvironment.createSession(modelBytes)
     }
 
@@ -67,6 +87,39 @@ class ReconstructionFragment: Fragment() {
         _fragmentReconstructionBinding = FragmentReconstructionBinding.inflate(
             inflater, container, false)
         reconstructionDialogFragment.isCancelable = false
+
+        sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
+        mobiSpectralApplication = sharedPreferences.getString("application", "Organic Non-Organic Apple Classification")!!
+        reconstructionFile = when (mobiSpectralApplication) {
+            "Organic Non-Organic Apple Classification" -> "mobile_mst_apple_wb.pt"
+            "Olive Oil Adulteration" -> "mobile_mst_oil.pt"
+            "Organic Non-Organic Kiwi Classification" -> "mobile_mst_kiwi_dayl.pt"
+            else -> "mobile_mst_apple_wb.pt"
+        }
+
+        classificationFile = when (mobiSpectralApplication) {
+            "Organic Non-Organic Apple Classification" -> R.raw.mobile_classifier_apple
+            "Olive Oil Adulteration" -> R.raw.mobile_classifier_oil
+            "Organic Non-Organic Kiwi Classification" -> R.raw.mobile_classifier_kiwi
+            else -> R.raw.mobile_classifier_apple
+        }
+        mobiSpectralControlOption = sharedPreferences.getString("option", "Advanced Option (with Signature Analysis)")!!
+
+        advancedControlOption = when (mobiSpectralControlOption) {
+            "Advanced Option (with Signature Analysis)" -> true
+            "Simple Option (no Signature Analysis)" -> false
+            else -> true
+        }
+
+        fragmentReconstructionBinding.textViewClass.text = mobiSpectralApplication
+
+        if (!advancedControlOption) {
+            fragmentReconstructionBinding.analysisButton.visibility = View.INVISIBLE
+            fragmentReconstructionBinding.simpleModeSignaturePositionTextView.visibility = View.VISIBLE
+            fragmentReconstructionBinding.graphView.visibility = View.INVISIBLE
+            fragmentReconstructionBinding.textViewClassTime.text = ""
+            fragmentReconstructionBinding.simpleModeSignaturePositionTextView.text = getString(R.string.simple_mode_signature_string, (Utils.torchWidth/2F).toInt(), (Utils.torchHeight/2F).toInt())
+        }
         return fragmentReconstructionBinding.root
     }
 
@@ -96,27 +149,49 @@ class ReconstructionFragment: Fragment() {
                 var canvas = Canvas(bitmapOverlay)
                 canvas.drawBitmap(item, Matrix(), null)
 
-                view.setOnTouchListener { v, event ->
-                    clickedX = (event!!.x / v!!.width) * Utils.torchWidth
-                    clickedY = (event.y / v.height) * Utils.torchHeight
-                    Log.i("View Dimensions", "$clickedX, $clickedY, ${v.width}, ${v.height}")
-                    color = Color.argb(255, randomColor.nextInt(256), randomColor.nextInt(256), randomColor.nextInt(256))
+                if (advancedControlOption) {
+                    view.setOnTouchListener { v, event ->
+                        clickedX = (event!!.x / v!!.width) * Utils.torchWidth
+                        clickedY = (event.y / v.height) * Utils.torchHeight
+                        Log.i("View Dimensions", "$clickedX, $clickedY, ${v.width}, ${v.height}")
+                        color = Color.argb(
+                            255,
+                            randomColor.nextInt(256),
+                            randomColor.nextInt(256),
+                            randomColor.nextInt(256)
+                        )
+                        val paint = Paint()
+                        paint.color = color
+                        paint.style = Paint.Style.STROKE
+                        canvas.drawCircle(clickedX, clickedY, 10F, paint)
+                        view.setImageBitmap(bitmapOverlay)
+                        inference()
+                        false
+                    }
+                    view.setOnLongClickListener {
+                        bitmapOverlay = Bitmap.createBitmap(item.width, item.height, item.config)
+                        canvas = Canvas(bitmapOverlay)
+                        canvas.drawBitmap(item, Matrix(), null)
+                        view.setImageBitmap(bitmapOverlay)
+                        fragmentReconstructionBinding.graphView.removeAllSeries()         // remove all previous series
+
+                        false
+                    }
+                }
+                else {
+                    Log.i("Simple Mode", "${Utils.torchWidth/2F}, ${Utils.torchHeight/2F}")
+                    color = Color.argb(
+                        255,
+                        randomColor.nextInt(256),
+                        randomColor.nextInt(256),
+                        randomColor.nextInt(256)
+                    )
                     val paint = Paint()
                     paint.color = color
                     paint.style = Paint.Style.STROKE
-                    canvas.drawCircle(clickedX, clickedY, 10F, paint)
+                    canvas.drawCircle(Utils.torchWidth/2F, Utils.torchHeight/2F, 10F, paint)
                     view.setImageBitmap(bitmapOverlay)
                     inference()
-                    false
-                }
-                view.setOnLongClickListener {
-                    bitmapOverlay = Bitmap.createBitmap(item.width, item.height, item.config)
-                    canvas = Canvas(bitmapOverlay)
-                    canvas.drawBitmap(item, Matrix(), null)
-                    view.setImageBitmap(bitmapOverlay)
-                    fragmentReconstructionBinding.graphView.removeAllSeries()         // remove all previous series
-
-                    false
                 }
                 Glide.with(view).load(item).into(view)
             }
@@ -175,7 +250,6 @@ class ReconstructionFragment: Fragment() {
             viewpagerThread.start()
             try { viewpagerThread.join() }
             catch (exception: InterruptedException) { exception.printStackTrace() }
-
             reconstructionDialogFragment.dismissDialog()
         }
     }
@@ -184,9 +258,14 @@ class ReconstructionFragment: Fragment() {
         val ortEnvironment = OrtEnvironment.getEnvironment()
         val ortSession = context?.let { createORTSession(ortEnvironment) }
 
+        if (!advancedControlOption) {
+            clickedX = Utils.torchWidth/2F
+            clickedY = Utils.torchHeight/2F
+        }
+
         val inputSignature = getSignature(predictedHS, clickedX.toInt(), clickedY.toInt())
         val outputLabel = ortSession?.let { classifyHypercube(inputSignature, it, ortEnvironment) }
-        outputLabelString = if (outputLabel == 1L) "Organic Apple" else "Non-Organic Apple"
+        outputLabelString = classificationLabels[Pair(mobiSpectralApplication, outputLabel)]!!
         fragmentReconstructionBinding.textViewClass.text = outputLabelString
         fragmentReconstructionBinding.graphView.title = "$outputLabelString Signature at (x: ${clickedX.toInt()}, y: ${clickedY.toInt()})"
     }
@@ -221,7 +300,7 @@ class ReconstructionFragment: Fragment() {
     }
 
     private fun generateHypercube() {
-        val reconstructionModel = context?.let { Reconstruction(it, "mobile_mst_apple_wb.pt") }!!
+        val reconstructionModel = context?.let { Reconstruction(it, reconstructionFile) }!!
         val decodedRGB = Base64.decode(args.rgbImage, Base64.DEFAULT)
         var rgbBitmap = BitmapFactory.decodeByteArray(decodedRGB, 0, decodedRGB.size)
         rgbBitmap = Bitmap.createBitmap(rgbBitmap, 0, 0, rgbBitmap.width, rgbBitmap.height,

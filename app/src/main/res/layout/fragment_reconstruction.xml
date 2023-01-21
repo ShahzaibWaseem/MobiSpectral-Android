@@ -65,6 +65,16 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
 
+        <TextView
+            android:id="@+id/simpleModeSignaturePositionTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="invisible"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/textViewClass"/>
+
         <Button
             android:id="@+id/analysisButton"
             android:text="@string/analysis_button_text"
@@ -96,7 +106,6 @@
             android:fontFamily="@font/roboto_medium"
             android:gravity="center"
             android:textSize="22sp"
-            android:text="@string/classification_string"
             app:layout_constraintTop_toBottomOf="@+id/analysisButton"
             app:layout_constraintBottom_toTopOf="@+id/textViewReconTime"
             tools:layout_editor_absoluteX="0dp" />
