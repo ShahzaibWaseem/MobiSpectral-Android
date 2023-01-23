@@ -56,6 +56,8 @@ object Utils {
             if (camera.sensorArrangement == CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGGB)
                 cameraIdRGB = camera.cameraId
         }
+        if (cameraIdNIR == "")
+            cameraIdNIR = "No NIR Camera"
         return Pair(cameraIdRGB, cameraIdNIR)
     }
 }

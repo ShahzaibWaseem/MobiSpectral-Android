@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">MobiSpectral</string>
     <string name="capture">Capture</string>
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="no_nir_warning">This phone does not have an NIR camera and project builds on NIR camera of the phone. So, this application will not work on this phone.</string>
     <string name="analysis_button_text">Analysis</string>
     <string name="classify_text">Click on the image to classify</string>
     <string name="get_hypercube_string">Get Hypercube</string>
