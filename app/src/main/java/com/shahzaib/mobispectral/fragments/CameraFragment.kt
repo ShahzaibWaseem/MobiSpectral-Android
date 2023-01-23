@@ -145,6 +145,24 @@ class CameraFragment : Fragment() {
                 Log.d(TAG, "Orientation changed: $orientation")
             }
         }
+
+        fragmentCameraBinding.Title.setOnClickListener {
+            lifecycleScope.launch(Dispatchers.Main) {
+                navController.navigate(
+                    CameraFragmentDirections
+                        .actionCameraToApplicationsTitle()
+                )
+            }
+        }
+
+        fragmentCameraBinding.reloadButton.setOnClickListener {
+            lifecycleScope.launch(Dispatchers.Main) {
+                navController.navigate(
+                    CameraFragmentDirections
+                        .actionCameraToApplications()
+                )
+            }
+        }
     }
 
     /**

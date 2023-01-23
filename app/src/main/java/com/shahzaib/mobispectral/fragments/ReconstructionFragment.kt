@@ -18,6 +18,9 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavController
+import androidx.navigation.Navigation
 import androidx.navigation.fragment.navArgs
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
@@ -29,6 +32,8 @@ import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.Reconstruction
 import com.shahzaib.mobispectral.Utils
 import com.shahzaib.mobispectral.databinding.FragmentReconstructionBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 import java.nio.FloatBuffer
 import java.util.*
@@ -50,6 +55,11 @@ class ReconstructionFragment: Fragment() {
     private val reconstructionDialogFragment = ReconstructionDialogFragment()
     private val randomColor = Random()
     private var color = Color.argb(255, randomColor.nextInt(256), randomColor.nextInt(256), randomColor.nextInt(256))
+
+    /** Host's navigation controller */
+    private val navController: NavController by lazy {
+        Navigation.findNavController(requireActivity(), R.id.fragment_container)
+    }
 
     private var _fragmentReconstructionBinding: FragmentReconstructionBinding? = null
     private val fragmentReconstructionBinding get() = _fragmentReconstructionBinding!!
@@ -194,6 +204,15 @@ class ReconstructionFragment: Fragment() {
                     inference()
                 }
                 Glide.with(view).load(item).into(view)
+            }
+        }
+
+        fragmentReconstructionBinding.Title.setOnClickListener {
+            lifecycleScope.launch(Dispatchers.Main) {
+                navController.navigate(
+                    ReconstructionFragmentDirections
+                        .actionReconstructionToApplicationTitle()
+                )
             }
         }
 

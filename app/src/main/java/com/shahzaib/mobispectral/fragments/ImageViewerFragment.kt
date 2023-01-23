@@ -83,6 +83,15 @@ class ImageViewerFragment: Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        fragmentImageViewerBinding.Title.setOnClickListener {
+            lifecycleScope.launch(Dispatchers.Main) {
+                navController.navigate(
+                    ImageViewerFragmentDirections
+                        .actionImageViewerFragmentToApplicationTitle()
+                )
+            }
+        }
+
         lifecycleScope.launch(Dispatchers.IO) {
             // Load input image file
             val (bufferRGB, bufferNIR) = loadInputBuffer()
@@ -109,6 +118,7 @@ class ImageViewerFragment: Fragment() {
                     )
                 }
             }
+
             fragmentImageViewerBinding.reloadButton.setOnClickListener {
                 lifecycleScope.launch(Dispatchers.Main) {
                     navController.navigate(
