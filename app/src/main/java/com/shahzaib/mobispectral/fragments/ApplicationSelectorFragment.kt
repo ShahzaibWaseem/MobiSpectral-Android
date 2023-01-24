@@ -27,7 +27,7 @@ class ApplicationSelectorFragment: Fragment() {
         Navigation.findNavController(requireActivity(), R.id.fragment_container)
     }
 
-    fun NavController.safeNavigate(direction: NavDirections) {
+    private fun NavController.safeNavigate(direction: NavDirections) {
         currentDestination?.getAction(direction.actionId)?.run {
             navigate(direction)
         }
