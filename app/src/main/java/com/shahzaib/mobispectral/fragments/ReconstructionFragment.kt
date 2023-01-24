@@ -129,6 +129,8 @@ class ReconstructionFragment: Fragment() {
             fragmentReconstructionBinding.graphView.visibility = View.INVISIBLE
             fragmentReconstructionBinding.textViewClassTime.text = ""
             fragmentReconstructionBinding.simpleModeSignaturePositionTextView.text = getString(R.string.simple_mode_signature_string, (Utils.torchWidth/2F).toInt(), (Utils.torchHeight/2F).toInt())
+            fragmentReconstructionBinding.textViewReconTime.visibility = View.INVISIBLE
+            fragmentReconstructionBinding.textViewClassTime.visibility = View.INVISIBLE
         }
         return fragmentReconstructionBinding.root
     }
@@ -138,7 +140,10 @@ class ReconstructionFragment: Fragment() {
         super.onViewCreated(view, savedInstanceState)
         fragmentReconstructionBinding.information.setOnClickListener {
             val builder: AlertDialog.Builder = AlertDialog.Builder(context)
-            builder.setMessage(R.string.reconstruction_analysis_information_string)
+            if (!advancedControlOption)
+                builder.setMessage(R.string.reconstruction_analysis_information_simple_string)
+            else
+                builder.setMessage(R.string.reconstruction_analysis_information_string)
             builder.setTitle("Information")
             builder.setPositiveButton("Okay") {
                     dialog: DialogInterface?, _: Int -> dialog?.cancel()
