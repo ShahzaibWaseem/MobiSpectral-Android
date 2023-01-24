@@ -2,6 +2,7 @@ package com.shahzaib.mobispectral.fragments
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.ImageFormat
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -11,6 +12,8 @@ import android.widget.RadioButton
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavController
+import androidx.navigation.NavDirections
 import androidx.navigation.Navigation
 import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.Utils
@@ -19,6 +22,16 @@ import com.shahzaib.mobispectral.databinding.FragmentApplicationselectorBinding
 class ApplicationSelectorFragment: Fragment() {
     private lateinit var fragmentApplicationselectorBinding: FragmentApplicationselectorBinding
     private val applicationArray: Array<String> = arrayOf("Organic Non-Organic Apple Classification", "Olive Oil Adulteration", "Organic Non-Organic Kiwi Classification")
+    /** Host's navigation controller */
+    private val navController: NavController by lazy {
+        Navigation.findNavController(requireActivity(), R.id.fragment_container)
+    }
+
+    fun NavController.safeNavigate(direction: NavDirections) {
+        currentDestination?.getAction(direction.actionId)?.run {
+            navigate(direction)
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View {
@@ -53,8 +66,9 @@ class ApplicationSelectorFragment: Fragment() {
             editor.apply()
 
             lifecycleScope.launchWhenStarted {
-                Navigation.findNavController(requireActivity(), R.id.fragment_container)
-                    .navigate(ApplicationSelectorFragmentDirections.actionAppselectorToPermissionFragment())
+                navController.safeNavigate(ApplicationSelectorFragmentDirections
+                    .actionAppselectorToCameraFragment(Utils.getCameraIDs(requireContext()).first,
+                        ImageFormat.JPEG))
             }
             true
         }
