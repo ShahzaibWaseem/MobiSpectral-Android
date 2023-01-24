@@ -8,6 +8,7 @@
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:windowTranslucentNavigation">true</item>
+        <item name="android:fontFamily">@font/roboto_medium</item>
     </style>
 
     <style name="TabLayoutTheme" parent="Theme.MaterialComponents.DayNight">
@@ -21,5 +22,6 @@
 
     <style name="TabLayoutTabTheme" parent="TextAppearance.Design.Tab">
         <item name="textAllCaps">false</item>
+        <item name="android:fontFamily">@font/din_pro_condenced</item>
     </style>
 </resources>
