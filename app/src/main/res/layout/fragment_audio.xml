@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/Title"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@color/sfu_red"
+        android:fontFamily="@font/countach_bold"
+        android:gravity="center"
+        android:text="@string/app_name"
+        android:textColor="@color/white"
+        android:textSize="70sp"
+        app:layout_constraintBottom_toTopOf="@+id/guideline"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.10" />
+
+    <ImageView
+        android:id="@+id/overlayImageView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:contentDescription="@string/shelf_life_prediction_description_string"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@+id/guideline2"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/guideline"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <com.jjoe64.graphview.GraphView
+        android:id="@+id/graphView"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:visibility="invisible"
+        android:paddingEnd="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/guideline"
+        app:layout_constraintBottom_toTopOf="@+id/dataConstraints"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/dataConstraints"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="invisible"
+        app:layout_constraintTop_toBottomOf="@+id/graphView"
+        app:layout_constraintBottom_toTopOf="@+id/guideline2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/objectIDConstraint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/border"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/objectSideConstraint"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <Button
+                android:id="@+id/minusButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="10dp"
+                android:text="-"
+                android:fontFamily="@font/din_pro_condenced"
+                android:gravity="center"
+                android:textSize="23sp"
+                android:backgroundTint="@color/sfu_primary"
+                android:layout_gravity="start"/>
+
+            <TextView
+                android:id="@+id/objectIDTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textSize="23sp"
+                android:paddingHorizontal="10dp"
+                android:text="@string/object_id_string"
+                android:layout_gravity="center"/>
+
+            <Button
+                android:id="@+id/plusButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="10dp"
+                android:text="+"
+                android:fontFamily="@font/din_pro_condenced"
+                android:gravity="center"
+                android:textSize="23sp"
+                android:backgroundTint="@color/sfu_primary"
+                android:layout_gravity="end"/>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/objectConstraint"
+            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:paddingHorizontal="5dp"
+            app:layout_constraintTop_toBottomOf="@+id/objectIDConstraint"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/objectSideConstraint">
+
+            <TextView
+                android:id="@+id/objectPickerText"
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:gravity="center"
+                android:textStyle="bold"
+                android:text="@string/pick_the_object_string"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toTopOf="@+id/objectPicker"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+
+            <NumberPicker
+                android:id="@+id/objectPicker"
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:textSize="15sp"
+                android:backgroundTint="@color/sfu_red"
+                app:layout_constraintTop_toBottomOf="@+id/objectPickerText"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/objectSideConstraint"
+            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:paddingHorizontal="5dp"
+            app:layout_constraintTop_toBottomOf="@+id/objectIDConstraint"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/objectConstraint"
+            app:layout_constraintEnd_toStartOf="@+id/organicConstraint">
+
+            <TextView
+                android:id="@+id/objectSideText"
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:gravity="center"
+                android:textStyle="bold"
+                android:text="@string/object_side_text_string"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toTopOf="@+id/objectSidePicker"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+
+            <NumberPicker
+                android:id="@+id/objectSidePicker"
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:textSize="15sp"
+                android:backgroundTint="@color/sfu_red"
+                app:layout_constraintTop_toBottomOf="@+id/objectSideText"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/organicConstraint"
+            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:paddingHorizontal="5dp"
+            app:layout_constraintTop_toBottomOf="@+id/objectIDConstraint"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/objectSideConstraint"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <TextView
+                android:id="@+id/organicText"
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:gravity="center"
+                android:textStyle="bold"
+                android:text="@string/organic_text_string"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toTopOf="@+id/organicPicker"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+
+            <NumberPicker
+                android:id="@+id/organicPicker"
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:textSize="15sp"
+                android:backgroundTint="@color/sfu_red"
+                app:layout_constraintTop_toBottomOf="@+id/organicText"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.85" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/guideline2"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <ImageButton
+            android:id="@+id/reloadButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@android:color/transparent"
+            android:contentDescription="@string/reload_capture_fragment_string"
+            android:src="@android:drawable/ic_menu_revert"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/guideline3"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guideline3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.25" />
+
+        <ImageButton
+            android:id="@+id/record_audio_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_btn_speak_now"
+            android:contentDescription="@string/capture"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/save"
+            app:layout_constraintStart_toEndOf="@+id/guideline3"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="ImageContrastCheck" />
+
+        <Button
+            android:id="@+id/save"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/save_data_button_string"
+            android:fontFamily="@font/din_pro_condenced"
+            android:gravity="center"
+            android:textSize="23sp"
+            android:backgroundTint="@color/sfu_primary"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/record_audio_button"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="ImageContrastCheck" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

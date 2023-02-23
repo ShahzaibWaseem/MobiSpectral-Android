@@ -26,4 +26,14 @@
     <string name="nmsl_string">NMSL @</string>
     <string name="sfu_string">SFU</string>
     <string name="simple_mode_signature_string">"Chosen Center Pixel (x: %1d, y: %2d)"</string>
+
+    <string name="collect_data_text">Collect data for Shelf Life Prediction</string>
+    <string name="run_shelf_life_text">Determine Shelf Life of a Fruit</string>
+    <string name="shelf_life_prediction_description_string">Image captured for shelf life prediction</string>
+    <string name="save_data_button_string">Save</string>
+    <string name="pick_the_object_string">Pick the object</string>
+    <string name="organic_text_string">Organicity</string>
+    <string name="object_side_text_string">Object Side</string>
+    <string name="object_id_string">Object ID: %2d</string>
+
 </resources>

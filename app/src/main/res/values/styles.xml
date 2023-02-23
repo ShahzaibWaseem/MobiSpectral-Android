@@ -8,7 +8,7 @@
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:windowTranslucentNavigation">true</item>
-        <item name="android:fontFamily">@font/roboto_medium</item>
+<!--        <item name="android:fontFamily">@font/d_din_pro_semibold</item>-->
     </style>
 
     <style name="TabLayoutTheme" parent="Theme.MaterialComponents.DayNight">

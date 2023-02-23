@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -20,15 +21,13 @@ import android.util.Size
 import android.view.*
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import androidx.exifinterface.media.ExifInterface
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.Navigation
 import androidx.navigation.fragment.navArgs
-import com.example.android.camera.utils.OrientationLiveData
-import com.example.android.camera.utils.computeExifOrientation
 import com.example.android.camera.utils.getPreviewOutputSize
+import com.shahzaib.mobispectral.MainActivity
 import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.Utils
 import com.shahzaib.mobispectral.databinding.FragmentCameraBinding
@@ -44,7 +43,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
-class CameraFragment : Fragment() {
+class CameraFragment: Fragment() {
     /** Android ViewBinding */
     private var _fragmentCameraBinding: FragmentCameraBinding? = null
 
@@ -90,16 +89,22 @@ class CameraFragment : Fragment() {
     /** Internal reference to the ongoing [CameraCaptureSession] configured with our parameters */
     private lateinit var session: CameraCaptureSession
 
-    /** Live data listener for changes in the device orientation relative to the camera */
-    private lateinit var relativeOrientation: OrientationLiveData
-
     private lateinit var cameraIdRGB: String
     private lateinit var cameraIdNIR: String
 
+    private lateinit var sharedPreferences: SharedPreferences
+    private var mobiSpectralApplicationID = 0
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _fragmentCameraBinding = FragmentCameraBinding.inflate(inflater, container, false)
-        cameraIdRGB = Utils.getCameraIDs(requireContext()).first
-        cameraIdNIR = Utils.getCameraIDs(requireContext()).second
+        sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
+        mobiSpectralApplicationID =
+            when(sharedPreferences.getString("application", "Organic Non-Organic Apple Classification")!!) {
+            "Shelf Life Prediction" -> MainActivity.SHELF_LIFE_APPLICATION
+            else -> MainActivity.MOBISPECTRAL_APPLICATION
+        }
+        cameraIdRGB = Utils.getCameraIDs(requireContext(), mobiSpectralApplicationID).first
+        cameraIdNIR = Utils.getCameraIDs(requireContext(), mobiSpectralApplicationID).second
         Log.i("CameraIDs Fragment", "RGB $cameraIdRGB, NIR $cameraIdNIR")
         return fragmentCameraBinding.root
     }
@@ -138,13 +143,6 @@ class CameraFragment : Fragment() {
                 view.post { initializeCamera() }
             }
         })
-
-        // Used to rotate the output media to match device orientation
-        relativeOrientation = OrientationLiveData(requireContext(), characteristics).apply {
-            observe(viewLifecycleOwner) { orientation ->
-                Log.d(TAG, "Orientation changed: $orientation")
-            }
-        }
 
         fragmentCameraBinding.Title.setOnClickListener {
             lifecycleScope.launch(Dispatchers.Main) {
@@ -235,24 +233,23 @@ class CameraFragment : Fragment() {
                 val output = saveResult(result)
                 Log.d(TAG, "Image saved: ${output.absolutePath}")
 
-                // If the result is a JPEG file, update EXIF metadata with orientation info
-                if (output.extension == "jpg") {
-                    val exif = ExifInterface(output.absolutePath)
-                    exif.setAttribute(
-                        ExifInterface.TAG_ORIENTATION, result.orientation.toString()
-                    )
-                    exif.saveAttributes()
-                    Log.d(TAG, "EXIF metadata saved: ${output.absolutePath}")
-                }
-
                 if (cameraId == cameraIdRGB){
-                    // Display the photo taken to user
-                    lifecycleScope.launch(Dispatchers.Main) {
-                        navController.navigate(
-                            CameraFragmentDirections.actionCameraFragmentSelf(
-                                cameraIdNIR, ImageFormat.JPEG
+                    if (cameraIdNIR == "Shelf Life Prediction") {
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            navController.navigate(
+                                CameraFragmentDirections.actionCameraFragmentToAudioFragment(rgbAbsolutePath, fileFormat)
                             )
-                        )
+                        }
+                    }
+                    else {
+                        // Display the photo taken to user
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            navController.navigate(
+                                CameraFragmentDirections.actionCameraFragmentSelf(
+                                    cameraIdNIR, ImageFormat.JPEG
+                                )
+                            )
+                        }
                     }
                 }
                 else {
@@ -262,7 +259,6 @@ class CameraFragment : Fragment() {
                             CameraFragmentDirections.actionCameraToJpegViewer(
                                 rgbAbsolutePath, output.absolutePath
                             )
-                                .setOrientation(result.orientation)
                                 .setDepth(
                                     Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
                                             result.format == ImageFormat.DEPTH_JPEG
@@ -387,15 +383,9 @@ class CameraFragment : Fragment() {
                             imageQueue.take().close()
                         }
 
-                        // Compute EXIF orientation metadata
-                        val rotation = relativeOrientation.value ?: 0
-                        val mirrored = characteristics.get(CameraCharacteristics.LENS_FACING) ==
-                                CameraCharacteristics.LENS_FACING_FRONT
-                        val exifOrientation = computeExifOrientation(rotation, mirrored)
-
                         // Build the result and resume progress
                         cont.resume(
-                            CombinedCaptureResult(image, result, exifOrientation, imageReader.imageFormat)
+                            CombinedCaptureResult(image, result, imageReader.imageFormat)
                         )
                         // There is no need to break out of the loop, this coroutine will suspend
                     }
@@ -498,6 +488,7 @@ class CameraFragment : Fragment() {
     companion object {
         private val TAG = CameraFragment::class.java.simpleName
         private lateinit var rgbAbsolutePath: String
+        private lateinit var fileFormat: String
 
         /** Maximum number of images that will be held in the reader's buffer */
         private const val IMAGE_BUFFER_SIZE: Int = 3
@@ -509,7 +500,6 @@ class CameraFragment : Fragment() {
         data class CombinedCaptureResult(
             val image: Image,
             val metadata: CaptureResult,
-            val orientation: Int,
             val format: Int
         ) : Closeable {
             override fun close() = image.close()
@@ -523,7 +513,8 @@ class CameraFragment : Fragment() {
         private fun createFile(context: Context, nir: String): File {
             val sdf = SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS", Locale.US)
             Log.i("Filename", sdf.toString())
-            val file = File(context.filesDir, "IMG_${sdf.format(Date())}_$nir.jpg")
+            fileFormat = sdf.format(Date())
+            val file = File(context.filesDir, "IMG_${fileFormat}_$nir.jpg")
             if (nir == "RGB")
                 rgbAbsolutePath = file.absolutePath
             return file

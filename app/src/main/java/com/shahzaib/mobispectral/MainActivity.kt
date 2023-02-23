@@ -11,4 +11,9 @@ class MainActivity : AppCompatActivity() {
         activityMainBinding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(activityMainBinding.root)
     }
+
+    companion object {
+        val MOBISPECTRAL_APPLICATION = 0
+        val SHELF_LIFE_APPLICATION = 1
+    }
 }

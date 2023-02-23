@@ -42,22 +42,30 @@ object Utils {
         return null
     }
 
-    fun getCameraIDs(context: Context): Pair<String, String> {
+    fun getCameraIDs(context: Context, application: Int): Pair<String, String> {
         var cameraIdRGB = ""
         var cameraIdNIR = ""
         val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
 
-        val cameraList = enumerateCameras(cameraManager)
+        var cameraList = enumerateCameras(cameraManager)
+        if (application == MainActivity.MOBISPECTRAL_APPLICATION) {
+            cameraList = getMobiSpectralConfigCameras(cameraList)
 
-        for (camera in cameraList) {
-            Log.i("Available Cameras", camera.title)
-            if (camera.sensorArrangement == CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_NIR)
-                cameraIdNIR = camera.cameraId
-            if (camera.sensorArrangement == CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGGB)
-                cameraIdRGB = camera.cameraId
+            for (camera in cameraList) {
+                Log.i("Available Cameras", camera.title)
+                if (camera.sensorArrangement == CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_NIR)
+                    cameraIdNIR = camera.cameraId
+                if (camera.sensorArrangement == CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGGB)
+                    cameraIdRGB = camera.cameraId
+            }
+            if (cameraIdNIR == "")
+                cameraIdNIR = "No NIR Camera"
         }
-        if (cameraIdNIR == "")
-            cameraIdNIR = "No NIR Camera"
+        else {
+            cameraIdRGB = cameraList[0].cameraId
+            cameraIdNIR = "Shelf Life Prediction"
+        }
+        Log.i("Camera", "$cameraIdRGB $cameraIdNIR")
         return Pair(cameraIdRGB, cameraIdNIR)
     }
 }
@@ -65,6 +73,7 @@ object Utils {
 /** Helper class used as a data holder for each selectable camera format item */
 data class FormatItem(val title: String, val cameraId: String, val format: Int, val orientation: String, val sensorArrangement: Int)
 
+data class ShelfLifeCSV(val image_path: String, val audio_path: String)
 /** Helper function used to convert a lens orientation enum into a human-readable string */
 private fun lensOrientationString(value: Int) = when(value) {
     CameraCharacteristics.LENS_FACING_BACK -> "Back"
@@ -73,11 +82,27 @@ private fun lensOrientationString(value: Int) = when(value) {
     else -> "Unknown"
 }
 
+fun getMobiSpectralConfigCameras(availableCameras: MutableList<FormatItem>): MutableList<FormatItem> {
+    val usableCameraList: MutableList<FormatItem> = mutableListOf()
+
+    for (camera in availableCameras) {
+        if (camera.sensorArrangement == CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_NIR) {
+            val nirLensOrientation = camera.orientation
+            usableCameraList.add(camera)
+            for (other_camera in availableCameras) {
+                if ((other_camera.orientation) == nirLensOrientation && other_camera.cameraId != camera.cameraId) {
+                    usableCameraList.add(other_camera)
+                }
+            }
+        }
+    }
+    return availableCameras
+}
+
 /** Helper function used to list all compatible cameras and supported pixel formats */
 @SuppressLint("InlinedApi")
-fun enumerateCameras(cameraManager: CameraManager): List<FormatItem> {
+fun enumerateCameras(cameraManager: CameraManager): MutableList<FormatItem> {
     val availableCameras: MutableList<FormatItem> = mutableListOf()
-    val usableCameraList: MutableList<FormatItem> = mutableListOf()
 
     // Get list of all compatible cameras
     val cameraIds = cameraManager.cameraIdList.filter {
@@ -102,19 +127,7 @@ fun enumerateCameras(cameraManager: CameraManager): List<FormatItem> {
             availableCameras.add(
                 FormatItem("$orientation JPEG ($id)", id, ImageFormat.JPEG, orientation,
                     CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGGB))
-
-        for (camera in availableCameras) {
-            if (camera.sensorArrangement == CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_NIR) {
-                val nirLensOrientation = camera.orientation
-                usableCameraList.add(camera)
-                for (other_camera in availableCameras) {
-                    if ((other_camera.orientation) == nirLensOrientation && other_camera.cameraId != camera.cameraId) {
-                        usableCameraList.add(other_camera)
-                    }
-                }
-            }
-        }
     }
 
-    return usableCameraList
+    return availableCameras
 }

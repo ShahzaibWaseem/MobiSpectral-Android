@@ -87,7 +87,7 @@
             android:id="@+id/button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/roboto_medium"
+            android:fontFamily="@font/din_pro_condenced"
             android:gravity="center"
             android:text="@string/get_hypercube_string"
             android:textSize="23sp"

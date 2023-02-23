@@ -180,7 +180,12 @@ class ReconstructionFragment: Fragment() {
                         paint.style = Paint.Style.STROKE
                         canvas.drawCircle(clickedX, clickedY, 10F, paint)
                         view.setImageBitmap(bitmapOverlay)
-                        inference()
+                        try {
+                            inference()
+                        }
+                        catch (e: NullPointerException) {
+                            e.printStackTrace()
+                        }
                         false
                     }
                     view.setOnLongClickListener {

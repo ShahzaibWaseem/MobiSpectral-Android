@@ -21,6 +21,7 @@ import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.example.android.camera.utils.GenericListAdapter
 import com.google.android.material.tabs.TabLayoutMediator
+import com.shahzaib.mobispectral.MainActivity
 import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.Utils
 import com.shahzaib.mobispectral.databinding.FragmentImageviewerBinding
@@ -124,7 +125,7 @@ class ImageViewerFragment: Fragment() {
                     navController.navigate(
                         ImageViewerFragmentDirections
                             .actionImageViewerFragmentToCameraFragment(
-                                Utils.getCameraIDs(requireContext()).first, ImageFormat.JPEG)
+                                Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).first, ImageFormat.JPEG)
                     )
                 }
             }

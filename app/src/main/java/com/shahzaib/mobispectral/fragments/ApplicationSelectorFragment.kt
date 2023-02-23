@@ -9,19 +9,21 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioButton
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.NavDirections
 import androidx.navigation.Navigation
+import com.shahzaib.mobispectral.MainActivity
 import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.Utils
 import com.shahzaib.mobispectral.databinding.FragmentApplicationselectorBinding
 
 class ApplicationSelectorFragment: Fragment() {
     private lateinit var fragmentApplicationselectorBinding: FragmentApplicationselectorBinding
-    private val applicationArray: Array<String> = arrayOf("Organic Non-Organic Apple Classification", "Olive Oil Adulteration", "Organic Non-Organic Kiwi Classification")
+    private val applicationArray: Array<String> = arrayOf("Organic Non-Organic Apple Classification",
+        "Olive Oil Adulteration", "Organic Non-Organic Kiwi Classification", "Shelf Life Prediction")
+
     /** Host's navigation controller */
     private val navController: NavController by lazy {
         Navigation.findNavController(requireActivity(), R.id.fragment_container)
@@ -44,16 +46,35 @@ class ApplicationSelectorFragment: Fragment() {
         return fragmentApplicationselectorBinding.root
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onStart() {
-        super.onStart()
-        val cameraIdNIR = Utils.getCameraIDs(requireContext()).second
+    private fun disableButton(cameraIdNIR: String) {
         if (cameraIdNIR == "No NIR Camera") {
             fragmentApplicationselectorBinding.runApplicationButton.isEnabled = false
             fragmentApplicationselectorBinding.runApplicationButton.text = resources.getString(R.string.no_nir_warning)
             fragmentApplicationselectorBinding.runApplicationButton.transformationMethod = null
-            fragmentApplicationselectorBinding.runApplicationButton.setTextColor(ContextCompat.getColor(requireContext(), R.color.black))
         }
+    }
+
+    private fun enableButton() {
+        fragmentApplicationselectorBinding.runApplicationButton.isEnabled = true
+        fragmentApplicationselectorBinding.runApplicationButton.text = resources.getString(R.string.launch_application_button).uppercase()
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onStart() {
+        super.onStart()
+        var cameraIdNIR = Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).second
+        disableButton(cameraIdNIR)
+
+        fragmentApplicationselectorBinding.applicationPicker.setOnValueChangedListener{ _, _, newVal ->
+            if (newVal != 3) {
+                disableButton(cameraIdNIR)
+            }
+            else {
+                enableButton()
+                cameraIdNIR = Utils.getCameraIDs(requireContext(), MainActivity.SHELF_LIFE_APPLICATION).second
+            }
+        }
+
         fragmentApplicationselectorBinding.runApplicationButton.setOnTouchListener { _, _ ->
             val selectedApplication = applicationArray[fragmentApplicationselectorBinding.applicationPicker.value]
             val selectedRadio = fragmentApplicationselectorBinding.radioGroup.checkedRadioButtonId
@@ -65,10 +86,23 @@ class ApplicationSelectorFragment: Fragment() {
             Log.i("Radio Button", "$selectedApplication, $selectedOption")
             editor.apply()
 
-            lifecycleScope.launchWhenStarted {
-                navController.safeNavigate(ApplicationSelectorFragmentDirections
-                    .actionAppselectorToCameraFragment(Utils.getCameraIDs(requireContext()).first,
-                        ImageFormat.JPEG))
+            if (selectedApplication != "Shelf Life Prediction") {
+                lifecycleScope.launchWhenStarted {
+                    navController.safeNavigate(
+                        ApplicationSelectorFragmentDirections
+                            .actionAppselectorToCameraFragment(
+                                Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).first,
+                                ImageFormat.JPEG
+                            )
+                    )
+                }
+            }
+            else {
+                lifecycleScope.launchWhenStarted {
+                    navController.safeNavigate(
+                        ApplicationSelectorFragmentDirections.actionAppselectorToShelflifeFragment()
+                    )
+                }
             }
             true
         }
