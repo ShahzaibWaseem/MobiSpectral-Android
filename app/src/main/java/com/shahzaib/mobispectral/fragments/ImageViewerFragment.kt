@@ -1,5 +1,6 @@
 package com.shahzaib.mobispectral.fragments
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
@@ -34,7 +35,7 @@ import java.nio.ByteBuffer
 import kotlin.math.max
 
 class ImageViewerFragment: Fragment() {
-    private val correctionMatrix = Matrix().apply { postScale(-1.0F, 1.0F); postRotate(90F) }
+    private val correctionMatrix = Matrix().apply {  }
 
     /** AndroidX navigation arguments */
     private val args: ImageViewerFragmentArgs by navArgs()
@@ -70,7 +71,7 @@ class ImageViewerFragment: Fragment() {
             adapter = GenericListAdapter(bitmapList,
                 itemViewFactory = { imageViewFactory() }) { view, item, _ ->
                 view as ImageView
-                view.scaleType = ImageView.ScaleType.FIT_XY
+//                view.scaleType = ImageView.ScaleType.FIT_XY
                 Glide.with(view).load(item).into(view)
             }
         }
@@ -98,8 +99,31 @@ class ImageViewerFragment: Fragment() {
             val (bufferRGB, bufferNIR) = loadInputBuffer()
 
             // Load the main JPEG image
-            val rgbImageBitmap = decodeBitmap(bufferRGB, bufferRGB.size, "RGB")
-            val nirImageBitmap = decodeBitmap(bufferNIR, bufferNIR.size, "NIR")
+            var rgbImageBitmap = decodeBitmap(bufferRGB, bufferRGB.size, "RGB")
+            var nirImageBitmap = decodeBitmap(bufferNIR, bufferNIR.size, "NIR")
+            Log.i("Bitmap Size", "Decoded RGB: ${rgbImageBitmap.width} x ${rgbImageBitmap.height}")
+            Log.i("Bitmap Size", "Decoded NIR: ${nirImageBitmap.width} x ${nirImageBitmap.height}")
+
+
+
+            val sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
+            val advancedControlOption = when (sharedPreferences.getString("option", "Advanced Option (with Signature Analysis)")!!) {
+                "Advanced Option (with Signature Analysis)" -> true
+                "Simple Option (no Signature Analysis)" -> false
+                else -> true
+            }
+            // Crop images to 300x150 if its the simple mode, to speed up the process.
+            if (!advancedControlOption) {
+                val newLeft = (rgbImageBitmap.width - Utils.croppedWidth)/2
+                val newTop = (rgbImageBitmap.height - Utils.croppedHeight)/2
+                Log.i("Crop Dimension", "Width: ${rgbImageBitmap.width/2} - ${Utils.croppedWidth/2} = $newLeft")
+                Log.i("Crop Dimension", "Height: ${rgbImageBitmap.height/2} - ${Utils.croppedHeight/2} = $newTop")
+                Log.i("Crop Dimension", "X + width: $newLeft + ${Utils.croppedWidth} = ${newLeft + Utils.croppedWidth}, rgbBitmap Width: ${rgbImageBitmap.width}")
+                Log.i("Crop Dimension", "Y + height: $newTop + ${Utils.croppedHeight} = ${newTop + Utils.croppedHeight}, rgbBitmap Height: ${rgbImageBitmap.height}")
+
+                rgbImageBitmap = Bitmap.createBitmap(rgbImageBitmap, newLeft, newTop, Utils.croppedWidth, Utils.croppedHeight)
+                nirImageBitmap = Bitmap.createBitmap(nirImageBitmap, newLeft, newTop, Utils.croppedWidth, Utils.croppedHeight)
+            }
 
             val rgbByteArray = bitmapToByteArray(rgbImageBitmap)
             var nirByteArray = bitmapToByteArray(nirImageBitmap)
@@ -197,8 +221,11 @@ class ImageViewerFragment: Fragment() {
 
         // Load bitmap from given buffer
         val decodedBitmap = BitmapFactory.decodeByteArray(buffer, 0, length, bitmapOptions)
+        Log.i("Bitmap Size", "${decodedBitmap.width} x ${decodedBitmap.height}")
+        Log.i("Decode Bitmap", "${Utils.aligningFactorX} + ${Utils.torchWidth} = ${Utils.torchWidth + Utils.aligningFactorX} (${decodedBitmap.width})")
+        Log.i("Decode Bitmap", "${Utils.aligningFactorY} + ${Utils.torchHeight} = ${Utils.torchHeight + Utils.aligningFactorY} (${decodedBitmap.height})")
         bitmap = if (RGB == "RGB")
-            Bitmap.createBitmap(decodedBitmap, Utils.aligningFactorX, Utils.aligningFactorY, Utils.torchHeight, Utils.torchWidth, correctionMatrix, true)
+            Bitmap.createBitmap(decodedBitmap, Utils.aligningFactorX, Utils.aligningFactorY, Utils.torchWidth, Utils.torchHeight, correctionMatrix, true)
         else
             Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, correctionMatrix, false)
 

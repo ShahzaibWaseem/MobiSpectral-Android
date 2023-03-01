@@ -5,10 +5,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Color
-import android.graphics.ImageFormat
+import android.graphics.*
 import android.hardware.camera2.*
 import android.media.Image
 import android.media.ImageReader
@@ -137,7 +134,10 @@ class CameraFragment: Fragment() {
                 // Selects appropriate preview size and configures view finder
                 val previewSize = getPreviewOutputSize(fragmentCameraBinding.viewFinder.display,
                     characteristics, SurfaceHolder::class.java)
-                fragmentCameraBinding.viewFinder.setAspectRatio(previewSize.height, previewSize.width)
+//                fragmentCameraBinding.viewFinder.setAspectRatio(previewSize.width, previewSize.height)
+                holder.setFixedSize(previewSize.width, previewSize.height)
+
+                Log.i("Preview Size", "AutoFitSurface Holder: Width${fragmentCameraBinding.viewFinder.width}, Height ${fragmentCameraBinding.viewFinder.height}")
 
                 // To ensure that size is set, initialize camera in the view's thread
                 view.post { initializeCamera() }
@@ -192,6 +192,7 @@ class CameraFragment: Fragment() {
         ).apply { addTarget(fragmentCameraBinding.viewFinder.holder.surface)
             set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
             set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_AUTO) }
+//        Log.i("Surface Holder Size", "${fragmentCameraBinding.viewFinder.holder.surface}")
 
         // This will keep sending the capture request as frequently as possible until the
         // session is torn down or session.stopRepeating() is called
@@ -245,9 +246,7 @@ class CameraFragment: Fragment() {
                         // Display the photo taken to user
                         lifecycleScope.launch(Dispatchers.Main) {
                             navController.navigate(
-                                CameraFragmentDirections.actionCameraFragmentSelf(
-                                    cameraIdNIR, ImageFormat.JPEG
-                                )
+                                CameraFragmentDirections.actionCameraFragmentSelf(cameraIdNIR, ImageFormat.JPEG)
                             )
                         }
                     }
@@ -256,13 +255,9 @@ class CameraFragment: Fragment() {
                     // Display the photo taken to user
                     lifecycleScope.launch(Dispatchers.Main) {
                         navController.navigate(
-                            CameraFragmentDirections.actionCameraToJpegViewer(
-                                rgbAbsolutePath, output.absolutePath
-                            )
-                                .setDepth(
-                                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-                                            result.format == ImageFormat.DEPTH_JPEG
-                                )
+                            CameraFragmentDirections.actionCameraToJpegViewer(rgbAbsolutePath, output.absolutePath)
+                                .setDepth(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                                            result.format == ImageFormat.DEPTH_JPEG)
                         )
                     }
                 }
@@ -341,6 +336,7 @@ class CameraFragment: Fragment() {
         imageReader.setOnImageAvailableListener({ reader ->
             val image = reader.acquireNextImage()
             Log.d(TAG, "Image available in queue: ${image.timestamp}")
+
             imageQueue.add(image)
         }, imageReaderHandler)
 
@@ -367,6 +363,7 @@ class CameraFragment: Fragment() {
                     while (true) {
                         // Dequeue images while timestamps don't match
                         val image = imageQueue.take()
+
                         // if (image.timestamp != resultTimestamp) continue
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
                             image.format != ImageFormat.DEPTH_JPEG &&
@@ -382,11 +379,10 @@ class CameraFragment: Fragment() {
                         while (imageQueue.size > 0) {
                             imageQueue.take().close()
                         }
+                        Log.d(TAG, "Capture Request DIMENSIONS: width ${image.width} Height: ${image.height}")
 
                         // Build the result and resume progress
-                        cont.resume(
-                            CombinedCaptureResult(image, result, imageReader.imageFormat)
-                        )
+                        cont.resume(CombinedCaptureResult(image, result, imageReader.imageFormat))
                         // There is no need to break out of the loop, this coroutine will suspend
                     }
                 }
@@ -429,17 +425,18 @@ class CameraFragment: Fragment() {
             ImageFormat.JPEG, ImageFormat.DEPTH_JPEG -> {
                 val buffer = result.image.planes[0].buffer
                 val bytes = ByteArray(buffer.remaining()).apply { buffer.get(this) }
-                Log.i("Filename Size", bytes.size.toString())
+
+                var rotatedBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null)
+                val correctionMatrix = Matrix().apply { postRotate(-90F); postScale(-1F, 1F); }
+                rotatedBitmap = Bitmap.createBitmap(rotatedBitmap, 0, 0, rotatedBitmap.width, rotatedBitmap.height, correctionMatrix, true)
+                val stream = ByteArrayOutputStream()
+                rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+                val rotatedBytes = stream.toByteArray()
+
                 try {
                     val nir = if (args.cameraId == cameraIdNIR) "NIR" else "RGB"
 
-                    val output = createFile(requireContext(), nir)
-                    FileOutputStream(output).use { it.write(bytes) }
-                    cont.resume(output)
-
-                    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-
-                    if (isDark(bitmap)) {
+                    if (isDark(rotatedBitmap)) {
                         Log.i("Dark", "The bitmap is too dark")
                         fragmentCameraBinding.illumination.text = resources.getString(R.string.formatted_illumination_string, "Inadequate")
                         fragmentCameraBinding.illumination.setTextColor(ContextCompat.getColor(requireContext(), R.color.design_default_color_error))
@@ -449,6 +446,9 @@ class CameraFragment: Fragment() {
                         fragmentCameraBinding.illumination.text = resources.getString(R.string.formatted_illumination_string, "Adequate")
                         fragmentCameraBinding.illumination.setTextColor(ContextCompat.getColor(requireContext(), R.color.design_default_color_secondary))
                     }
+                    val output = createFile(requireContext(), nir)
+                    FileOutputStream(output).use { it.write(rotatedBytes) }
+                    cont.resume(output)
                     Log.i("Filename", output.toString())
                 } catch (exc: IOException) {
                     Log.e(TAG, "Unable to write JPEG image to file", exc)

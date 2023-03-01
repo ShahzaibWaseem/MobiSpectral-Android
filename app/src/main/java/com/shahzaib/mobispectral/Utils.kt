@@ -18,6 +18,8 @@ object Utils {
     const val torchWidth = 480
     const val aligningFactorX = 83
     const val aligningFactorY = 100
+    const val croppedHeight = 400
+    const val croppedWidth = 300
 
     fun assetFilePath(context: Context, assetName: String): String? {
         val file = File(context.filesDir, assetName)

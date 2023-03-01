@@ -78,8 +78,11 @@ class ReconstructionFragment: Fragment() {
         Pair("Organic Non-Organic Kiwi Classification", 1L) to "Organic Kiwi",
         Pair("Olive Oil Adulteration", 0L) to "50% EVOO, 50% SFO",
         Pair("Olive Oil Adulteration", 1L) to "75% EVOO, 25% SFO",
-        Pair("Olive Oil Adulteration", 2L) to "100% EVOO, 0% SFO"
+        Pair("Olive Oil Adulteration", 2L) to "100% EVOO, 0% SFO",
     )
+
+    private var bitmapsWidth = Utils.torchWidth
+    private var bitmapsHeight = Utils.torchHeight
 
     private fun imageViewFactory() = ImageView(requireContext()).apply {
         layoutParams = ViewGroup.LayoutParams(
@@ -128,7 +131,7 @@ class ReconstructionFragment: Fragment() {
             fragmentReconstructionBinding.simpleModeSignaturePositionTextView.visibility = View.VISIBLE
             fragmentReconstructionBinding.graphView.visibility = View.INVISIBLE
             fragmentReconstructionBinding.textViewClassTime.text = ""
-            fragmentReconstructionBinding.simpleModeSignaturePositionTextView.text = getString(R.string.simple_mode_signature_string, (Utils.torchWidth/2F).toInt(), (Utils.torchHeight/2F).toInt())
+            fragmentReconstructionBinding.simpleModeSignaturePositionTextView.text = getString(R.string.simple_mode_signature_string, (Utils.croppedWidth/2F).toInt(), (Utils.croppedHeight/2F).toInt())
             fragmentReconstructionBinding.textViewReconTime.visibility = View.INVISIBLE
             fragmentReconstructionBinding.textViewClassTime.visibility = View.INVISIBLE
         }
@@ -166,8 +169,8 @@ class ReconstructionFragment: Fragment() {
 
                 if (advancedControlOption) {
                     view.setOnTouchListener { v, event ->
-                        clickedX = (event!!.x / v!!.width) * Utils.torchWidth
-                        clickedY = (event.y / v.height) * Utils.torchHeight
+                        clickedX = (event!!.x / v!!.width) * bitmapsWidth
+                        clickedY = (event.y / v.height) * bitmapsHeight
                         Log.i("View Dimensions", "$clickedX, $clickedY, ${v.width}, ${v.height}")
                         color = Color.argb(
                             255,
@@ -199,7 +202,7 @@ class ReconstructionFragment: Fragment() {
                     }
                 }
                 else {
-                    Log.i("Simple Mode", "${Utils.torchWidth/2F}, ${Utils.torchHeight/2F}")
+                    Log.i("Simple Mode", "${bitmapsWidth/2F}, ${bitmapsHeight/2F}")
                     color = Color.argb(
                         255,
                         randomColor.nextInt(256),
@@ -288,13 +291,17 @@ class ReconstructionFragment: Fragment() {
         val ortSession = context?.let { createORTSession(ortEnvironment) }
 
         if (!advancedControlOption) {
-            clickedX = Utils.torchWidth/2F
-            clickedY = Utils.torchHeight/2F
+            clickedX = bitmapsWidth/2F
+            clickedY = bitmapsHeight/2F
         }
 
         val inputSignature = getSignature(predictedHS, clickedX.toInt(), clickedY.toInt())
         val outputLabel = ortSession?.let { classifyHypercube(inputSignature, it, ortEnvironment) }
-        outputLabelString = classificationLabels[Pair(mobiSpectralApplication, outputLabel)]!!
+        println("Output Label: $outputLabel")
+        outputLabelString = if (Pair(mobiSpectralApplication, outputLabel) !in classificationLabels)
+            "Something went wrong"
+        else
+            classificationLabels[Pair(mobiSpectralApplication, outputLabel)]!!
         fragmentReconstructionBinding.textViewClass.text = outputLabelString
         fragmentReconstructionBinding.graphView.title = "$outputLabelString Signature at (x: ${clickedX.toInt()}, y: ${clickedY.toInt()})"
     }
@@ -302,10 +309,10 @@ class ReconstructionFragment: Fragment() {
     private fun getSignature(predictedHS: FloatArray, SignatureX: Int, SignatureY: Int): FloatArray {
         val signature = FloatArray(numberOfBands)
         Log.i("Touch Coordinates", "$SignatureX, $SignatureY")
-        val leftX = Utils.torchWidth - SignatureX
-        val leftY = Utils.torchHeight - SignatureY
+        val leftX = bitmapsWidth - SignatureX
+        val leftY = bitmapsHeight - SignatureY
 
-        var idx = if (Utils.torchWidth*SignatureY <= Utils.torchWidth) Utils.torchWidth*SignatureY else Utils.torchWidth
+        var idx = if (bitmapsWidth*SignatureY <= bitmapsWidth) bitmapsWidth*SignatureY else bitmapsWidth
         idx += SignatureX
 
         print("Signature is:")
@@ -315,7 +322,7 @@ class ReconstructionFragment: Fragment() {
             signature[i] = predictedHS[idx]
             print("${predictedHS[idx]}, ")
             series.appendData(DataPoint(ACTUAL_BAND_WAVELENGTHS[i], predictedHS[idx].toDouble()), true, 60)
-            idx += leftX + Utils.torchWidth*leftY + (Utils.torchWidth*SignatureY + SignatureX)
+            idx += leftX + bitmapsWidth*leftY + (bitmapsWidth*SignatureY + SignatureX)
         }
         val graphView = fragmentReconstructionBinding.graphView
 //        graphView.removeAllSeries()         // remove all previous series
@@ -339,6 +346,9 @@ class ReconstructionFragment: Fragment() {
         var nirBitmap = BitmapFactory.decodeByteArray(decodedNIR, 0, decodedNIR.size)
         nirBitmap = Bitmap.createBitmap(nirBitmap, 0, 0, nirBitmap.width, nirBitmap.height,
             null, true)
+
+        bitmapsWidth = rgbBitmap.width
+        bitmapsHeight = rgbBitmap.height
 
         val startTime = System.currentTimeMillis()
         predictedHS = reconstructionModel.predict(rgbBitmap, nirBitmap)
@@ -376,11 +386,11 @@ class ReconstructionFragment: Fragment() {
     private fun getBand(predictedHS: FloatArray, bandNumber: Int, reverseScale: Boolean = false): Bitmap {
         val alpha :Byte = (255).toByte()
 
-        val byteBuffer = ByteBuffer.allocate((Utils.torchWidth + 1) * (Utils.torchHeight + 1) * 4)
-        var bmp = Bitmap.createBitmap(Utils.torchWidth, Utils.torchHeight, Bitmap.Config.ARGB_8888)
+        val byteBuffer = ByteBuffer.allocate((bitmapsWidth + 1) * (bitmapsHeight + 1) * 4)
+        var bmp = Bitmap.createBitmap(bitmapsWidth, bitmapsHeight, Bitmap.Config.ARGB_8888)
 
-        val startOffset = bandNumber * Utils.torchWidth * Utils.torchHeight
-        val endOffset = (bandNumber+1) * Utils.torchWidth * Utils.torchHeight - 1
+        val startOffset = bandNumber * bitmapsWidth * bitmapsHeight
+        val endOffset = (bandNumber+1) * bitmapsWidth * bitmapsHeight - 1
 
         // mapping smallest value to 0 and largest value to 255
         val maxValue = predictedHS.maxOrNull() ?: 1.0f
@@ -404,7 +414,7 @@ class ReconstructionFragment: Fragment() {
         }
 
         bmp.copyPixelsFromBuffer(byteBuffer)
-        bmp = Bitmap.createBitmap(bmp, 0, 0, Utils.torchWidth, Utils.torchHeight, null, true)
+        bmp = Bitmap.createBitmap(bmp, 0, 0, bitmapsWidth, bitmapsHeight, null, true)
         return bmp
     }
 

@@ -12,6 +12,8 @@ class Reconstruction(context: Context, modelPath: String) {
     private var model: Module? = null
     private var mean = floatArrayOf(0.0f, 0.0f, 0.0f)
     private var std = floatArrayOf(1.0f, 1.0f, 1.0f)
+    private var bitmapsWidth = Utils.torchWidth
+    private var bitmapsHeight = Utils.torchHeight
 
     init {
         Log.i("Model Load", Utils.assetFilePath(context, modelPath).toString())
@@ -22,14 +24,15 @@ class Reconstruction(context: Context, modelPath: String) {
         return TensorImageUtils.bitmapToFloat32Tensor(bitmap, mean, std)
     }
 
+
     private fun getOneBand(tensor: Tensor): Tensor {
         val tensorDoubleArray = tensor.dataAsFloatArray
-        val floatArray = FloatArray((Utils.torchWidth*Utils.torchHeight))
+        val floatArray = FloatArray((bitmapsHeight*bitmapsWidth))
         Log.i("Tensor size", "${tensorDoubleArray.size}")
-        for (i in 0 until (Utils.torchWidth*Utils.torchHeight)){
+        for (i in 0 until (bitmapsHeight*bitmapsWidth)){
             floatArray[i] = tensorDoubleArray[i]
         }
-        val size = longArrayOf(1, 1, Utils.torchHeight.toLong(), Utils.torchWidth.toLong())
+        val size = longArrayOf(1, 1, bitmapsHeight.toLong(), bitmapsWidth.toLong())
         return Tensor.fromBlob(floatArray, size)
     }
 
@@ -40,11 +43,14 @@ class Reconstruction(context: Context, modelPath: String) {
         System.arraycopy(rgbArray, 0, concatenated, 0, rgbArray.size)
         System.arraycopy(nirArray, 0, concatenated, rgbArray.size, nirArray.size)
         Log.i("Concatenated Array Size", "${concatenated.size}")
-        val size = longArrayOf(1, 4, Utils.torchHeight.toLong(), Utils.torchWidth.toLong())
+        val size = longArrayOf(1, 4, bitmapsHeight.toLong(), bitmapsWidth.toLong())
         return Tensor.fromBlob(concatenated, size)
     }
 
     fun predict(rgbBitmap: Bitmap, nirBitmap: Bitmap): FloatArray {
+        bitmapsWidth = rgbBitmap.width
+        bitmapsHeight = rgbBitmap.height
+
         val startTime = System.currentTimeMillis()
         val rgbTensor: Tensor = preprocess(rgbBitmap)
         val nirTensor: Tensor = getOneBand(preprocess(nirBitmap))

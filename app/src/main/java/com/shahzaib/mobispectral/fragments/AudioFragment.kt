@@ -29,15 +29,19 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
 import androidx.navigation.Navigation
 import androidx.navigation.fragment.navArgs
+import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
 import com.opencsv.CSVWriter
 import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.databinding.FragmentAudioBinding
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.*
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.util.*
+import kotlin.collections.Map
 import kotlin.math.abs
 import kotlin.math.log10
 
@@ -71,6 +75,7 @@ class AudioFragment: Fragment() {
 
     private lateinit var sharedPreferences: SharedPreferences
     private var objectID = 0
+    private lateinit var graphView: GraphView
 
     private fun initializingNumberPickers(numberPicker: NumberPicker, array: Array<String>) {
         numberPicker.minValue = 0
@@ -112,18 +117,19 @@ class AudioFragment: Fragment() {
             val uri = Uri.fromParts("package", requireContext().packageName, null)
             intent.data = uri
             startActivity(intent)
-        } else {
-            Thread{
-                try {
-                    val fos = FileOutputStream(newImagePath)
-                    rgbBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
-            }.start()
-
-            MediaScannerConnection.scanFile(context, arrayOf(newImagePath.absolutePath), null, null)
         }
+        Thread{
+            try {
+                val fos = FileOutputStream(newImagePath)
+                rgbBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+                fos.flush()
+                fos.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }.start()
+
+        MediaScannerConnection.scanFile(context, arrayOf(newImagePath.absolutePath), null, null)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
@@ -136,6 +142,7 @@ class AudioFragment: Fragment() {
         sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
         objectID = sharedPreferences.getInt("objectID", 0)
         fragmentAudioBinding.objectIDTextView.text = getString(R.string.object_id_string, objectID)
+        graphView = fragmentAudioBinding.graphView
 
         return fragmentAudioBinding.root
     }
@@ -143,16 +150,14 @@ class AudioFragment: Fragment() {
     override fun onStart() {
         super.onStart()
 
-        val graphView = fragmentAudioBinding.graphView
         graphView.gridLabelRenderer.horizontalAxisTitle = "Frequency (Hz)"
         graphView.gridLabelRenderer.verticalAxisTitle = "Level (dBSPL)"
-//        graphView.title = "Click on the image to show the signature"
         graphView.viewport.isXAxisBoundsManual = true
-        graphView.viewport.setMaxX(44.1)
+        graphView.viewport.setMaxX(SAMPLE_RATE.toDouble())
         graphView.viewport.setMinX(0.0)
         graphView.viewport.isYAxisBoundsManual = true
-        graphView.viewport.setMaxY(90.0)
-        graphView.viewport.setMinY(0.0)
+//        graphView.viewport.setMaxY(90.0)
+//        graphView.viewport.setMinY(0.0)
         graphView.gridLabelRenderer.setHumanRounding(true)
 
         fragmentAudioBinding.overlayImageView.setImageBitmap(BitmapFactory.decodeFile(args.filePath))
@@ -207,31 +212,39 @@ class AudioFragment: Fragment() {
 
     @SuppressLint("MissingPermission")
     fun startRecording() {
-        Thread {
-            val audioRecord =
-                AudioRecord(AUDIO_SOURCE, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, BUFFER_SIZE)
-            val buffer = ShortArray(BUFFER_SIZE / 2)
-            audioRecord.startRecording()
-            val recordingDuration = 5 * 1000 // 5 seconds in milliseconds
-            val startTime = System.currentTimeMillis()
-            var currentTime = startTime
+        val audioRecord =
+            AudioRecord(AUDIO_SOURCE, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, BUFFER_SIZE)
+        val buffer = ByteArray(BUFFER_SIZE / 2)
+        //First check whether the above object actually initialized
+        if (audioRecord.state != AudioRecord.STATE_INITIALIZED) {
+            Log.e("AudioRecord", "error initializing AudioRecord")
+        }
+        audioRecord.startRecording()
+        val recordingDuration = 5 * 1000 // 5 seconds in milliseconds
+        val startTime = System.currentTimeMillis()
+        var currentTime = startTime
 
-            while (currentTime - startTime < recordingDuration) {
-                audioRecord.read(buffer, 0, buffer.size)
-                plotData(buffer)
+        while (currentTime - startTime < recordingDuration) {
+            audioRecord.read(buffer, 0, buffer.size)
+            plotData(buffer)
+            currentTime = System.currentTimeMillis()
+        }
+        audioRecord.stop()
+        audioRecord.release()
+        val file = File(audioDirectory, FILE_NAME.format(args.fileFormat))
 
-                currentTime = System.currentTimeMillis()
-            }
-            try {
-                saveAudio(buffer)
-            } catch (e: IOException) {
-                Log.i("Audio File Saved", "File Not saved")
-                e.printStackTrace()
-            }
-            audioRecord.stop()
-            audioRecord.release()
-            recording = false
-        }.start()
+        try {
+            file.writeBytes(buffer)
+        } catch (e: IOException) {
+            Log.i("Audio File Saved", "File Not saved")
+            e.printStackTrace()
+        }
+        // Notify the media scanner about the new file
+
+        MediaScannerConnection.scanFile(context, arrayOf(file.absolutePath), null, null)
+        updateCSV(file.absolutePath)
+
+        recording = false
     }
 
     private fun highPassFilter(audioData: ShortArray): ShortArray {
@@ -252,25 +265,9 @@ class AudioFragment: Fragment() {
         return filteredData
     }
 
-    private fun saveAudio(audioData: ShortArray) {
-
-        val file = File(audioDirectory, FILE_NAME.format(args.fileFormat))
-        Log.i("Audio File Saved", "$externalStorageDirectory, $audioDirectory, ${file.absolutePath}")
-        FileOutputStream(file).use {
-            val byteBuffer = ByteBuffer.allocate(audioData.size * 2)
-            byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
-            for (data in audioData) {
-                Log.i("Audio File Saved", "$data")
-                byteBuffer.putShort(data)
-            }
-            it.write(byteBuffer.array(), 0, byteBuffer.position())
-        }
-
-        // Notify the media scanner about the new file
-        MediaScannerConnection.scanFile(context, arrayOf(file.absolutePath), null, null)
-
+    private fun updateCSV(absolutePath: String) {
         val csvFile = File(audioDirectory.parent, CSV_FILE)
-        val entries = arrayOf(File(newImagePath.toURI()).absoluteFile.toString(), file.absolutePath)
+        val entries = arrayOf(File(newImagePath.toURI()).absoluteFile.toString(), absolutePath)
         val writer = CSVWriter(
             FileWriter(csvFile, true),
             ',',
@@ -283,27 +280,26 @@ class AudioFragment: Fragment() {
         MediaScannerConnection.scanFile(context, arrayOf(csvFile.absolutePath), null, null)
     }
 
-    private fun plotData(data: ShortArray) {
+    private fun plotData(data: ByteArray) {
         // dbSPL: decibels relative to 20 micropascals
         val size = data.size
-        val dBSPL = FloatArray(size)
-        val frequency = FloatArray(size)
+        val dBSPL = DoubleArray(size)
+        val frequency = DoubleArray(size)
 
         for (i in 0 until size) {
             val pressure = abs(data[i].toDouble() / Short.MAX_VALUE)
             // 32768f is the maximum amplitude value of a 16-bit audio sample
             // 20e-6f is the pressure at 20 micropascals
-            dBSPL[i] = 20f * log10((pressure.toFloat() / 20e-6f) + 0.001f)
-            frequency[i] = (i * SAMPLE_RATE / size.toFloat())/1000.0f
+            dBSPL[i] = 20.0 * log10((pressure.toFloat() / 20e-6f) + 0.001f).toDouble()
+            frequency[i] = (i * SAMPLE_RATE / size).toDouble()
+//            Log.i("Frequency", "${frequency[i]}, ${dBSPL[i]}")
         }
 
         val series = LineGraphSeries<DataPoint>()
-        for (i in dBSPL.indices) {
-            series.appendData(DataPoint(frequency[i].toDouble(), dBSPL[i].toDouble()), true, size)
-        }
-        val graphView = fragmentAudioBinding.graphView
-        graphView.removeAllSeries()
-        graphView.addSeries(series)
+        val dataPoints = frequency.zip(dBSPL).mapIndexed { _, pair -> DataPoint(pair.first, pair.second)}
+        series.resetData(dataPoints.toTypedArray())
+//        graphView.removeAllSeries()
+//        graphView.addSeries(series)
     }
 
     companion object {
