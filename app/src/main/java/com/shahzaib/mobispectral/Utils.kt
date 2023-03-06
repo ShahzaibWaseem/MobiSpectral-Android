@@ -2,14 +2,20 @@ package com.shahzaib.mobispectral
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.ImageFormat
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
+import android.os.Build
 import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import org.opencv.android.Utils
+import org.opencv.core.*
+import org.opencv.imgproc.Imgproc
+import org.opencv.video.Video
 
 object Utils {
     const val previewHeight = 800
@@ -57,11 +63,14 @@ object Utils {
                 Log.i("Available Cameras", camera.title)
                 if (camera.sensorArrangement == CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_NIR)
                     cameraIdNIR = camera.cameraId
-                if (camera.sensorArrangement == CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGGB)
+                else
                     cameraIdRGB = camera.cameraId
             }
-            if (cameraIdNIR == "")
-                cameraIdNIR = "No NIR Camera"
+            // OnePlus has hidden their Photochrom camera, so accessing it via Intent.
+            if (cameraIdNIR == "") {
+                cameraIdNIR = if (Build.PRODUCT == "OnePlus8Pro") "OnePlus" else "No NIR Camera"
+                cameraIdRGB = if (Build.PRODUCT == "OnePlus8Pro") "0" else cameraIdRGB
+            }
         }
         else {
             cameraIdRGB = cameraList[0].cameraId
@@ -69,6 +78,48 @@ object Utils {
         }
         Log.i("Camera", "$cameraIdRGB $cameraIdNIR")
         return Pair(cameraIdRGB, cameraIdNIR)
+//        return Pair("2", "1")
+    }
+
+    fun alignImages(image1: Bitmap, image2: Bitmap): Bitmap {
+        val image1Mat = Mat(image1.height, image1.width, CvType.CV_8UC3)
+        val image2Mat = Mat(image2.height, image2.width, CvType.CV_8UC3)
+        Utils.bitmapToMat(image1, image1Mat)
+        Utils.bitmapToMat(image2, image2Mat)
+
+        val image1Gray = Mat(image1.height, image1.width, CvType.CV_8UC1)
+        val image2Gray = Mat(image2.height, image2.width, CvType.CV_8UC1)
+
+        Imgproc.cvtColor(image1Mat, image1Gray, Imgproc.COLOR_RGB2GRAY)
+        Imgproc.cvtColor(image2Mat, image2Gray, Imgproc.COLOR_RGB2GRAY)
+
+        val warpMode = Video.MOTION_TRANSLATION
+
+        val warpMatrix = if (warpMode == Video.MOTION_HOMOGRAPHY) Mat.eye(3, 3, CvType.CV_32F) else Mat.eye(2, 3, CvType.CV_32F)
+        val iterations = 10000
+        val terminationEps = 1e-10
+        val terminationCriteria = TermCriteria(TermCriteria.EPS + TermCriteria.COUNT, iterations, terminationEps)
+        val image2Aligned = Mat(image1.height, image1.width, CvType.CV_8UC3)
+
+        Video.findTransformECC(image1Gray, image2Gray, warpMatrix, warpMode, terminationCriteria)
+        if (warpMode == Video.MOTION_HOMOGRAPHY)
+            Imgproc.warpPerspective(image2Mat, image2Aligned, warpMatrix, image1Mat.size(), Imgproc.INTER_LINEAR + Imgproc.WARP_INVERSE_MAP)
+        else
+            Imgproc.warpAffine(image2Mat, image2Aligned, warpMatrix, image1Mat.size(), Imgproc.INTER_LINEAR + Imgproc.WARP_INVERSE_MAP)
+
+        val img2Threshold = Mat(image2Gray.height(), image2Gray.width(), CvType.CV_8UC1)
+        val contours: List<MatOfPoint> = ArrayList<MatOfPoint>()
+        val hierarchy = Mat()
+
+        Imgproc.cvtColor(image2Aligned, image2Gray, Imgproc.COLOR_RGB2GRAY)
+        Imgproc.threshold(image2Gray, img2Threshold, 1.0, 255.0, Imgproc.THRESH_BINARY)
+        Imgproc.findContours(img2Threshold, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE)
+        val cropCoordinates = Imgproc.boundingRect(contours[0])
+        val image2AlignedCropped = image2Aligned.submat(cropCoordinates)
+        val image2AlignedCroppedBitmap = Bitmap.createBitmap(image2AlignedCropped.width(), image2AlignedCropped.height(), Bitmap.Config.RGB_565)
+        Utils.matToBitmap(image2AlignedCropped, image2AlignedCroppedBitmap)
+
+        return image2AlignedCroppedBitmap
     }
 }
 
@@ -109,6 +160,12 @@ fun enumerateCameras(cameraManager: CameraManager): MutableList<FormatItem> {
     // Get list of all compatible cameras
     val cameraIds = cameraManager.cameraIdList.filter {
         val characteristics = cameraManager.getCameraCharacteristics(it)
+        val orientation = lensOrientationString(characteristics.get(CameraCharacteristics.LENS_FACING)!!)
+
+        Log.i("ALl Cameras", "${characteristics.physicalCameraIds}")
+        Log.i("All Cameras", "$it, ${characteristics.get(CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT)}, $orientation")
+
+
         val capabilities = characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)
         capabilities?.contains(CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE) ?: false
     }
@@ -125,7 +182,7 @@ fun enumerateCameras(cameraManager: CameraManager): MutableList<FormatItem> {
                 FormatItem("$orientation JPEG ($id) NIR", id, ImageFormat.JPEG, orientation,
                     CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_NIR))
 
-        else if (characteristics.get(CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT) == CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGGB)
+        else
             availableCameras.add(
                 FormatItem("$orientation JPEG ($id)", id, ImageFormat.JPEG, orientation,
                     CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGGB))

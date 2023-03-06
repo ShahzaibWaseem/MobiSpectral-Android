@@ -1,22 +1,25 @@
 package com.shahzaib.mobispectral.fragments
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.AlertDialog
-import android.content.Context
-import android.content.DialogInterface
-import android.content.SharedPreferences
+import android.content.*
+import android.database.Cursor
 import android.graphics.*
 import android.hardware.camera2.*
 import android.media.Image
 import android.media.ImageReader
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
+import android.provider.MediaStore
 import android.util.Log
 import android.util.Size
 import android.view.*
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -92,6 +95,17 @@ class CameraFragment: Fragment() {
     private lateinit var sharedPreferences: SharedPreferences
     private var mobiSpectralApplicationID = 0
 
+    private val myActivityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            fragmentCameraBinding
+            // Handle the result
+            val data: Intent? = result.data
+            Log.i("Image", "Path: ${getRealPathFromURI(data?.data!!)}")
+            nirAbsolutePath = getRealPathFromURI(data.data!!)
+
+        }
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _fragmentCameraBinding = FragmentCameraBinding.inflate(inflater, container, false)
         sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
@@ -102,6 +116,8 @@ class CameraFragment: Fragment() {
         }
         cameraIdRGB = Utils.getCameraIDs(requireContext(), mobiSpectralApplicationID).first
         cameraIdNIR = Utils.getCameraIDs(requireContext(), mobiSpectralApplicationID).second
+        if (cameraIdNIR == "OnePlus")
+            startMyActivityForResult()
         Log.i("CameraIDs Fragment", "RGB $cameraIdRGB, NIR $cameraIdNIR")
         return fragmentCameraBinding.root
     }
@@ -137,7 +153,7 @@ class CameraFragment: Fragment() {
 //                fragmentCameraBinding.viewFinder.setAspectRatio(previewSize.width, previewSize.height)
                 holder.setFixedSize(previewSize.width, previewSize.height)
 
-                Log.i("Preview Size", "AutoFitSurface Holder: Width${fragmentCameraBinding.viewFinder.width}, Height ${fragmentCameraBinding.viewFinder.height}")
+                Log.i("Preview Size", "AutoFitSurface Holder: Width ${fragmentCameraBinding.viewFinder.width}, Height ${fragmentCameraBinding.viewFinder.height}")
 
                 // To ensure that size is set, initialize camera in the view's thread
                 view.post { initializeCamera() }
@@ -174,8 +190,9 @@ class CameraFragment: Fragment() {
         // Open the selected camera
         camera = openCamera(cameraManager, args.cameraId, cameraHandler)
 
+//        val size = if (cameraIdNIR == "OnePlus") Size(Utils.previewHeight, Utils.previewWidth) else Size(Utils.previewWidth, Utils.previewHeight)
         val size = Size(Utils.previewWidth, Utils.previewHeight)
-        Log.i("Size", "$size")
+        Log.i("Size", "W: ${size.width} H: ${size.height}")
 
         imageReader = ImageReader.newInstance(
             size.width, size.height, args.pixelFormat, IMAGE_BUFFER_SIZE
@@ -242,6 +259,20 @@ class CameraFragment: Fragment() {
                             )
                         }
                     }
+                    else if (cameraIdNIR == "OnePlus") {
+//                        val photochromIntent = Intent()
+//                        photochromIntent.component = ComponentName("com.oneplus.factorymode", "com.oneplus.factorymode/.camera.manualtest.CameraManualTest")
+//
+//                        startActivity(photochromIntent)
+//                        startMyActivityForResult()
+                        // Display the photo taken to user
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            navController.navigate(
+                                CameraFragmentDirections.actionCameraToJpegViewer(rgbAbsolutePath, nirAbsolutePath)
+                            )
+                        }
+
+                    }
                     else {
                         // Display the photo taken to user
                         lifecycleScope.launch(Dispatchers.Main) {
@@ -265,6 +296,22 @@ class CameraFragment: Fragment() {
         }
     }
 
+    fun startMyActivityForResult() {
+        val galleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        myActivityResultLauncher.launch(galleryIntent)
+    }
+
+    private fun getRealPathFromURI(contentUri: Uri): String {
+        val proj = arrayOf(MediaStore.Images.Media.DATA)
+        val cursor: Cursor = requireContext().contentResolver.query(contentUri, proj, null, null, null)!!
+        val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+        cursor.moveToFirst()
+        Log.i("Image", "ContentURI: $contentUri, Cursor: $cursor, Column Index: $columnIndex")
+        val absolutePath = cursor.getString(columnIndex)
+        cursor.close()
+        return absolutePath
+    }
+
     /** Opens the camera and returns the opened device (as the result of the suspend coroutine) */
     @SuppressLint("MissingPermission")
     private suspend fun openCamera(
@@ -274,7 +321,7 @@ class CameraFragment: Fragment() {
     ): CameraDevice = suspendCancellableCoroutine { cont ->
         Log.i("CameraID", cameraId)
 
-        manager.openCamera(cameraId, object : CameraDevice.StateCallback() {
+        manager.openCamera(cameraId, object: CameraDevice.StateCallback() {
             override fun onOpened(device: CameraDevice) = cont.resume(device)
 
             override fun onDisconnected(device: CameraDevice) {
@@ -323,19 +370,17 @@ class CameraFragment: Fragment() {
      * template. It performs synchronization between the [CaptureResult] and the [Image] resulting
      * from the single capture, and outputs a [CombinedCaptureResult] object.
      */
-    private suspend fun takePhoto(): CombinedCaptureResult
-            = suspendCoroutine { cont ->
+    private suspend fun takePhoto(): CombinedCaptureResult = suspendCoroutine { cont ->
 
         // Flush any images left in the image reader
         @Suppress("ControlFlowWithEmptyBody")
-        while (imageReader.acquireNextImage() != null) {
-        }
+        while (imageReader.acquireNextImage() != null) {}
 
         // Start a new image queue
         val imageQueue = ArrayBlockingQueue<Image>(IMAGE_BUFFER_SIZE)
         imageReader.setOnImageAvailableListener({ reader ->
             val image = reader.acquireNextImage()
-            Log.d(TAG, "Image available in queue: ${image.timestamp}")
+            Log.d(TAG, "Image available in queue: ${image.timestamp} W ${image.width}, H ${image.height}")
 
             imageQueue.add(image)
         }, imageReaderHandler)
@@ -369,16 +414,14 @@ class CameraFragment: Fragment() {
                             image.format != ImageFormat.DEPTH_JPEG &&
                             image.timestamp != resultTimestamp
                         ) continue
-                        Log.d(TAG, "Matching image dequeued: ${image.timestamp}")
+                        Log.d(TAG, "Matching image dequeued: ${image.timestamp}, W ${image.width}, H ${image.height}")
 
                         // Unset the image reader listener
                         imageReaderHandler.removeCallbacks(timeoutRunnable)
                         imageReader.setOnImageAvailableListener(null, null)
 
                         // Clear the queue of images, if there are left
-                        while (imageQueue.size > 0) {
-                            imageQueue.take().close()
-                        }
+                        while (imageQueue.size > 0) { imageQueue.take().close() }
                         Log.d(TAG, "Capture Request DIMENSIONS: width ${image.width} Height: ${image.height}")
 
                         // Build the result and resume progress
@@ -427,11 +470,12 @@ class CameraFragment: Fragment() {
                 val bytes = ByteArray(buffer.remaining()).apply { buffer.get(this) }
 
                 var rotatedBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null)
-                val correctionMatrix = Matrix().apply { postRotate(-90F); postScale(-1F, 1F); }
+                val correctionMatrix = Matrix().apply { postRotate(90F); postScale(1F, 1F); }
                 rotatedBitmap = Bitmap.createBitmap(rotatedBitmap, 0, 0, rotatedBitmap.width, rotatedBitmap.height, correctionMatrix, true)
                 val stream = ByteArrayOutputStream()
                 rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
                 val rotatedBytes = stream.toByteArray()
+                Log.i("Save Photo", "Bitmap Size: W ${rotatedBitmap.width} H ${rotatedBitmap.height}, byte size: ${bytes.size}, rotated Bytes Size: ${rotatedBytes.size} buffer Size: $buffer")
 
                 try {
                     val nir = if (args.cameraId == cameraIdNIR) "NIR" else "RGB"
@@ -487,7 +531,8 @@ class CameraFragment: Fragment() {
 
     companion object {
         private val TAG = CameraFragment::class.java.simpleName
-        private lateinit var rgbAbsolutePath: String
+        lateinit var rgbAbsolutePath: String
+        lateinit var nirAbsolutePath: String
         private lateinit var fileFormat: String
 
         /** Maximum number of images that will be held in the reader's buffer */
@@ -497,11 +542,8 @@ class CameraFragment: Fragment() {
         private const val IMAGE_CAPTURE_TIMEOUT_MILLIS: Long = 5000
 
         /** Helper data class used to hold capture metadata with their associated image */
-        data class CombinedCaptureResult(
-            val image: Image,
-            val metadata: CaptureResult,
-            val format: Int
-        ) : Closeable {
+        data class CombinedCaptureResult(val image: Image, val metadata: CaptureResult, val format: Int)
+            : Closeable {
             override fun close() = image.close()
         }
 

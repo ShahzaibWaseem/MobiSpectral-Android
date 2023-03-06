@@ -28,6 +28,7 @@ import com.shahzaib.mobispectral.Utils
 import com.shahzaib.mobispectral.databinding.FragmentImageviewerBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.opencv.android.OpenCVLoader
 import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -35,7 +36,7 @@ import java.nio.ByteBuffer
 import kotlin.math.max
 
 class ImageViewerFragment: Fragment() {
-    private val correctionMatrix = Matrix().apply {  }
+    private val correctionMatrix = Matrix().apply { postRotate(90F); }
 
     /** AndroidX navigation arguments */
     private val args: ImageViewerFragmentArgs by navArgs()
@@ -65,13 +66,15 @@ class ImageViewerFragment: Fragment() {
     }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View {
+        OpenCVLoader.initDebug()
         _fragmentImageViewerBinding = FragmentImageviewerBinding.inflate(inflater, container, false)
         fragmentImageViewerBinding.viewpager.apply {
+
             offscreenPageLimit=2
             adapter = GenericListAdapter(bitmapList,
                 itemViewFactory = { imageViewFactory() }) { view, item, _ ->
                 view as ImageView
-//                view.scaleType = ImageView.ScaleType.FIT_XY
+                view.scaleType = ImageView.ScaleType.FIT_XY
                 Glide.with(view).load(item).into(view)
             }
         }
@@ -99,12 +102,13 @@ class ImageViewerFragment: Fragment() {
             val (bufferRGB, bufferNIR) = loadInputBuffer()
 
             // Load the main JPEG image
-            var rgbImageBitmap = decodeBitmap(bufferRGB, bufferRGB.size, "RGB")
-            var nirImageBitmap = decodeBitmap(bufferNIR, bufferNIR.size, "NIR")
+            var rgbImageBitmap = decodeBitmap(bufferRGB, bufferRGB.size, true)
+            var nirImageBitmap = decodeBitmap(bufferNIR, bufferNIR.size, false)
+
+            nirImageBitmap = Utils.alignImages(rgbImageBitmap, nirImageBitmap)
+            rgbImageBitmap = Utils.alignImages(nirImageBitmap, rgbImageBitmap)
             Log.i("Bitmap Size", "Decoded RGB: ${rgbImageBitmap.width} x ${rgbImageBitmap.height}")
             Log.i("Bitmap Size", "Decoded NIR: ${nirImageBitmap.width} x ${nirImageBitmap.height}")
-
-
 
             val sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
             val advancedControlOption = when (sharedPreferences.getString("option", "Advanced Option (with Signature Analysis)")!!) {
@@ -216,19 +220,26 @@ class ImageViewerFragment: Fragment() {
     }
 
     /** Utility function used to decode a [Bitmap] from a byte array */
-    private fun decodeBitmap(buffer: ByteArray, length: Int, RGB: String): Bitmap {
-        val bitmap: Bitmap
+    private fun decodeBitmap(buffer: ByteArray, length: Int, isRGB: Boolean): Bitmap {
+        var bitmap: Bitmap
 
         // Load bitmap from given buffer
         val decodedBitmap = BitmapFactory.decodeByteArray(buffer, 0, length, bitmapOptions)
-        Log.i("Bitmap Size", "${decodedBitmap.width} x ${decodedBitmap.height}")
-        Log.i("Decode Bitmap", "${Utils.aligningFactorX} + ${Utils.torchWidth} = ${Utils.torchWidth + Utils.aligningFactorX} (${decodedBitmap.width})")
-        Log.i("Decode Bitmap", "${Utils.aligningFactorY} + ${Utils.torchHeight} = ${Utils.torchHeight + Utils.aligningFactorY} (${decodedBitmap.height})")
-        bitmap = if (RGB == "RGB")
-            Bitmap.createBitmap(decodedBitmap, Utils.aligningFactorX, Utils.aligningFactorY, Utils.torchWidth, Utils.torchHeight, correctionMatrix, true)
-        else
-            Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, correctionMatrix, false)
+        if (isRGB) RGB_DIMENSION = Pair(decodedBitmap.width, decodedBitmap.height)
 
+        Log.i("Bitmap Size", "${decodedBitmap.width} x ${decodedBitmap.height}")
+//        Log.i("Decode Bitmap", "${Utils.aligningFactorX} + ${Utils.torchWidth} = ${Utils.torchWidth + Utils.aligningFactorX} (${decodedBitmap.width})")
+//        Log.i("Decode Bitmap", "${Utils.aligningFactorY} + ${Utils.torchHeight} = ${Utils.torchHeight + Utils.aligningFactorY} (${decodedBitmap.height})")
+
+        if (isRGB)
+            bitmap = Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, null, false)
+        else {
+            bitmap = if (decodedBitmap.width > decodedBitmap.height)
+                Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, correctionMatrix, false)
+            else
+                Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, null, false)
+            bitmap = Bitmap.createScaledBitmap(bitmap, RGB_DIMENSION.first, RGB_DIMENSION.second, true)
+        }
         // Transform bitmap orientation using provided metadata
         return bitmap
     }
@@ -236,5 +247,6 @@ class ImageViewerFragment: Fragment() {
     companion object {
         /** Maximum size of [Bitmap] decoded */
         private const val DOWNSAMPLE_SIZE: Int = 1024  // 1MP
+        private lateinit var RGB_DIMENSION: Pair<Int, Int>
     }
 }

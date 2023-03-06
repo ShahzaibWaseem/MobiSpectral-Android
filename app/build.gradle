@@ -82,6 +82,7 @@ dependencies {
     implementation 'com.microsoft.onnxruntime:onnxruntime-android:latest.release'
     implementation 'com.google.android.material:material:1.6.0'
     implementation "androidx.cardview:cardview:1.0.0"
+    implementation project(path: ':openCVLibrary343')
 
     // Navigation library
     def nav_version = '2.5.3'
