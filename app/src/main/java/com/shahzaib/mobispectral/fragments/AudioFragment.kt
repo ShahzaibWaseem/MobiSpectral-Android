@@ -109,11 +109,12 @@ class AudioFragment: Fragment() {
                 Manifest.permission.MANAGE_EXTERNAL_STORAGE
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-            } else {
-                TODO("VERSION.SDK_INT < R")
-            }
+//            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+//            } else {
+//                TODO("VERSION.SDK_INT < R")
+//            }
+            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+
             val uri = Uri.fromParts("package", requireContext().packageName, null)
             intent.data = uri
             startActivity(intent)

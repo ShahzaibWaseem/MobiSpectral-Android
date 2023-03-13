@@ -9,13 +9,12 @@ import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
 import android.os.Build
 import android.util.Log
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
-import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
 import org.opencv.video.Video
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 
 object Utils {
     const val previewHeight = 800
@@ -78,7 +77,6 @@ object Utils {
         }
         Log.i("Camera", "$cameraIdRGB $cameraIdNIR")
         return Pair(cameraIdRGB, cameraIdNIR)
-//        return Pair("2", "1")
     }
 
     fun alignImages(image1: Bitmap, image2: Bitmap): Bitmap {
@@ -127,6 +125,7 @@ object Utils {
 data class FormatItem(val title: String, val cameraId: String, val format: Int, val orientation: String, val sensorArrangement: Int)
 
 data class ShelfLifeCSV(val image_path: String, val audio_path: String)
+
 /** Helper function used to convert a lens orientation enum into a human-readable string */
 private fun lensOrientationString(value: Int) = when(value) {
     CameraCharacteristics.LENS_FACING_BACK -> "Back"
@@ -161,10 +160,11 @@ fun enumerateCameras(cameraManager: CameraManager): MutableList<FormatItem> {
     val cameraIds = cameraManager.cameraIdList.filter {
         val characteristics = cameraManager.getCameraCharacteristics(it)
         val orientation = lensOrientationString(characteristics.get(CameraCharacteristics.LENS_FACING)!!)
+        val isNIR = if(characteristics.get(CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT)
+            == CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_NIR) "NIR" else "RGB"
 
         Log.i("ALl Cameras", "${characteristics.physicalCameraIds}")
-        Log.i("All Cameras", "$it, ${characteristics.get(CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT)}, $orientation")
-
+        Log.i("All Cameras", "$it, $isNIR, $orientation")
 
         val capabilities = characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)
         capabilities?.contains(CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE) ?: false
@@ -174,18 +174,17 @@ fun enumerateCameras(cameraManager: CameraManager): MutableList<FormatItem> {
     cameraIds.forEach { id ->
         val characteristics = cameraManager.getCameraCharacteristics(id)
         val orientation = lensOrientationString(characteristics.get(CameraCharacteristics.LENS_FACING)!!)
+        val isNIR = if(characteristics.get(CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT)
+            == CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_NIR) "NIR" else "RGB"
 
         // All cameras *must* support JPEG output so we don't need to check characteristics
         // Return cameras that support NIR Filter Arrangement
-        if (characteristics.get(CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT) == CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_NIR)
-            availableCameras.add(
-                FormatItem("$orientation JPEG ($id) NIR", id, ImageFormat.JPEG, orientation,
-                    CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_NIR))
-
+        if (isNIR == "NIR")
+            availableCameras.add(FormatItem("$orientation JPEG ($id) $isNIR", id, ImageFormat.JPEG,
+                orientation, CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_NIR))
         else
-            availableCameras.add(
-                FormatItem("$orientation JPEG ($id)", id, ImageFormat.JPEG, orientation,
-                    CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGGB))
+            availableCameras.add(FormatItem("$orientation JPEG ($id)", id, ImageFormat.JPEG,
+                orientation, CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGGB))
     }
 
     return availableCameras
