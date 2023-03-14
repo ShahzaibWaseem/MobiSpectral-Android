@@ -7,14 +7,19 @@ import android.graphics.ImageFormat
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
+import android.media.MediaScannerConnection
 import android.os.Build
+import android.os.Environment
 import android.util.Log
+import com.opencsv.CSVWriter
+import com.shahzaib.mobispectral.fragments.AudioFragment
 import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
 import org.opencv.video.Video
 import java.io.File
 import java.io.FileOutputStream
+import java.io.FileWriter
 import java.io.IOException
 
 object Utils {
@@ -158,7 +163,11 @@ data class FormatItem(val title: String, val cameraId: String, val format: Int, 
 data class MobiSpectralCSVFormat(val originalImageRGB: String, val originalImageNIR: String,
                                  val processedImageRGB: String, val processedImageNIR: String,
                                  val actualLabel: String, val predictedLabel: String,
-                                 val memoryConsumption: Long)
+                                 val memoryConsumption: String) {
+    fun csvFormat(): Array<String> {
+        return arrayOf("$originalImageRGB", "$originalImageNIR", "$processedImageRGB", "$processedImageNIR", "$actualLabel", "$predictedLabel", "$memoryConsumption")
+    }
+}
 data class ShelfLifeCSV(val image_path: String, val audio_path: String)
 
 /** Helper function used to convert a lens orientation enum into a human-readable string */
@@ -223,4 +232,29 @@ fun enumerateCameras(cameraManager: CameraManager): MutableList<FormatItem> {
     }
 
     return availableCameras
+}
+
+fun makeFolderInRoot (directoryPath: String, context: Context) {
+    val externalStorageDirectory = Environment.getExternalStorageDirectory().toString()
+    val directory = File(externalStorageDirectory, "/$directoryPath")
+    if (!directory.exists()) {
+        directory.mkdirs()
+    }
+    val csvFile = File(directory.parent, "MobiSpectralLogs.csv")
+    if (! csvFile.exists()) {
+        val header = MobiSpectralCSVFormat("Original RGB Path", "Original NIR Path",
+            "Processed RGB Path", "Processed NIR Path",
+            "Actual Label", "Predicted Label", "Memory Consumption")
+
+        val writer = CSVWriter(
+            FileWriter(csvFile, true),
+            ',',
+            CSVWriter.NO_QUOTE_CHARACTER,
+            CSVWriter.DEFAULT_ESCAPE_CHARACTER,
+            "\r\n"
+        )
+        writer.writeNext(header.csvFormat())
+        writer.close()
+        MediaScannerConnection.scanFile(context, arrayOf(csvFile.absolutePath), null, null)
+    }
 }

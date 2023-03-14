@@ -28,6 +28,7 @@ import com.shahzaib.mobispectral.MainActivity
 import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.Utils
 import com.shahzaib.mobispectral.databinding.FragmentImageviewerBinding
+import com.shahzaib.mobispectral.makeFolderInRoot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.opencv.android.OpenCVLoader
@@ -70,6 +71,7 @@ class ImageViewerFragment: Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View {
         OpenCVLoader.initDebug()
+        makeFolderInRoot("MobiSpectral/processedImages", requireContext())
         _fragmentImageViewerBinding = FragmentImageviewerBinding.inflate(inflater, container, false)
         fragmentImageViewerBinding.viewpager.apply {
             offscreenPageLimit=2
@@ -149,6 +151,8 @@ class ImageViewerFragment: Fragment() {
             addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 0)
             addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 1)
 
+            // TODO: Save Images Here
+
             fragmentImageViewerBinding.button.setOnClickListener {
                 if(fragmentImageViewerBinding.radioGroup.checkedRadioButtonId == -1) {
                     fragmentImageViewerBinding.noRadioSelectedText.visibility = View.VISIBLE
@@ -158,14 +162,14 @@ class ImageViewerFragment: Fragment() {
                     val selectedOption = requireView().findViewById<RadioButton>(selectedRadio).text.toString()
                     MainActivity.actualLabel = selectedOption
                     fragmentImageViewerBinding.noRadioSelectedText.visibility = View.INVISIBLE
-                }
-                lifecycleScope.launch(Dispatchers.Main) {
-                    navController.navigate(
-                        ImageViewerFragmentDirections
-                            .actionImageViewerFragmentToReconstructionFragment2(
-                                serializeByteArrayToString(rgbImageBitmap),
-                                serializeByteArrayToString(nirImageBitmap))
-                    )
+                    lifecycleScope.launch(Dispatchers.Main) {
+                        navController.navigate(
+                            ImageViewerFragmentDirections
+                                .actionImageViewerFragmentToReconstructionFragment2(
+                                    serializeByteArrayToString(rgbImageBitmap),
+                                    serializeByteArrayToString(nirImageBitmap))
+                        )
+                    }
                 }
             }
         }
