@@ -24,5 +24,12 @@ class MainActivity : AppCompatActivity() {
     companion object {
         val MOBISPECTRAL_APPLICATION = 0
         val SHELF_LIFE_APPLICATION = 1
+        lateinit var originalImageRGB: String
+        lateinit var originalImageNIR: String
+        lateinit var processedImageRGB: String
+        lateinit var processedImageNIR: String
+        lateinit var actualLabel: String
+        lateinit var predictedLabel: String
+        var memoryConsumption: Long = 0L
     }
 }

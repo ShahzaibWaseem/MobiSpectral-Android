@@ -22,7 +22,7 @@ import com.shahzaib.mobispectral.databinding.FragmentApplicationselectorBinding
 class ApplicationSelectorFragment: Fragment() {
     private lateinit var fragmentApplicationselectorBinding: FragmentApplicationselectorBinding
     private val applicationArray: Array<String> = arrayOf("Organic Non-Organic Apple Classification",
-        "Olive Oil Adulteration", "Organic Non-Organic Kiwi Classification", "Shelf Life Prediction")
+        "Olive Oil Adulteration", "Organic Non-Organic Kiwi Classification")
 
     /** Host's navigation controller */
     private val navController: NavController by lazy {

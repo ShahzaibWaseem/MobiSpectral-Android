@@ -190,8 +190,8 @@ class CameraFragment: Fragment() {
         // Open the selected camera
         camera = openCamera(cameraManager, args.cameraId, cameraHandler)
 
-//        val size = if (cameraIdNIR == "OnePlus") Size(Utils.previewHeight, Utils.previewWidth) else Size(Utils.previewWidth, Utils.previewHeight)
-        val size = Size(Utils.previewWidth, Utils.previewHeight)
+        val size = if (cameraIdNIR == "OnePlus") Size(Utils.torchHeight, Utils.torchWidth) else Size(Utils.previewWidth, Utils.previewHeight)
+//        val size = Size(Utils.previewWidth, Utils.previewHeight)
         Log.i("Size", "W: ${size.width} H: ${size.height}")
 
         imageReader = ImageReader.newInstance(
@@ -470,7 +470,7 @@ class CameraFragment: Fragment() {
                 val bytes = ByteArray(buffer.remaining()).apply { buffer.get(this) }
 
                 var rotatedBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null)
-                val correctionMatrix = Matrix().apply { postRotate(90F); postScale(1F, 1F); }
+                val correctionMatrix = Matrix().apply { postRotate(-90F); postScale(-1F, 1F); }
                 rotatedBitmap = Bitmap.createBitmap(rotatedBitmap, 0, 0, rotatedBitmap.width, rotatedBitmap.height, correctionMatrix, true)
                 val stream = ByteArrayOutputStream()
                 rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)

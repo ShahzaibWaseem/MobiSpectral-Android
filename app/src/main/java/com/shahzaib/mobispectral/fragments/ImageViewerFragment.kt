@@ -1,6 +1,7 @@
 package com.shahzaib.mobispectral.fragments
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
@@ -13,6 +14,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.widget.ImageView
+import android.widget.RadioButton
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -45,6 +47,7 @@ class ImageViewerFragment: Fragment() {
     private val navController: NavController by lazy {
         Navigation.findNavController(requireActivity(), R.id.fragment_container)
     }
+    private lateinit var sharedPreferences: SharedPreferences
     private var _fragmentImageViewerBinding: FragmentImageviewerBinding? = null
     private val fragmentImageViewerBinding get() = _fragmentImageViewerBinding!!
     /** Default Bitmap decoding options */
@@ -69,7 +72,6 @@ class ImageViewerFragment: Fragment() {
         OpenCVLoader.initDebug()
         _fragmentImageViewerBinding = FragmentImageviewerBinding.inflate(inflater, container, false)
         fragmentImageViewerBinding.viewpager.apply {
-
             offscreenPageLimit=2
             adapter = GenericListAdapter(bitmapList,
                 itemViewFactory = { imageViewFactory() }) { view, item, _ ->
@@ -97,7 +99,7 @@ class ImageViewerFragment: Fragment() {
             }
         }
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.Main) {
             // Load input image file
             val (bufferRGB, bufferNIR) = loadInputBuffer()
 
@@ -105,12 +107,22 @@ class ImageViewerFragment: Fragment() {
             var rgbImageBitmap = decodeBitmap(bufferRGB, bufferRGB.size, true)
             var nirImageBitmap = decodeBitmap(bufferNIR, bufferNIR.size, false)
 
-            nirImageBitmap = Utils.alignImages(rgbImageBitmap, nirImageBitmap)
-            rgbImageBitmap = Utils.alignImages(nirImageBitmap, rgbImageBitmap)
+            if (rgbImageBitmap.width == nirImageBitmap.width && rgbImageBitmap.height == nirImageBitmap.height) {
+                try {
+                    nirImageBitmap = Utils.alignImages(rgbImageBitmap, nirImageBitmap)
+                    rgbImageBitmap = Utils.alignImages(nirImageBitmap, rgbImageBitmap)
+                }
+                catch (e: org.opencv.core.CvException) {
+                    e.printStackTrace()
+                }
+            }
+            else
+                rgbImageBitmap = Utils.fixedAlignment(rgbImageBitmap)
+
             Log.i("Bitmap Size", "Decoded RGB: ${rgbImageBitmap.width} x ${rgbImageBitmap.height}")
             Log.i("Bitmap Size", "Decoded NIR: ${nirImageBitmap.width} x ${nirImageBitmap.height}")
 
-            val sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
+            sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
             val advancedControlOption = when (sharedPreferences.getString("option", "Advanced Option (with Signature Analysis)")!!) {
                 "Advanced Option (with Signature Analysis)" -> true
                 "Simple Option (no Signature Analysis)" -> false
@@ -138,6 +150,15 @@ class ImageViewerFragment: Fragment() {
             addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 1)
 
             fragmentImageViewerBinding.button.setOnClickListener {
+                if(fragmentImageViewerBinding.radioGroup.checkedRadioButtonId == -1) {
+                    fragmentImageViewerBinding.noRadioSelectedText.visibility = View.VISIBLE
+                }
+                else {
+                    val selectedRadio = fragmentImageViewerBinding.radioGroup.checkedRadioButtonId
+                    val selectedOption = requireView().findViewById<RadioButton>(selectedRadio).text.toString()
+                    MainActivity.actualLabel = selectedOption
+                    fragmentImageViewerBinding.noRadioSelectedText.visibility = View.INVISIBLE
+                }
                 lifecycleScope.launch(Dispatchers.Main) {
                     navController.navigate(
                         ImageViewerFragmentDirections
@@ -147,6 +168,7 @@ class ImageViewerFragment: Fragment() {
                     )
                 }
             }
+        }
 
             fragmentImageViewerBinding.reloadButton.setOnClickListener {
                 lifecycleScope.launch(Dispatchers.Main) {
@@ -157,7 +179,6 @@ class ImageViewerFragment: Fragment() {
                     )
                 }
             }
-        }
     }
 
     private fun bitmapToByteArray(bitmap: Bitmap): ByteArray {
@@ -227,18 +248,20 @@ class ImageViewerFragment: Fragment() {
         val decodedBitmap = BitmapFactory.decodeByteArray(buffer, 0, length, bitmapOptions)
         if (isRGB) RGB_DIMENSION = Pair(decodedBitmap.width, decodedBitmap.height)
 
-        Log.i("Bitmap Size", "${decodedBitmap.width} x ${decodedBitmap.height}")
+        Log.i("Bitmap Size", "${decodedBitmap.width} x ${decodedBitmap.height} $isRGB")
 //        Log.i("Decode Bitmap", "${Utils.aligningFactorX} + ${Utils.torchWidth} = ${Utils.torchWidth + Utils.aligningFactorX} (${decodedBitmap.width})")
 //        Log.i("Decode Bitmap", "${Utils.aligningFactorY} + ${Utils.torchHeight} = ${Utils.torchHeight + Utils.aligningFactorY} (${decodedBitmap.height})")
 
-        if (isRGB)
+        if (isRGB){
             bitmap = Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, null, false)
+        }
         else {
             bitmap = if (decodedBitmap.width > decodedBitmap.height)
                 Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, correctionMatrix, false)
             else
                 Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, null, false)
-            bitmap = Bitmap.createScaledBitmap(bitmap, RGB_DIMENSION.first, RGB_DIMENSION.second, true)
+            if (Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).second == "OnePlus")
+                bitmap = Bitmap.createScaledBitmap(bitmap, RGB_DIMENSION.first, RGB_DIMENSION.second, true)
         }
         // Transform bitmap orientation using provided metadata
         return bitmap

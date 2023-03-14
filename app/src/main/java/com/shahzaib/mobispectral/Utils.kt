@@ -9,6 +9,7 @@ import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
 import android.os.Build
 import android.util.Log
+import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
 import org.opencv.video.Video
@@ -21,10 +22,14 @@ object Utils {
     const val previewWidth = 600
     const val torchHeight = 640
     const val torchWidth = 480
-    const val aligningFactorX = 83
-    const val aligningFactorY = 100
+    const val aligningFactorX = 37  //This is 37 if picture captured in portrait 83 if landscape
+    const val aligningFactorY = 100 //This stays 100
     const val croppedHeight = 400
     const val croppedWidth = 300
+
+    // Intrinsic Camera Parameters for Google Pixel 4 IR camera
+    val K_Pixel = doubleArrayOf(542.6309295733048, 0.0, 232.78423096084575, 0.0, 542.8318136934467, 337.77984524454547, 0.0, 0.0, 1.0)
+    val D_Pixel = doubleArrayOf(-0.04591876756027188, 0.4810113550965089, -1.1137694861149858, 0.4336328878297329)
 
     fun assetFilePath(context: Context, assetName: String): String? {
         val file = File(context.filesDir, assetName)
@@ -79,6 +84,32 @@ object Utils {
         return Pair(cameraIdRGB, cameraIdNIR)
     }
 
+    fun initializeMats(parameter: DoubleArray, size: Size): Mat {
+        val mat: Mat = Mat(size, 0)
+        var iter: Int = 0
+        for (row in 0..2) {
+            for (col in 0..2) {
+                mat.put(row, col, parameter[iter])
+                iter+=1
+            }
+        }
+        return mat
+    }
+
+    fun unwarp(imageNIR: Bitmap) {
+        val K: Mat = initializeMats(K_Pixel, Size(3.0, 3.0))
+        val D: Mat = initializeMats(D_Pixel, Size(4.0, 1.0))
+//        Imgproc.initUndistortRectifyMap()
+    }
+
+    fun fixedAlignment(imageRGB: Bitmap): Bitmap{
+        Log.i("Aligned RGB", "$aligningFactorX + $torchWidth = ${torchWidth + aligningFactorX} (${imageRGB.width})")
+        Log.i("Aligned RGB", "$aligningFactorY + $torchHeight = ${torchHeight + aligningFactorY} (${imageRGB.height})")
+        val alignedImageRGB = Bitmap.createBitmap(imageRGB, aligningFactorX, aligningFactorY, torchWidth, torchHeight, null, true)
+        Log.i("Aligned RGB", "Resulting Bitmap: W ${alignedImageRGB.width} H ${alignedImageRGB.height}")
+        return alignedImageRGB
+    }
+
     fun alignImages(image1: Bitmap, image2: Bitmap): Bitmap {
         val image1Mat = Mat(image1.height, image1.width, CvType.CV_8UC3)
         val image2Mat = Mat(image2.height, image2.width, CvType.CV_8UC3)
@@ -124,6 +155,10 @@ object Utils {
 /** Helper class used as a data holder for each selectable camera format item */
 data class FormatItem(val title: String, val cameraId: String, val format: Int, val orientation: String, val sensorArrangement: Int)
 
+data class MobiSpectralCSVFormat(val originalImageRGB: String, val originalImageNIR: String,
+                                 val processedImageRGB: String, val processedImageNIR: String,
+                                 val actualLabel: String, val predictedLabel: String,
+                                 val memoryConsumption: Long)
 data class ShelfLifeCSV(val image_path: String, val audio_path: String)
 
 /** Helper function used to convert a lens orientation enum into a human-readable string */
