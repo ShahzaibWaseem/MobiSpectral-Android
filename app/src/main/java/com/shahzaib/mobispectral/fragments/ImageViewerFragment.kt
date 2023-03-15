@@ -115,7 +115,7 @@ class ImageViewerFragment: Fragment() {
         }
         TabLayoutMediator(fragmentImageViewerBinding.tabLayout,
             fragmentImageViewerBinding.viewpager) { tab, position ->
-            tab.text = if (position==0) "RGB" else "NIR"
+            tab.text = if (position%2==0) "RGB" else "NIR"
         }.attach()
         return fragmentImageViewerBinding.root
     }
@@ -191,17 +191,24 @@ class ImageViewerFragment: Fragment() {
             val nirImage = File(args.filePath2)
             val nirDirectoryPath = nirImage.absolutePath.split(System.getProperty("file.separator")!!)
             val nirImageFileName = nirDirectoryPath[nirDirectoryPath.size-1]
+            saveProcessedImages(rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName)
 
             fragmentImageViewerBinding.button.setOnClickListener {
-                if (leftCrop != 0F && topCrop != 0F){
-                    rgbImageBitmap = cropImage(rgbImageBitmap, leftCrop, topCrop)
-                    nirImageBitmap = cropImage(nirImageBitmap, leftCrop, topCrop)
+                val croppedRGBImageBitmap: Bitmap
+                val croppedNIRImageBitmap: Bitmap
 
-                    addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 2)
-                    addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 3)
+                if (leftCrop != 0F && topCrop != 0F) {
+                    croppedRGBImageBitmap = cropImage(rgbImageBitmap, leftCrop, topCrop)
+                    croppedNIRImageBitmap = cropImage(nirImageBitmap, leftCrop, topCrop)
+
+                    addItemToViewPager(fragmentImageViewerBinding.viewpager, croppedRGBImageBitmap, 2)
+                    addItemToViewPager(fragmentImageViewerBinding.viewpager, croppedNIRImageBitmap, 3)
+                    saveProcessedImages(croppedRGBImageBitmap, croppedNIRImageBitmap, rgbImageFileName, nirImageFileName)
                 }
-
-                saveProcessedImages(rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName)
+                else {
+                    croppedRGBImageBitmap = rgbImageBitmap
+                    croppedNIRImageBitmap = nirImageBitmap
+                }
 
                 if(fragmentImageViewerBinding.radioGroup.checkedRadioButtonId == -1) {
                     fragmentImageViewerBinding.noRadioSelectedText.visibility = View.VISIBLE
@@ -210,6 +217,12 @@ class ImageViewerFragment: Fragment() {
                     val selectedRadio = fragmentImageViewerBinding.radioGroup.checkedRadioButtonId
                     val selectedOption = requireView().findViewById<RadioButton>(selectedRadio).text.toString()
                     MainActivity.actualLabel = selectedOption
+
+                    if (leftCrop != 0F && topCrop != 0F) {
+                        rgbImageBitmap = croppedRGBImageBitmap
+                        nirImageBitmap = croppedNIRImageBitmap
+                    }
+
                     fragmentImageViewerBinding.noRadioSelectedText.visibility = View.INVISIBLE
                     lifecycleScope.launch(Dispatchers.Main) {
                         navController.navigate(

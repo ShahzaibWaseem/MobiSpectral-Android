@@ -16,6 +16,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -35,6 +36,7 @@ import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 import java.nio.FloatBuffer
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.concurrent.schedule
 import kotlin.math.roundToInt
 import kotlin.properties.Delegates
@@ -81,6 +83,7 @@ class ReconstructionFragment: Fragment() {
 
     private var bitmapsWidth = Utils.torchWidth
     private var bitmapsHeight = Utils.torchHeight
+    private var results = ArrayList<Long> ()
 
     private fun imageViewFactory() = ImageView(requireContext()).apply {
         layoutParams = ViewGroup.LayoutParams(
@@ -214,6 +217,7 @@ class ReconstructionFragment: Fragment() {
                     canvas.drawCircle(Utils.torchWidth/2F, Utils.torchHeight/2F, 10F, paint)
                     view.setImageBitmap(bitmapOverlay)
                     inference()
+                    addCSVLog(requireContext())
                 }
                 Glide.with(view).load(item).into(view)
             }
@@ -299,6 +303,25 @@ class ReconstructionFragment: Fragment() {
             clickedY = bitmapsHeight/2F
         }
 
+        if (bitmapsWidth == 64 && bitmapsHeight == 64) {
+            for (i in 1..8)
+                for (j in 1..8)
+                    classifyOneSignature(8*i-4, 8*i-4)
+
+            val frequencies = results.groupingBy { it }.eachCount()
+            Log.i("Signatures OneClassify", "$results $frequencies")
+            var frequenciesString = ""
+            for (item in frequencies) {
+                val substring = if (Pair(mobiSpectralApplication, item.key) !in classificationLabels)
+                    "Something went wrong = ${item.value}, "
+                else
+                    "${classificationLabels[Pair(mobiSpectralApplication, item.key)]!!} = ${item.value}, "
+
+                frequenciesString += substring
+            }
+            Toast.makeText(requireContext(), frequenciesString, Toast.LENGTH_LONG).show()
+        }
+
         val inputSignature = getSignature(predictedHS, clickedX.toInt(), clickedY.toInt())
         val outputLabel = ortSession?.let { classifyHypercube(inputSignature, it, ortEnvironment) }
         println("Output Label: $outputLabel")
@@ -310,6 +333,24 @@ class ReconstructionFragment: Fragment() {
 //        addCSVLog(requireContext())
         fragmentReconstructionBinding.textViewClass.text = outputLabelString
         fragmentReconstructionBinding.graphView.title = "$outputLabelString Signature at (x: ${clickedX.toInt()}, y: ${clickedY.toInt()})"
+    }
+
+    fun classifyOneSignature(x: Int, y: Int) {
+        val ortEnvironment = OrtEnvironment.getEnvironment()
+        val ortSession = context?.let { createORTSession(ortEnvironment) }
+
+        val signature = getSignature(predictedHS, x, y)
+        val outputLabel = ortSession?.let { classifyHypercube(signature, it, ortEnvironment) }
+        Log.i("Signatures OneClassify", "$x, $y, $outputLabel")
+
+        outputLabelString = if (Pair(mobiSpectralApplication, outputLabel) !in classificationLabels)
+            "Something went wrong"
+        else
+            classificationLabels[Pair(mobiSpectralApplication, outputLabel)]!!
+        if (outputLabel != null) {
+            results.add(outputLabel)
+        }
+//        MainActivity.predictedLabel = outputLabelString
     }
 
     private fun getSignature(predictedHS: FloatArray, SignatureX: Int, SignatureY: Int): FloatArray {
