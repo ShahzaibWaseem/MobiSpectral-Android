@@ -1,11 +1,9 @@
 package com.shahzaib.mobispectral.fragments
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.ImageFormat
-import android.graphics.Matrix
+import android.graphics.*
 import android.os.Bundle
 import android.util.Base64
 import android.util.Log
@@ -24,11 +22,9 @@ import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.example.android.camera.utils.GenericListAdapter
 import com.google.android.material.tabs.TabLayoutMediator
-import com.shahzaib.mobispectral.MainActivity
-import com.shahzaib.mobispectral.R
-import com.shahzaib.mobispectral.Utils
+import com.shahzaib.mobispectral.*
+import com.shahzaib.mobispectral.Utils.cropImage
 import com.shahzaib.mobispectral.databinding.FragmentImageviewerBinding
-import com.shahzaib.mobispectral.makeFolderInRoot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.opencv.android.OpenCVLoader
@@ -64,14 +60,27 @@ class ImageViewerFragment: Fragment() {
 
     /** Data backing our Bitmap viewpager */
     private val bitmapList: MutableList<Bitmap> = mutableListOf()
+    private var bitmapsWidth = Utils.torchWidth
+    private var bitmapsHeight = Utils.torchHeight
+
+    private var topCrop = 0F
+    private var bottomCrop = 0F
+    private var leftCrop = 0F
+    private var rightCrop = 0F
 
     private fun imageViewFactory() = ImageView(requireContext()).apply {
         layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
     }
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View {
         OpenCVLoader.initDebug()
-        makeFolderInRoot("MobiSpectral/processedImages", requireContext())
+        makeFolderInRoot(Utils.MobiSpectralPath, requireContext())
+
+        MainActivity.originalImageRGB = args.filePath
+        MainActivity.originalImageNIR = args.filePath2
+
+        val squareColor = Color.argb(255, 0, 0, 0)
         _fragmentImageViewerBinding = FragmentImageviewerBinding.inflate(inflater, container, false)
         fragmentImageViewerBinding.viewpager.apply {
             offscreenPageLimit=2
@@ -79,6 +88,28 @@ class ImageViewerFragment: Fragment() {
                 itemViewFactory = { imageViewFactory() }) { view, item, _ ->
                 view as ImageView
                 view.scaleType = ImageView.ScaleType.FIT_XY
+
+                view.setOnTouchListener { v, event ->
+                    val bitmapOverlay = Bitmap.createBitmap(item.width, item.height, item.config)
+                    val canvas = Canvas(bitmapOverlay)
+                    canvas.drawBitmap(item, Matrix(), null)
+                    val clickedX = (event!!.x / v!!.width) * bitmapsWidth
+                    val clickedY = (event.y / v.height) * bitmapsHeight
+                    Log.i("View Dimensions", "$clickedX, $clickedY, ${v.width}, ${v.height}")
+
+                    val paint = Paint()
+                    paint.color = squareColor
+                    paint.style = Paint.Style.STROKE
+
+                    leftCrop = clickedX - 32F
+                    topCrop = clickedY - 32F
+                    rightCrop = clickedX + 32F
+                    bottomCrop = clickedY + 32F
+
+                    canvas.drawRect(leftCrop, topCrop, rightCrop, bottomCrop, paint)
+                    view.setImageBitmap(bitmapOverlay)
+                    false
+                }
                 Glide.with(view).load(item).into(view)
             }
         }
@@ -121,6 +152,9 @@ class ImageViewerFragment: Fragment() {
             else
                 rgbImageBitmap = Utils.fixedAlignment(rgbImageBitmap)
 
+            bitmapsWidth = rgbImageBitmap.width
+            bitmapsHeight = rgbImageBitmap.height
+
             Log.i("Bitmap Size", "Decoded RGB: ${rgbImageBitmap.width} x ${rgbImageBitmap.height}")
             Log.i("Bitmap Size", "Decoded NIR: ${nirImageBitmap.width} x ${nirImageBitmap.height}")
 
@@ -151,9 +185,24 @@ class ImageViewerFragment: Fragment() {
             addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 0)
             addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 1)
 
-            // TODO: Save Images Here
+            val rgbImage = File(args.filePath)
+            val directoryPath = rgbImage.absolutePath.split(System.getProperty("file.separator")!!)
+            val rgbImageFileName = directoryPath[directoryPath.size-1]
+            val nirImage = File(args.filePath2)
+            val nirDirectoryPath = nirImage.absolutePath.split(System.getProperty("file.separator")!!)
+            val nirImageFileName = nirDirectoryPath[nirDirectoryPath.size-1]
 
             fragmentImageViewerBinding.button.setOnClickListener {
+                if (leftCrop != 0F && topCrop != 0F){
+                    rgbImageBitmap = cropImage(rgbImageBitmap, leftCrop, topCrop)
+                    nirImageBitmap = cropImage(nirImageBitmap, leftCrop, topCrop)
+
+                    addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 2)
+                    addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 3)
+                }
+
+                saveProcessedImages(rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName)
+
                 if(fragmentImageViewerBinding.radioGroup.checkedRadioButtonId == -1) {
                     fragmentImageViewerBinding.noRadioSelectedText.visibility = View.VISIBLE
                 }

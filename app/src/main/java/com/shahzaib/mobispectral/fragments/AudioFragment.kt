@@ -1,11 +1,8 @@
 package com.shahzaib.mobispectral.fragments
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
@@ -13,18 +10,14 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.media.MediaScannerConnection
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.provider.Settings
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.NumberPicker
 import android.widget.Toast
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
 import androidx.navigation.Navigation
@@ -35,15 +28,11 @@ import com.jjoe64.graphview.series.LineGraphSeries
 import com.opencsv.CSVWriter
 import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.databinding.FragmentAudioBinding
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.io.*
 import java.util.*
-import kotlin.collections.Map
 import kotlin.math.abs
 import kotlin.math.log10
+
 
 class AudioFragment: Fragment() {
     /** Android ViewBinding */
@@ -104,21 +93,21 @@ class AudioFragment: Fragment() {
         val rgbImageFileName = directoryPath[directoryPath.size-1]
         newImagePath = File(imageDirectory, rgbImageFileName)
 
-        if (ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.MANAGE_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-//            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-//            } else {
-//                TODO("VERSION.SDK_INT < R")
-//            }
-            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-
-            val uri = Uri.fromParts("package", requireContext().packageName, null)
-            intent.data = uri
-            startActivity(intent)
-        }
+//        if (ContextCompat.checkSelfPermission(
+//                requireContext(),
+//                Manifest.permission.MANAGE_EXTERNAL_STORAGE
+//            ) != PackageManager.PERMISSION_GRANTED
+//        ) {
+////            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+////            } else {
+////                TODO("VERSION.SDK_INT < R")
+////            }
+//            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+//
+//            val uri = Uri.fromParts("package", requireContext().packageName, null)
+//            intent.data = uri
+//            startActivity(intent)
+//        }
         Thread{
             try {
                 val fos = FileOutputStream(newImagePath)

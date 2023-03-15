@@ -471,7 +471,9 @@ class CameraFragment: Fragment() {
 
                 var rotatedBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null)
                 val correctionMatrix = Matrix().apply { postRotate(-90F); postScale(-1F, 1F); }
-                rotatedBitmap = Bitmap.createBitmap(rotatedBitmap, 0, 0, rotatedBitmap.width, rotatedBitmap.height, correctionMatrix, true)
+                val nirCameraID = Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).second
+                rotatedBitmap = Bitmap.createBitmap(rotatedBitmap, 0, 0, rotatedBitmap.width,
+                    rotatedBitmap.height, if (nirCameraID == "OnePlus") Matrix().apply { postRotate(90F) } else correctionMatrix, true)
                 val stream = ByteArrayOutputStream()
                 rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
                 val rotatedBytes = stream.toByteArray()

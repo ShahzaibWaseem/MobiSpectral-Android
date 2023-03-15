@@ -28,9 +28,7 @@ import com.example.android.camera.utils.GenericListAdapter
 import com.google.android.material.tabs.TabLayoutMediator
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
-import com.shahzaib.mobispectral.R
-import com.shahzaib.mobispectral.Reconstruction
-import com.shahzaib.mobispectral.Utils
+import com.shahzaib.mobispectral.*
 import com.shahzaib.mobispectral.databinding.FragmentReconstructionBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -185,6 +183,7 @@ class ReconstructionFragment: Fragment() {
                         view.setImageBitmap(bitmapOverlay)
                         try {
                             inference()
+                            addCSVLog(requireContext())
                         }
                         catch (e: NullPointerException) {
                             e.printStackTrace()
@@ -219,6 +218,11 @@ class ReconstructionFragment: Fragment() {
                 Glide.with(view).load(item).into(view)
             }
         }
+        val editor = sharedPreferences.edit()
+        MainActivity.fruitID = sharedPreferences.getString("fruitID", "0").toString()
+        MainActivity.fruitID = (MainActivity.fruitID.toInt() + 1).toString()
+        editor.putString("fruitID", MainActivity.fruitID)
+        editor.apply()
 
         fragmentReconstructionBinding.Title.setOnClickListener {
             lifecycleScope.launch(Dispatchers.Main) {
@@ -256,7 +260,7 @@ class ReconstructionFragment: Fragment() {
             graphView.viewport.setMaxX(1000.0)
             graphView.viewport.setMinX(400.0)
             graphView.viewport.isYAxisBoundsManual = true
-            graphView.viewport.setMaxY(0.4)
+            graphView.viewport.setMaxY(1.0)
             graphView.gridLabelRenderer.setHumanRounding(true)
 
             graphView.setOnLongClickListener{
@@ -302,6 +306,8 @@ class ReconstructionFragment: Fragment() {
             "Something went wrong"
         else
             classificationLabels[Pair(mobiSpectralApplication, outputLabel)]!!
+        MainActivity.predictedLabel = outputLabelString
+//        addCSVLog(requireContext())
         fragmentReconstructionBinding.textViewClass.text = outputLabelString
         fragmentReconstructionBinding.graphView.title = "$outputLabelString Signature at (x: ${clickedX.toInt()}, y: ${clickedY.toInt()})"
     }
@@ -358,6 +364,7 @@ class ReconstructionFragment: Fragment() {
         val endTime = System.currentTimeMillis()
         reconstructionDuration = (endTime - startTime)/1000
         println(getString(R.string.reconstruction_time_string, reconstructionDuration))
+        MainActivity.reconstrutionTime = "$reconstructionDuration s"
         fragmentReconstructionBinding.textViewReconTime.text = getString(R.string.reconstruction_time_string, reconstructionDuration)
     }
 

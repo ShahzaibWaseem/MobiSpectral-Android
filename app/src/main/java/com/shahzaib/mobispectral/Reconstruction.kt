@@ -24,7 +24,6 @@ class Reconstruction(context: Context, modelPath: String) {
         return TensorImageUtils.bitmapToFloat32Tensor(bitmap, mean, std)
     }
 
-
     private fun getOneBand(tensor: Tensor): Tensor {
         val tensorDoubleArray = tensor.dataAsFloatArray
         val floatArray = FloatArray((bitmapsHeight*bitmapsWidth))
