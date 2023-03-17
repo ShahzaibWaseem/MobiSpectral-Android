@@ -101,13 +101,17 @@ class ImageViewerFragment: Fragment() {
                     paint.color = squareColor
                     paint.style = Paint.Style.STROKE
 
-                    leftCrop = clickedX - 32F
-                    topCrop = clickedY - 32F
-                    rightCrop = clickedX + 32F
-                    bottomCrop = clickedY + 32F
+                    leftCrop = clickedX - 64F
+                    topCrop = clickedY - 64F
+                    rightCrop = clickedX + 64F
+                    bottomCrop = clickedY + 64F
 
                     canvas.drawRect(leftCrop, topCrop, rightCrop, bottomCrop, paint)
                     view.setImageBitmap(bitmapOverlay)
+                    MainActivity.tempRGBBitmap = bitmapOverlay
+                    MainActivity.tempRectangle = Rect(bottomCrop.toInt(),
+                        leftCrop.toInt(), rightCrop.toInt(), topCrop.toInt()
+                    )
                     false
                 }
                 Glide.with(view).load(item).into(view)
@@ -139,6 +143,7 @@ class ImageViewerFragment: Fragment() {
             // Load the main JPEG image
             var rgbImageBitmap = decodeBitmap(bufferRGB, bufferRGB.size, true)
             var nirImageBitmap = decodeBitmap(bufferNIR, bufferNIR.size, false)
+//            val unirImageBitmap = Utils.unwarp(nirImageBitmap)
 
             if (rgbImageBitmap.width == nirImageBitmap.width && rgbImageBitmap.height == nirImageBitmap.height) {
                 try {
@@ -151,9 +156,6 @@ class ImageViewerFragment: Fragment() {
             }
             else
                 rgbImageBitmap = Utils.fixedAlignment(rgbImageBitmap)
-
-            bitmapsWidth = rgbImageBitmap.width
-            bitmapsHeight = rgbImageBitmap.height
 
             Log.i("Bitmap Size", "Decoded RGB: ${rgbImageBitmap.width} x ${rgbImageBitmap.height}")
             Log.i("Bitmap Size", "Decoded NIR: ${nirImageBitmap.width} x ${nirImageBitmap.height}")
@@ -176,7 +178,8 @@ class ImageViewerFragment: Fragment() {
                 rgbImageBitmap = Bitmap.createBitmap(rgbImageBitmap, newLeft, newTop, Utils.croppedWidth, Utils.croppedHeight)
                 nirImageBitmap = Bitmap.createBitmap(nirImageBitmap, newLeft, newTop, Utils.croppedWidth, Utils.croppedHeight)
             }
-
+            bitmapsWidth = rgbImageBitmap.width
+            bitmapsHeight = rgbImageBitmap.height
             val rgbByteArray = bitmapToByteArray(rgbImageBitmap)
             var nirByteArray = bitmapToByteArray(nirImageBitmap)
             Log.i("RGB NIR ByteArray Sizes", "${rgbByteArray.size}, ${nirByteArray.size}")
@@ -184,6 +187,7 @@ class ImageViewerFragment: Fragment() {
             Log.i("RGB NIR ByteArray Sizes", "${rgbByteArray.size}, ${nirByteArray.size}")
             addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 0)
             addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 1)
+//            addItemToViewPager(fragmentImageViewerBinding.viewpager, unirImageBitmap, 2)
 
             val rgbImage = File(args.filePath)
             val directoryPath = rgbImage.absolutePath.split(System.getProperty("file.separator")!!)
@@ -210,29 +214,35 @@ class ImageViewerFragment: Fragment() {
                     croppedNIRImageBitmap = nirImageBitmap
                 }
 
-                if(fragmentImageViewerBinding.radioGroup.checkedRadioButtonId == -1) {
-                    fragmentImageViewerBinding.noRadioSelectedText.visibility = View.VISIBLE
+                if (leftCrop != 0F && topCrop != 0F) {
+                    rgbImageBitmap = croppedRGBImageBitmap
+                    nirImageBitmap = croppedNIRImageBitmap
                 }
-                else {
-                    val selectedRadio = fragmentImageViewerBinding.radioGroup.checkedRadioButtonId
-                    val selectedOption = requireView().findViewById<RadioButton>(selectedRadio).text.toString()
-                    MainActivity.actualLabel = selectedOption
-
-                    if (leftCrop != 0F && topCrop != 0F) {
-                        rgbImageBitmap = croppedRGBImageBitmap
-                        nirImageBitmap = croppedNIRImageBitmap
-                    }
-
-                    fragmentImageViewerBinding.noRadioSelectedText.visibility = View.INVISIBLE
-                    lifecycleScope.launch(Dispatchers.Main) {
-                        navController.navigate(
-                            ImageViewerFragmentDirections
-                                .actionImageViewerFragmentToReconstructionFragment2(
-                                    serializeByteArrayToString(rgbImageBitmap),
-                                    serializeByteArrayToString(nirImageBitmap))
-                        )
-                    }
+                lifecycleScope.launch(Dispatchers.Main) {
+                    navController.navigate(
+                        ImageViewerFragmentDirections
+                            .actionImageViewerFragmentToReconstructionFragment2(
+                                serializeByteArrayToString(rgbImageBitmap),
+                                serializeByteArrayToString(nirImageBitmap))
+                    )
                 }
+
+//                if(fragmentImageViewerBinding.radioGroup.checkedRadioButtonId == -1) {
+//                    fragmentImageViewerBinding.noRadioSelectedText.visibility = View.VISIBLE
+//                }
+//                else {
+//                    val selectedRadio = fragmentImageViewerBinding.radioGroup.checkedRadioButtonId
+//                    val selectedOption = requireView().findViewById<RadioButton>(selectedRadio).text.toString()
+//                    MainActivity.actualLabel = selectedOption
+//
+//                    if (leftCrop != 0F && topCrop != 0F) {
+//                        rgbImageBitmap = croppedRGBImageBitmap
+//                        nirImageBitmap = croppedNIRImageBitmap
+//                    }
+//
+//                    fragmentImageViewerBinding.noRadioSelectedText.visibility = View.INVISIBLE
+//
+//                }
             }
         }
 

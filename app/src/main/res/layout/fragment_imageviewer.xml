@@ -94,44 +94,45 @@
             android:textSize="23sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/reloadButton"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <TextView
-            android:id="@+id/noRadioSelectedText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="No Option Selected"
-            android:textColor="@color/sfu_primary"
-            android:visibility="invisible"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/button"
-            app:layout_constraintStart_toStartOf="@+id/guideline3"
-            app:layout_constraintTop_toBottomOf="@+id/button" />
+<!--        <TextView-->
+<!--            android:id="@+id/noRadioSelectedText"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="No Option Selected"-->
+<!--            android:textColor="@color/sfu_primary"-->
+<!--            android:visibility="invisible"-->
+<!--            app:layout_constraintBottom_toBottomOf="parent"-->
+<!--            app:layout_constraintEnd_toStartOf="@+id/button"-->
+<!--            app:layout_constraintStart_toStartOf="@+id/guideline3"-->
+<!--            app:layout_constraintTop_toBottomOf="@+id/button" />-->
 
-        <RadioGroup
-            android:id="@+id/radioGroup"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/button"
-            app:layout_constraintStart_toEndOf="@+id/reloadButton"
-            app:layout_constraintTop_toTopOf="parent">
+<!--        <RadioGroup-->
+<!--            android:id="@+id/radioGroup"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            app:layout_constraintBottom_toBottomOf="parent"-->
+<!--            app:layout_constraintEnd_toStartOf="@+id/button"-->
+<!--            app:layout_constraintStart_toEndOf="@+id/reloadButton"-->
+<!--            app:layout_constraintTop_toTopOf="parent">-->
 
-            <RadioButton
-                android:id="@+id/organicRadio"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Organic"
-                android:buttonTint="@color/sfu_primary" />
+<!--            <RadioButton-->
+<!--                android:id="@+id/organicRadio"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="Organic"-->
+<!--                android:buttonTint="@color/sfu_primary" />-->
 
-            <RadioButton
-                android:id="@+id/nonOrganicRadio"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="NonOrganic"
-                android:buttonTint="@color/sfu_primary" />
+<!--            <RadioButton-->
+<!--                android:id="@+id/nonOrganicRadio"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="NonOrganic"-->
+<!--                android:buttonTint="@color/sfu_primary" />-->
 
-        </RadioGroup>
+<!--        </RadioGroup>-->
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

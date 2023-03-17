@@ -1,18 +1,10 @@
 package com.shahzaib.mobispectral
 
-import android.content.Intent
-import android.database.Cursor
-import android.net.Uri
+import android.graphics.Bitmap
+import android.graphics.Rect
 import android.os.Bundle
-import android.provider.MediaStore
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import com.shahzaib.mobispectral.databinding.ActivityMainBinding
-import com.shahzaib.mobispectral.fragments.CameraFragment
-import com.shahzaib.mobispectral.fragments.CameraFragmentDirections
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var activityMainBinding: ActivityMainBinding
@@ -31,6 +23,9 @@ class MainActivity : AppCompatActivity() {
         lateinit var processedImageNIR: String
         lateinit var actualLabel: String
         lateinit var predictedLabel: String
-        lateinit var reconstrutionTime: String
+        lateinit var reconstructionTime: String
+        lateinit var classificationTime: String
+        lateinit var tempRGBBitmap: Bitmap
+        lateinit var tempRectangle: Rect
     }
 }

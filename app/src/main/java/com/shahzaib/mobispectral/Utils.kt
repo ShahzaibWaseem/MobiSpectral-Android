@@ -90,11 +90,14 @@ object Utils {
         return Pair(cameraIdRGB, cameraIdNIR)
     }
 
-    private fun initializeMats(parameter: DoubleArray, size: Size): Mat {
-        val mat: Mat = Mat(size, 0)
+    private fun initializeMats(parameter: DoubleArray, width: Int, height: Int): Mat {
+        val mat: Mat = Mat(height, width, CvType.CV_64FC1)
         var iter: Int = 0
-        for (row in 0..2) {
-            for (col in 0..2) {
+        for (row in 0 until height) {
+            print("$row ")
+            for (col in 0 until width) {
+                print("$col ")
+
                 mat.put(row, col, parameter[iter])
                 iter+=1
             }
@@ -102,14 +105,38 @@ object Utils {
         return mat
     }
 
-    fun unwarp(imageNIR: Bitmap) {
-        val K: Mat = initializeMats(K_Pixel, Size(3.0, 3.0))
-        val D: Mat = initializeMats(D_Pixel, Size(4.0, 1.0))
-//        Imgproc.initUndistortRectifyMap()
+    fun unwarp(imageNIR: Bitmap): Bitmap {
+        val K: Mat = initializeMats(K_Pixel, 3, 3)
+        val D: Mat = initializeMats(D_Pixel, 4, 1)
+//        val K: Mat = Mat(3, 3, CvType.CV_32F)
+//        K.put(0, 0, K_Pixel)
+//
+//        val nK: Mat = K.clone()
+//        val D: Mat = Mat(4, 1,  CvType.CV_32F)
+//        D.put(0, 0, D_Pixel)
+//        nK.put(0, 0, nK.get(0, 0)[0]/2.0)
+//        nK.put(1, 1, nK.get(1, 1)[0]/2.0)
+        Log.i("Parameters", "${K.dump()} ${D.dump()} ${imageNIR.config}")
+
+        val map1 = Mat()
+        val map2 = Mat()
+
+        val nirMat = Mat()
+        Utils.bitmapToMat(imageNIR, nirMat)
+
+        val width = imageNIR.width.toDouble()
+        val height = imageNIR.height.toDouble()
+        val fixedNirMat = Mat()
+
+        Imgproc.initUndistortRectifyMap(K, D, Mat.eye(3, 3, 0), K, Size(width, height), CvType.CV_16SC2, map1, map2)
+        Imgproc.remap(nirMat, fixedNirMat, map1, map2, Imgproc.INTER_LINEAR, Core.BORDER_CONSTANT)
+        val fixedImageBitmap = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
+        Utils.matToBitmap(fixedNirMat, fixedImageBitmap)
+        return fixedImageBitmap
     }
 
     fun cropImage(bitmap: Bitmap, left: Float, top: Float): Bitmap {
-        return Bitmap.createBitmap(bitmap, left.toInt(), top.toInt(), 64, 64, null, true)
+        return Bitmap.createBitmap(bitmap, left.toInt(), top.toInt(), 128, 128, null, true)
     }
 
     fun fixedAlignment(imageRGB: Bitmap): Bitmap{
@@ -169,7 +196,8 @@ data class FormatItem(val title: String, val cameraId: String, val format: Int, 
 data class MobiSpectralCSVFormat(val fruitID: String, val originalImageRGB: String,
                                  val originalImageNIR: String, val processedImageRGB: String,
                                  val processedImageNIR: String, val actualLabel: String,
-                                 val predictedLabel: String, val reconstructionTime: String) {
+                                 val predictedLabel: String, val reconstructionTime: String,
+                                 val classificationTime: String) {
     fun csvFormat(): Array<String> {
         return arrayOf(fruitID, originalImageRGB, originalImageNIR, processedImageRGB, processedImageNIR,
             actualLabel, predictedLabel, reconstructionTime)
@@ -251,7 +279,7 @@ fun makeFolderInRoot (directoryPath: String, context: Context) {
     if (! csvFile.exists()) {
         val header = MobiSpectralCSVFormat("Fruit ID", "Original RGB Path", "Original NIR Path",
             "Processed RGB Path", "Processed NIR Path",
-            "Actual Label", "Predicted Label", "Reconstruction Time")
+            "Actual Label", "Predicted Label", "Reconstruction Time", "Classification Time")
 
         val writer = CSVWriter(
             FileWriter(csvFile, false),
@@ -302,7 +330,7 @@ fun addCSVLog (context: Context) {
     if (csvFile.exists()) {
         val entry = MobiSpectralCSVFormat(MainActivity.fruitID, MainActivity.originalImageRGB, MainActivity.originalImageNIR,
             MainActivity.processedImageRGB, MainActivity.processedImageNIR, MainActivity.actualLabel,
-            MainActivity.predictedLabel, MainActivity.reconstrutionTime)
+            MainActivity.predictedLabel, MainActivity.reconstructionTime, MainActivity.classificationTime)
 
         val writer = CSVWriter(
             FileWriter(csvFile, true),

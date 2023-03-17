@@ -62,6 +62,7 @@ class Reconstruction(context: Context, modelPath: String) {
         val inputs: IValue = IValue.from(imageTensor)
 
         val outputs: Tensor = model?.forward(inputs)?.toTensor()!!
+        Log.i("Output Tensor", "${outputs.shape().toList()}")
         val reconstructedHS: FloatArray = outputs.dataAsFloatArray
         val endTime = System.currentTimeMillis()
         val duration = endTime - startTime
