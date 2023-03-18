@@ -12,7 +12,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.widget.ImageView
-import android.widget.RadioButton
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -99,6 +98,7 @@ class ImageViewerFragment: Fragment() {
 
                     val paint = Paint()
                     paint.color = squareColor
+                    paint.strokeWidth = 2.5F
                     paint.style = Paint.Style.STROKE
 
                     leftCrop = clickedX - 64F
@@ -127,6 +127,7 @@ class ImageViewerFragment: Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+
         fragmentImageViewerBinding.Title.setOnClickListener {
             lifecycleScope.launch(Dispatchers.Main) {
                 navController.navigate(
@@ -147,8 +148,13 @@ class ImageViewerFragment: Fragment() {
 
             if (rgbImageBitmap.width == nirImageBitmap.width && rgbImageBitmap.height == nirImageBitmap.height) {
                 try {
-                    nirImageBitmap = Utils.alignImages(rgbImageBitmap, nirImageBitmap)
-                    rgbImageBitmap = Utils.alignImages(nirImageBitmap, rgbImageBitmap)
+                    val alignedNIR = Utils.alignImages(rgbImageBitmap, nirImageBitmap)
+                    val alignedRGB = Utils.alignImages(nirImageBitmap, rgbImageBitmap)
+                    if (alignedNIR.width >= 200 && alignedNIR.height >= 200 && alignedRGB.width >= 200
+                        && alignedRGB.height >= 200) {
+                        nirImageBitmap = alignedNIR
+                        rgbImageBitmap = alignedRGB
+                    }
                 }
                 catch (e: org.opencv.core.CvException) {
                     e.printStackTrace()
@@ -196,6 +202,7 @@ class ImageViewerFragment: Fragment() {
             val nirDirectoryPath = nirImage.absolutePath.split(System.getProperty("file.separator")!!)
             val nirImageFileName = nirDirectoryPath[nirDirectoryPath.size-1]
             saveProcessedImages(rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName)
+            var buttonPressed = false
 
             fragmentImageViewerBinding.button.setOnClickListener {
                 val croppedRGBImageBitmap: Bitmap
@@ -214,18 +221,22 @@ class ImageViewerFragment: Fragment() {
                     croppedNIRImageBitmap = nirImageBitmap
                 }
 
-                if (leftCrop != 0F && topCrop != 0F) {
-                    rgbImageBitmap = croppedRGBImageBitmap
-                    nirImageBitmap = croppedNIRImageBitmap
+
+                if (buttonPressed) {
+                    if (leftCrop != 0F && topCrop != 0F) {
+                        rgbImageBitmap = croppedRGBImageBitmap
+                        nirImageBitmap = croppedNIRImageBitmap
+                    }
+                    lifecycleScope.launch(Dispatchers.Main) {
+                        navController.navigate(
+                            ImageViewerFragmentDirections
+                                .actionImageViewerFragmentToReconstructionFragment2(
+                                    serializeByteArrayToString(rgbImageBitmap),
+                                    serializeByteArrayToString(nirImageBitmap))
+                        )
+                    }
                 }
-                lifecycleScope.launch(Dispatchers.Main) {
-                    navController.navigate(
-                        ImageViewerFragmentDirections
-                            .actionImageViewerFragmentToReconstructionFragment2(
-                                serializeByteArrayToString(rgbImageBitmap),
-                                serializeByteArrayToString(nirImageBitmap))
-                    )
-                }
+                buttonPressed = true
 
 //                if(fragmentImageViewerBinding.radioGroup.checkedRadioButtonId == -1) {
 //                    fragmentImageViewerBinding.noRadioSelectedText.visibility = View.VISIBLE

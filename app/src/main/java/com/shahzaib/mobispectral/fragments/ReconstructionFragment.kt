@@ -46,6 +46,7 @@ class ReconstructionFragment: Fragment() {
     private var reconstructionDuration = 0L
     private var classificationDuration = 0L
     private val numberOfBands = 68
+    private val bandSpacing = 204 / numberOfBands
     private var outputLabelString: String = ""
     private var clickedX = 0.0F
     private var clickedY = 0.0F
@@ -190,6 +191,7 @@ class ReconstructionFragment: Fragment() {
                             val paint = Paint()
                             paint.color = color
                             paint.style = Paint.Style.STROKE
+                            paint.strokeWidth = 2.5F
                             val tempRect = MainActivity.tempRectangle
 
                             if (position == 9 && (clickedX >= tempRect.left || clickedX <= tempRect.right)
@@ -279,7 +281,12 @@ class ReconstructionFragment: Fragment() {
             val graphView = _fragmentReconstructionBinding!!.graphView
             graphView.gridLabelRenderer.horizontalAxisTitle = "Wavelength λ (nm)"
             graphView.gridLabelRenderer.verticalAxisTitle = "Reflectance"
+            graphView.gridLabelRenderer.padding = 50
+            graphView.gridLabelRenderer.textSize = 50F
+            graphView.gridLabelRenderer.horizontalAxisTitleTextSize = 50F
+            graphView.gridLabelRenderer.verticalAxisTitleTextSize = 50F
             graphView.title = "Click on the image to show the signature"
+            graphView.titleTextSize = 50F
             graphView.viewport.isXAxisBoundsManual = true
             graphView.viewport.setMaxX(1000.0)
             graphView.viewport.setMinX(400.0)
@@ -295,25 +302,24 @@ class ReconstructionFragment: Fragment() {
 
             val viewpagerThread = Thread {
                 for (i in 0 until numberOfBands) {
-                    if (i % 8 > 0) continue
+                    if (i % 16 > 0) continue
                     Log.i("Bands Chosen", "$i")
                     bandsChosen.add(i)
                     addItemToViewPager(fragmentReconstructionBinding.viewpager, getBand(predictedHS, i), i)
                 }
             }
-
             TabLayoutMediator(fragmentReconstructionBinding.tabLayout,
                 fragmentReconstructionBinding.viewpager) { tab, position ->
-                if (position == 9)
+                if (position == 5)
                     tab.text = "RGB"
                 else
-                    tab.text = ACTUAL_BAND_WAVELENGTHS[bandsChosen[position] * 3].roundToInt().toString() + " nm"
+                    tab.text = ACTUAL_BAND_WAVELENGTHS[bandsChosen[position] * bandSpacing].roundToInt().toString() + " nm"
             }.attach()
 
             viewpagerThread.start()
             try { viewpagerThread.join() }
             catch (exception: InterruptedException) { exception.printStackTrace() }
-            addItemToViewPager(fragmentReconstructionBinding.viewpager, MainActivity.tempRGBBitmap, 9)
+            addItemToViewPager(fragmentReconstructionBinding.viewpager, MainActivity.tempRGBBitmap, 5)
 //            fragmentReconstructionBinding.viewpager.currentItem = fragmentReconstructionBinding.viewpager.adapter!!.itemCount - 1
             reconstructionDialogFragment.dismissDialog()
         }
@@ -395,13 +401,15 @@ class ReconstructionFragment: Fragment() {
         for (i in 0 until numberOfBands) {
             signature[i] = predictedHS[idx]
             print(" ${predictedHS[idx]},")
-            series.appendData(DataPoint(ACTUAL_BAND_WAVELENGTHS[i*3], predictedHS[idx].toDouble()), true, numberOfBands)
+            series.appendData(DataPoint(ACTUAL_BAND_WAVELENGTHS[i*bandSpacing], predictedHS[idx].toDouble()), true, numberOfBands)
             idx += leftX + bitmapsWidth*leftY + (bitmapsWidth*SignatureY + SignatureX)
         }
         val graphView = fragmentReconstructionBinding.graphView
 //        graphView.removeAllSeries()         // remove all previous series
         graphView.title = "$outputLabelString Signature at (x: $SignatureX, y: $SignatureY)"
-        series.dataPointsRadius = 10F
+        graphView.gridLabelRenderer.padding = 50
+        graphView.gridLabelRenderer.textSize = 50F
+        series.dataPointsRadius = 20F
         series.thickness = 10
         series.color = color
         graphView.addSeries(series)

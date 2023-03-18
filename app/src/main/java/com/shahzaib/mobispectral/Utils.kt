@@ -34,9 +34,22 @@ object Utils {
     const val MobiSpectralPath = "MobiSpectral/processedImages"
 
     // Intrinsic Camera Parameters for Google Pixel 4 IR camera
-    val K_Pixel = doubleArrayOf(542.6309295733048, 0.0, 232.78423096084575, 0.0, 542.8318136934467, 337.77984524454547, 0.0, 0.0, 1.0)
-    val D_Pixel = doubleArrayOf(-0.04591876756027188, 0.4810113550965089, -1.1137694861149858, 0.4336328878297329)
+//    val K_Pixel = arrayOf(doubleArrayOf(542.6309295733048, 0.0, 232.78423096084575),
+//                          doubleArrayOf(0.0, 542.8318136934467, 337.77984524454547),
+//                          doubleArrayOf( 0.0, 0.0, 1.0))
 
+    val K_Pixel = doubleArrayOf(542.6309295733048, 0.0, 232.78423096084575,
+                                0.0, 542.8318136934467, 337.77984524454547,
+                                0.0, 0.0, 1.0)
+//    val D_Pixel = arrayOf(doubleArrayOf(-0.04591876756027188),
+//                          doubleArrayOf(0.4810113550965089),
+//                          doubleArrayOf(-1.1137694861149858),
+//                          doubleArrayOf(0.4336328878297329))
+
+    val D_Pixel = doubleArrayOf(-0.04591876756027188,
+                                0.4810113550965089,
+                                -1.1137694861149858,
+                                0.4336328878297329)
     fun assetFilePath(context: Context, assetName: String): String? {
         val file = File(context.filesDir, assetName)
         if (file.exists() && file.length() > 0) {
@@ -106,30 +119,35 @@ object Utils {
     }
 
     fun unwarp(imageNIR: Bitmap): Bitmap {
-        val K: Mat = initializeMats(K_Pixel, 3, 3)
-        val D: Mat = initializeMats(D_Pixel, 4, 1)
-//        val K: Mat = Mat(3, 3, CvType.CV_32F)
-//        K.put(0, 0, K_Pixel)
-//
-//        val nK: Mat = K.clone()
-//        val D: Mat = Mat(4, 1,  CvType.CV_32F)
-//        D.put(0, 0, D_Pixel)
-//        nK.put(0, 0, nK.get(0, 0)[0]/2.0)
-//        nK.put(1, 1, nK.get(1, 1)[0]/2.0)
-        Log.i("Parameters", "${K.dump()} ${D.dump()} ${imageNIR.config}")
-
+        val K = Mat(Size(3.0, 3.0), CvType.CV_64F)
+        K.put(0, 0, *K_Pixel)
+        val nk = K.clone()
+        val D = Mat(Size(4.0, 1.0), CvType.CV_64F)
         val map1 = Mat()
         val map2 = Mat()
 
         val nirMat = Mat()
         Utils.bitmapToMat(imageNIR, nirMat)
 
-        val width = imageNIR.width.toDouble()
-        val height = imageNIR.height.toDouble()
         val fixedNirMat = Mat()
 
-        Imgproc.initUndistortRectifyMap(K, D, Mat.eye(3, 3, 0), K, Size(width, height), CvType.CV_16SC2, map1, map2)
+        val width = imageNIR.width.toDouble()
+        val height = imageNIR.height.toDouble()
+
+        D.put(0, 0, *D_Pixel)
+        nk.put(0, 0, nk[0, 0][0] / 2.0)
+        nk.put(1, 1, nk[1, 1][0] / 2.0)
+        Imgproc.initUndistortRectifyMap(K, D, Mat.eye(3, 3, 0), nk, Size(width, height), CvType.CV_32FC1, map1, map2)
         Imgproc.remap(nirMat, fixedNirMat, map1, map2, Imgproc.INTER_LINEAR, Core.BORDER_CONSTANT)
+
+//        val K: Mat = initializeMats(K_Pixel, 3, 3)
+//        val D: Mat = initializeMats(D_Pixel, 4, 1)
+
+        Log.i("Parameters", "${K.dump()} ${D.dump()} ${imageNIR.config}")
+
+
+//        Imgproc.initUndistortRectifyMap(K, D, Mat.eye(3, 3, 0), K, Size(width, height), CvType.CV_16SC2, map1, map2)
+//        Imgproc.remap(nirMat, fixedNirMat, map1, map2, Imgproc.INTER_LINEAR, Core.BORDER_CONSTANT)
         val fixedImageBitmap = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
         Utils.matToBitmap(fixedNirMat, fixedImageBitmap)
         return fixedImageBitmap
