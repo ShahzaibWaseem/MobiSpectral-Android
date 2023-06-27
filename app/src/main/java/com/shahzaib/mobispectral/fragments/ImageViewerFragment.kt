@@ -22,6 +22,7 @@ import com.bumptech.glide.Glide
 import com.example.android.camera.utils.GenericListAdapter
 import com.google.android.material.tabs.TabLayoutMediator
 import com.shahzaib.mobispectral.*
+import com.shahzaib.mobispectral.WhiteBalance
 import com.shahzaib.mobispectral.Utils.cropImage
 import com.shahzaib.mobispectral.databinding.FragmentImageviewerBinding
 import kotlinx.coroutines.Dispatchers
@@ -127,7 +128,6 @@ class ImageViewerFragment: Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-
         fragmentImageViewerBinding.Title.setOnClickListener {
             lifecycleScope.launch(Dispatchers.Main) {
                 navController.navigate(
@@ -160,8 +160,8 @@ class ImageViewerFragment: Fragment() {
                     e.printStackTrace()
                 }
             }
-            else
-                rgbImageBitmap = Utils.fixedAlignment(rgbImageBitmap)
+//            else
+//                rgbImageBitmap = Utils.fixedAlignment(rgbImageBitmap)
 
             Log.i("Bitmap Size", "Decoded RGB: ${rgbImageBitmap.width} x ${rgbImageBitmap.height}")
             Log.i("Bitmap Size", "Decoded NIR: ${nirImageBitmap.width} x ${nirImageBitmap.height}")
@@ -327,6 +327,12 @@ class ImageViewerFragment: Fragment() {
         return Base64.encodeToString(byteArray, Base64.DEFAULT)
     }
 
+    private fun whiteBalance(rgbBitmap: Bitmap): Bitmap? {
+        val whiteBalanceModel = context?.let { WhiteBalance(it, "mobile_awb_d.pt") }
+        val bitmap = whiteBalanceModel?.whiteBalance(rgbBitmap)
+        return bitmap
+    }
+
     /** Utility function used to decode a [Bitmap] from a byte array */
     private fun decodeBitmap(buffer: ByteArray, length: Int, isRGB: Boolean): Bitmap {
         var bitmap: Bitmap
@@ -341,6 +347,7 @@ class ImageViewerFragment: Fragment() {
 
         if (isRGB){
             bitmap = Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, null, false)
+            bitmap = whiteBalance(bitmap)!!
         }
         else {
             bitmap = if (decodedBitmap.width > decodedBitmap.height)
