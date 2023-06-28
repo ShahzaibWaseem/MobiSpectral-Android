@@ -215,6 +215,7 @@ class CameraFragment: Fragment() {
 //        Log.i("Surface Holder Size", "${fragmentCameraBinding.viewFinder.holder.surface}")
 
         // This will keep sending the capture request as frequently as possible until the
+        // This will keep sending the capture request as frequently as possible until the
         // session is torn down or session.stopRepeating() is called
         session.setRepeatingRequest(captureRequest.build(), null, cameraHandler)
 
@@ -291,8 +292,6 @@ class CameraFragment: Fragment() {
 
                     }
                     else {
-                        cameraIdNIR = "0"
-
                         // Display the photo taken to user
                         lifecycleScope.launch(Dispatchers.Main) {
                             navController.navigate(

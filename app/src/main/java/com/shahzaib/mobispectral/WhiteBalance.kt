@@ -11,21 +11,70 @@ import org.pytorch.Tensor
 import org.pytorch.torchvision.TensorImageUtils
 import kotlin.math.roundToInt
 
-class WhiteBalance(context: Context, modelPath: String) {
-    private var model: Module? = null
+class WhiteBalance(context: Context) {
+    private var model_awb: Module? = null
+    private var model_s: Module? = null
+    private var model_t: Module? = null
+    private var output_awb: Tensor? = null
+    private var output_t: Tensor? = null
+    private var output_s: Tensor? = null
+
     private var mean = floatArrayOf(0.0f, 0.0f, 0.0f)
     private var std = floatArrayOf(1.0f, 1.0f, 1.0f)
 
     init {
-        Log.i("Model Load", Utils.assetFilePath(context, modelPath).toString())
-        model = Module.load(Utils.assetFilePath(context, modelPath))
+        model_awb = Module.load(Utils.assetFilePath(context, "mobile_awb.pt"))
+        model_t = Module.load(Utils.assetFilePath(context, "mobile_t.pt"))
+        model_s = Module.load(Utils.assetFilePath(context, "mobile_s.pt"))
     }
 
     private fun preprocess(bitmap: Bitmap?): Tensor {
         return TensorImageUtils.bitmapToFloat32Tensor(bitmap, mean, std)
     }
 
-    private fun tensor2Bitmap(input: DoubleArray, width: Int, height: Int): Bitmap {
+    fun deepWB(image: Tensor): Tensor {
+        val inputs: IValue = IValue.from(image)
+        output_awb = model_awb?.forward(inputs)?.toTensor()!!
+        output_t = model_t?.forward(inputs)?.toTensor()!!
+        output_s = model_s?.forward(inputs)?.toTensor()!!
+
+        val output_d = colorTempInterpolate(output_t!!, output_s!!)
+        return output_d
+    }
+
+    /*
+    * This function does the following python equivalent operation:
+    * I_D = I_T * g_D + I_S * (1 - g_D)
+    * */
+    fun multiplyAndAddTensors(tensor1: Tensor, tensor2: Tensor, scalar: Float): Tensor {
+        val float1 = tensor1.dataAsFloatArray
+        val float2 = tensor2.dataAsFloatArray
+        val resulting = FloatArray(float1.size)
+
+        for (i in resulting.indices) {
+            resulting[i] = (scalar * float1[i]) + (float2[i] * (1-scalar))
+        }
+        return Tensor.fromBlob(resulting, longArrayOf(1, 3, 800, 600))
+    }
+
+    private fun colorTempInterpolate(I_T: Tensor, I_S: Tensor): Tensor {
+        val colorTemperatures = mapOf('T' to 2850, 'F' to 3800, 'D' to 5500, 'C' to 6500, 'S' to 7500)
+        val cct1 = colorTemperatures['T']!!.toDouble()
+        val cct2 = colorTemperatures['S']!!.toDouble()
+
+        // Interpolation weight
+        val cct1inv = 1.0 / cct1
+        val cct2inv = 1.0 / cct2
+        val tempinv_D = 1.0 / colorTemperatures['D']!!.toDouble()
+
+        val g_D = (tempinv_D - cct2inv) / (cct1inv - cct2inv)
+
+        val I_D = multiplyAndAddTensors(I_T, I_S, g_D.toFloat())
+        Log.i("ID IT IS", "${I_T.shape().toList()} ${I_S.shape().toList()} ${I_D.shape().toList()}")
+        return I_D
+    }
+
+    private fun tensor2Bitmap(input: FloatArray, width: Int, height: Int): Bitmap {
         val pixelsCount = height * width
         val pixels = IntArray(pixelsCount)
         val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -36,7 +85,7 @@ class WhiteBalance(context: Context, modelPath: String) {
         val delta = maxValue-minValue
 
         // Define if float min..max will be mapped to 0..255 or 255..0
-        val conversion = { v: Double -> ((v-minValue)/delta*255.0).roundToInt()}
+        val conversion = { v: Float -> ((v-minValue)/delta*255.0).roundToInt()}
 
         for (i in 0 until pixelsCount) {
             val r = conversion(input[3 * i])
@@ -52,7 +101,7 @@ class WhiteBalance(context: Context, modelPath: String) {
 
         // Create empty bitmap in ARGB format
         val bmp: Bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val pixels = IntArray(width * height * 4)
+        val pixels = IntArray(width * height * 3)
 
         // mapping smallest value to 0 and largest value to 255
         val maxValue = floatArray.max()
@@ -101,36 +150,32 @@ class WhiteBalance(context: Context, modelPath: String) {
         val height = bitmap.height
         val pixels = IntArray(width * height * 3)
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
-        val floatArray = FloatArray(width * height * 3)
+        val Array = FloatArray(width * height * 3)
         for (i in 0 until width * height) {
             val pixel = pixels[i]
             val red = Color.red(pixel)
             val green = Color.green(pixel)
             val blue = Color.blue(pixel)
-            floatArray[3 * i] = red.toFloat()
-            floatArray[3 * i + 1] = green.toFloat()
-            floatArray[3 * i + 2] = blue.toFloat()
+            Array[3 * i] = red.toFloat()
+            Array[3 * i + 1] = green.toFloat()
+            Array[3 * i + 2] = blue.toFloat()
         }
         val bitmapTensor = Tensor.allocateFloatBuffer(width * height * 3)
-        bitmapTensor.put(floatArray)
+        bitmapTensor.put(Array)
 
-        return Tensor.fromBlob(bitmapTensor, longArrayOf(height.toLong(), width.toLong(), 3))
+        return Tensor.fromBlob(bitmapTensor, longArrayOf(1, 3, height.toLong(), width.toLong()))
     }
 
     fun whiteBalance(rgbBitmap: Bitmap): Bitmap {
-        val rgbTensor: Tensor = bitmapToFloatArraySecond(rgbBitmap)
+        val rgbTensor = TensorImageUtils.bitmapToFloat32Tensor(rgbBitmap, mean, std)
         val startTime = System.currentTimeMillis()
 
         Log.i("imageShape", "${rgbTensor.shape().toList()}")
 
-        val inputs: IValue = IValue.from(rgbTensor)
-        val outputs: Tensor = model?.forward(inputs)?.toTensor()!!
+        val outputs = deepWB(rgbTensor)
         Log.i("White Balancing", "Output Shape: ${outputs.shape().toList()}")
 
-        val whiteBalancedBitmap = tensor2Bitmap(
-            outputs.dataAsDoubleArray, outputs.shape()[1].toInt(), outputs.shape()[0].toInt()
-        )
-        // val whiteBalancedBitmap3 = floatArrayToBitmap(rgbResizedTensor.dataAsFloatArray, rgbResizedTensor.shape()[1].toInt(), rgbResizedTensor.shape()[0].toInt())
+         val whiteBalancedBitmap = floatArrayToBitmap(outputs.dataAsFloatArray, outputs.shape()[3].toInt(), outputs.shape()[2].toInt())
 
         val duration = System.currentTimeMillis() - startTime
         Log.i("White Balancing" , "White balancing Duration: $duration ms")
