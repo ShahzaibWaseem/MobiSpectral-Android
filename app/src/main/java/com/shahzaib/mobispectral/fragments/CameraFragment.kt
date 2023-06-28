@@ -245,7 +245,7 @@ class CameraFragment: Fragment() {
                     }
                     override fun onFinish() {
                         fragmentCameraBinding.timer.visibility = View.INVISIBLE
-                        Utils.viberate(requireContext())
+                        Utils.vibrate(requireContext())
                         savePhoto(args.cameraId)
                     }
                 }.start()

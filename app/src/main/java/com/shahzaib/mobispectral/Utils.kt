@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.Environment
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import androidx.core.net.toUri
 import com.opencsv.CSVWriter
@@ -208,8 +209,16 @@ object Utils {
         return image2AlignedCroppedBitmap
     }
 
-    fun viberate(context: Context) {
-        val vibrator: Vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    fun vibrate(context: Context) {
+        val vibrator: Vibrator
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager =  context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibrator = vibratorManager.defaultVibrator
+        }
+        else {
+            @Suppress("DEPRECATION")
+            vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
 
         val vibrationDuration = 500L
         if (vibrator.hasVibrator()) {
