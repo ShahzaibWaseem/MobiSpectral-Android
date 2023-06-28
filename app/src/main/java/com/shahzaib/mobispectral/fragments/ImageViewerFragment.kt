@@ -328,7 +328,7 @@ class ImageViewerFragment: Fragment() {
     }
 
     private fun whiteBalance(rgbBitmap: Bitmap): Bitmap? {
-        val whiteBalanceModel = context?.let { WhiteBalance(it, "mobile_awb_d.pt") }
+        val whiteBalanceModel = context?.let { WhiteBalance(it, "mobile_awb_d_1.pt") }
         val bitmap = whiteBalanceModel?.whiteBalance(rgbBitmap)
         return bitmap
     }

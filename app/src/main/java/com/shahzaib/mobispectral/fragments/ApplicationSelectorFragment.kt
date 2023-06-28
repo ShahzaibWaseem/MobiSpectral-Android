@@ -67,7 +67,8 @@ class ApplicationSelectorFragment: Fragment() {
 
         fragmentApplicationselectorBinding.applicationPicker.setOnValueChangedListener{ _, _, newVal ->
             if (newVal != 3) {
-                disableButton(cameraIdNIR)
+                // disableButton(cameraIdNIR)
+                enableButton()
             }
             else {
                 enableButton()

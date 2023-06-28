@@ -10,6 +10,8 @@ import android.hardware.camera2.CameraMetadata
 import android.media.MediaScannerConnection
 import android.os.Build
 import android.os.Environment
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.util.Log
 import androidx.core.net.toUri
 import com.opencsv.CSVWriter
@@ -204,6 +206,21 @@ object Utils {
         Utils.matToBitmap(image2AlignedCropped, image2AlignedCroppedBitmap)
 
         return image2AlignedCroppedBitmap
+    }
+
+    fun viberate(context: Context) {
+        val vibrator: Vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+
+        val vibrationDuration = 500L
+        if (vibrator.hasVibrator()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(vibrationDuration, VibrationEffect.DEFAULT_AMPLITUDE))
+            }
+            else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(vibrationDuration)
+            }
+        }
     }
 }
 lateinit var csvFile: File

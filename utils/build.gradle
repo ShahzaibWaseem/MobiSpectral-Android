@@ -19,6 +19,7 @@ apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion 33
+    namespace 'com.example.android.camera.utils'
 
     defaultConfig {
         minSdkVersion 21
@@ -43,6 +44,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    namespace 'com.example.android.camera.utils'
 }
 
 dependencies {

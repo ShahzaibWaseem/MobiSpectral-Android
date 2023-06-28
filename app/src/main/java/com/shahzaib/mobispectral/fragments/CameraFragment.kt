@@ -7,11 +7,14 @@ import android.content.*
 import android.database.Cursor
 import android.graphics.*
 import android.hardware.camera2.*
+import android.media.AudioManager
 import android.media.Image
 import android.media.ImageReader
+import android.media.ToneGenerator
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.os.Handler
 import android.os.HandlerThread
 import android.provider.MediaStore
@@ -230,8 +233,22 @@ class CameraFragment: Fragment() {
                 }
                 // Disable click listener to prevent multiple requests simultaneously in flight
                 it.isEnabled = false
+                fragmentCameraBinding.timer.visibility = View.VISIBLE
 
-                savePhoto(args.cameraId)
+                val beepingTone = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+
+                object: CountDownTimer(5000, 1000) {
+                    override fun onTick(millisUntilFinished: Long) {
+                        val secondsRemaining = millisUntilFinished / 1000
+                        fragmentCameraBinding.timer.text = "$secondsRemaining"
+                        beepingTone.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
+                    }
+                    override fun onFinish() {
+                        fragmentCameraBinding.timer.visibility = View.INVISIBLE
+                        Utils.viberate(requireContext())
+                        savePhoto(args.cameraId)
+                    }
+                }.start()
                 // Re-enable click listener after photo is taken
                 it.post { it.isEnabled = true }
             }
@@ -274,6 +291,8 @@ class CameraFragment: Fragment() {
 
                     }
                     else {
+                        cameraIdNIR = "0"
+
                         // Display the photo taken to user
                         lifecycleScope.launch(Dispatchers.Main) {
                             navController.navigate(
