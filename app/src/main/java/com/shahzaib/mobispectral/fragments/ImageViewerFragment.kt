@@ -67,6 +67,7 @@ class ImageViewerFragment: Fragment() {
     private var bottomCrop = 0F
     private var leftCrop = 0F
     private var rightCrop = 0F
+    private val loadingDialogFragment = LoadingDialogFragment()
 
     private fun imageViewFactory() = ImageView(requireContext()).apply {
         layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
@@ -75,6 +76,8 @@ class ImageViewerFragment: Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View {
         OpenCVLoader.initDebug()
+        LoadingDialogFragment.text = "Normalizing Image"
+        loadingDialogFragment.isCancelable = false
         makeFolderInRoot(Utils.MobiSpectralPath, requireContext())
 
         MainActivity.originalImageRGB = args.filePath
@@ -137,7 +140,23 @@ class ImageViewerFragment: Fragment() {
             }
         }
 
-        lifecycleScope.launch(Dispatchers.Main) {
+        fragmentImageViewerBinding.reloadButton.setOnClickListener {
+            lifecycleScope.launch(Dispatchers.Main) {
+                navController.navigate(
+                    ImageViewerFragmentDirections
+                        .actionImageViewerFragmentToCameraFragment(
+                            Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).first, ImageFormat.JPEG)
+                )
+            }
+        }
+
+        loadingDialogFragment.show(childFragmentManager, LoadingDialogFragment.TAG)
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        lifecycleScope.launch(Dispatchers.IO) {
             // Load input image file
             val (bufferRGB, bufferNIR) = loadInputBuffer()
 
@@ -191,9 +210,16 @@ class ImageViewerFragment: Fragment() {
             Log.i("RGB NIR ByteArray Sizes", "${rgbByteArray.size}, ${nirByteArray.size}")
             nirByteArray = getNIRBand(nirByteArray)
             Log.i("RGB NIR ByteArray Sizes", "${rgbByteArray.size}, ${nirByteArray.size}")
-            addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 0)
-            addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 1)
-//            addItemToViewPager(fragmentImageViewerBinding.viewpager, unirImageBitmap, 2)
+            val viewpagerThread = Thread {
+                addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 0)
+                addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 1)
+            }
+
+            viewpagerThread.start()
+            try { viewpagerThread.join() }
+            catch (exception: InterruptedException) { exception.printStackTrace() }
+
+            loadingDialogFragment.dismissDialog()
 
             val rgbImage = File(args.filePath)
             val directoryPath = rgbImage.absolutePath.split(System.getProperty("file.separator")!!)
@@ -256,16 +282,6 @@ class ImageViewerFragment: Fragment() {
 //                }
             }
         }
-
-            fragmentImageViewerBinding.reloadButton.setOnClickListener {
-                lifecycleScope.launch(Dispatchers.Main) {
-                    navController.navigate(
-                        ImageViewerFragmentDirections
-                            .actionImageViewerFragmentToCameraFragment(
-                                Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).first, ImageFormat.JPEG)
-                    )
-                }
-            }
     }
 
     private fun bitmapToByteArray(bitmap: Bitmap): ByteArray {
@@ -347,7 +363,12 @@ class ImageViewerFragment: Fragment() {
 
         if (isRGB){
             bitmap = Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, null, false)
-            bitmap = whiteBalance(bitmap)!!
+            val whiteBalancingThread = Thread {
+                bitmap = whiteBalance(bitmap)
+            }
+            whiteBalancingThread.start()
+            try { whiteBalancingThread.join() }
+            catch (exception: InterruptedException) { exception.printStackTrace() }
         }
         else {
             bitmap = if (decodedBitmap.width > decodedBitmap.height)

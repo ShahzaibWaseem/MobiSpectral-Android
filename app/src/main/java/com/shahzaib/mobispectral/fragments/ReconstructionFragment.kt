@@ -51,7 +51,7 @@ class ReconstructionFragment: Fragment() {
     private var clickedX = 0.0F
     private var clickedY = 0.0F
     private val bandsChosen = mutableListOf<Int>()
-    private val reconstructionDialogFragment = ReconstructionDialogFragment()
+    private val loadingDialogFragment = LoadingDialogFragment()
     private val randomColor = Random()
     private var color = Color.argb(255, randomColor.nextInt(256), randomColor.nextInt(256), randomColor.nextInt(256))
 
@@ -99,7 +99,8 @@ class ReconstructionFragment: Fragment() {
         super.onCreateView(inflater, container, savedInstanceState)
         _fragmentReconstructionBinding = FragmentReconstructionBinding.inflate(
             inflater, container, false)
-        reconstructionDialogFragment.isCancelable = false
+        LoadingDialogFragment.text = "Reconstructing Hypercube"
+        loadingDialogFragment.isCancelable = false
 
         sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
         mobiSpectralApplication = sharedPreferences.getString("application", "Organic Non-Organic Apple Classification")!!
@@ -263,7 +264,7 @@ class ReconstructionFragment: Fragment() {
             fragmentReconstructionBinding.textConstraintView.visibility = View.INVISIBLE
             fragmentReconstructionBinding.graphView.visibility = View.VISIBLE
         }
-        reconstructionDialogFragment.show(childFragmentManager, ReconstructionDialogFragment.TAG)
+        loadingDialogFragment.show(childFragmentManager, LoadingDialogFragment.TAG)
     }
 
     override fun onStart() {
@@ -321,7 +322,7 @@ class ReconstructionFragment: Fragment() {
             catch (exception: InterruptedException) { exception.printStackTrace() }
             addItemToViewPager(fragmentReconstructionBinding.viewpager, MainActivity.tempRGBBitmap, 5)
 //            fragmentReconstructionBinding.viewpager.currentItem = fragmentReconstructionBinding.viewpager.adapter!!.itemCount - 1
-            reconstructionDialogFragment.dismissDialog()
+            loadingDialogFragment.dismissDialog()
         }
     }
 

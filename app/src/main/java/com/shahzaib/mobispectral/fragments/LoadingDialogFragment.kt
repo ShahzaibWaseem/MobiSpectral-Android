@@ -7,7 +7,7 @@ import android.view.View
 import androidx.fragment.app.DialogFragment
 import com.shahzaib.mobispectral.databinding.FragmentReconstructionDialogBinding
 
-class ReconstructionDialogFragment: DialogFragment() {
+class LoadingDialogFragment: DialogFragment() {
     private lateinit var alertDialog: AlertDialog
     private var _fragmentReconstructionDialogBinding: FragmentReconstructionDialogBinding? = null
 
@@ -16,6 +16,7 @@ class ReconstructionDialogFragment: DialogFragment() {
         _fragmentReconstructionDialogBinding = FragmentReconstructionDialogBinding.inflate(layoutInflater)
         _fragmentReconstructionDialogBinding!!.progressBar.visibility = View.VISIBLE
         _fragmentReconstructionDialogBinding!!.progressBar.progress = 30
+        _fragmentReconstructionDialogBinding!!.textView.text = text
         alertDialog = AlertDialog.Builder(requireContext()).setCancelable(false).create()
 
         alertDialog.setView(_fragmentReconstructionDialogBinding!!.root)
@@ -27,6 +28,7 @@ class ReconstructionDialogFragment: DialogFragment() {
     }
 
     companion object {
-        const val TAG = "ReconstructionDialog"
+        const val TAG = "LoadingDialog"
+        var text = ""
     }
 }
