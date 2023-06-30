@@ -345,8 +345,7 @@ class ImageViewerFragment: Fragment() {
 
     private fun whiteBalance(rgbBitmap: Bitmap): Bitmap {
         val whiteBalanceModel = WhiteBalance(requireContext())
-        val bitmap = whiteBalanceModel.whiteBalance(rgbBitmap)
-        return bitmap
+        return whiteBalanceModel.whiteBalance(rgbBitmap)
     }
 
     /** Utility function used to decode a [Bitmap] from a byte array */

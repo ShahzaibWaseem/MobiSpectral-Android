@@ -270,33 +270,30 @@ class CameraFragment: Fragment() {
                 Log.d(TAG, "Image saved: ${output.absolutePath}")
 
                 if (cameraId == cameraIdRGB){
-                    if (cameraIdNIR == "Shelf Life Prediction") {
-                        lifecycleScope.launch(Dispatchers.Main) {
-                            navController.navigate(
-                                CameraFragmentDirections.actionCameraFragmentToAudioFragment(rgbAbsolutePath, fileFormat)
-                            )
+                    when (cameraIdNIR) {
+                        "Shelf Life Prediction" -> {
+                            lifecycleScope.launch(Dispatchers.Main) {
+                                navController.navigate(
+                                    CameraFragmentDirections.actionCameraFragmentToAudioFragment(rgbAbsolutePath, fileFormat)
+                                )
+                            }
                         }
-                    }
-                    else if (cameraIdNIR == "OnePlus") {
-//                        val photochromIntent = Intent()
-//                        photochromIntent.component = ComponentName("com.oneplus.factorymode", "com.oneplus.factorymode/.camera.manualtest.CameraManualTest")
-//
-//                        startActivity(photochromIntent)
-//                        startMyActivityForResult()
-                        // Display the photo taken to user
-                        lifecycleScope.launch(Dispatchers.Main) {
-                            navController.navigate(
-                                CameraFragmentDirections.actionCameraToJpegViewer(rgbAbsolutePath, nirAbsolutePath)
-                            )
-                        }
+                        "OnePlus" -> {
+                            // Display the photo taken to user
+                            lifecycleScope.launch(Dispatchers.Main) {
+                                navController.navigate(
+                                    CameraFragmentDirections.actionCameraToJpegViewer(rgbAbsolutePath, nirAbsolutePath)
+                                )
+                            }
 
-                    }
-                    else {
-                        // Display the photo taken to user
-                        lifecycleScope.launch(Dispatchers.Main) {
-                            navController.navigate(
-                                CameraFragmentDirections.actionCameraFragmentSelf(cameraIdNIR, ImageFormat.JPEG)
-                            )
+                        }
+                        else -> {
+                            // Display the photo taken to user
+                            lifecycleScope.launch(Dispatchers.Main) {
+                                navController.navigate(
+                                    CameraFragmentDirections.actionCameraFragmentSelf(cameraIdNIR, ImageFormat.JPEG)
+                                )
+                            }
                         }
                     }
                 }
@@ -314,7 +311,7 @@ class CameraFragment: Fragment() {
         }
     }
 
-    fun startMyActivityForResult() {
+    private fun startMyActivityForResult() {
         val galleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
         myActivityResultLauncher.launch(galleryIntent)
     }

@@ -30,8 +30,8 @@ object Utils {
     const val previewWidth = 600
     const val torchHeight = 640
     const val torchWidth = 480
-    const val aligningFactorX = 37  //This is 37 if picture captured in portrait [35-41 if un-warped] 83 if landscape
-    const val aligningFactorY = 87  //This is 83 if picture captured in portrait [74 if un-warped] 100 if landscape
+    private const val aligningFactorX = 37  //This is 37 if picture captured in portrait [35-41 if un-warped] 83 if landscape
+    private const val aligningFactorY = 87  //This is 83 if picture captured in portrait [74 if un-warped] 100 if landscape
     const val croppedHeight = 400
     const val croppedWidth = 300
     const val MobiSpectralPath = "MobiSpectral/processedImages"
@@ -41,7 +41,7 @@ object Utils {
 //                          doubleArrayOf(0.0, 542.8318136934467, 337.77984524454547),
 //                          doubleArrayOf( 0.0, 0.0, 1.0))
 
-    val K_Pixel = doubleArrayOf(542.6309295733048, 0.0, 232.78423096084575,
+    private val K_Pixel = doubleArrayOf(542.6309295733048, 0.0, 232.78423096084575,
                                 0.0, 542.8318136934467, 337.77984524454547,
                                 0.0, 0.0, 1.0)
 //    val D_Pixel = arrayOf(doubleArrayOf(-0.04591876756027188),
@@ -49,7 +49,7 @@ object Utils {
 //                          doubleArrayOf(-1.1137694861149858),
 //                          doubleArrayOf(0.4336328878297329))
 
-    val D_Pixel = doubleArrayOf(-0.04591876756027188,
+    private val D_Pixel = doubleArrayOf(-0.04591876756027188,
                                 0.4810113550965089,
                                 -1.1137694861149858,
                                 0.4336328878297329)
@@ -107,8 +107,8 @@ object Utils {
     }
 
     private fun initializeMats(parameter: DoubleArray, width: Int, height: Int): Mat {
-        val mat: Mat = Mat(height, width, CvType.CV_64FC1)
-        var iter: Int = 0
+        val mat = Mat(height, width, CvType.CV_64FC1)
+        var iter = 0
         for (row in 0 until height) {
             print("$row ")
             for (col in 0 until width) {

@@ -14,8 +14,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(activityMainBinding.root)
     }
     companion object {
-        val MOBISPECTRAL_APPLICATION = 0
-        val SHELF_LIFE_APPLICATION = 1
+        const val MOBISPECTRAL_APPLICATION = 0
+        const val SHELF_LIFE_APPLICATION = 1
         lateinit var fruitID: String
         lateinit var originalImageRGB: String
         lateinit var originalImageNIR: String

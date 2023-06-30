@@ -28,10 +28,6 @@ class WhiteBalance(context: Context) {
         model_s = Module.load(Utils.assetFilePath(context, "mobile_s.pt"))
     }
 
-    private fun preprocess(bitmap: Bitmap?): Tensor {
-        return TensorImageUtils.bitmapToFloat32Tensor(bitmap, mean, std)
-    }
-
     fun deepWB(image: Tensor): Tensor {
         val inputs: IValue = IValue.from(image)
         output_awb = model_awb?.forward(inputs)?.toTensor()!!
@@ -46,7 +42,7 @@ class WhiteBalance(context: Context) {
     * This function does the following python equivalent operation:
     * I_D = I_T * g_D + I_S * (1 - g_D)
     * */
-    fun multiplyAndAddTensors(tensor1: Tensor, tensor2: Tensor, scalar: Float): Tensor {
+    private fun multiplyAndAddTensors(tensor1: Tensor, tensor2: Tensor, scalar: Float): Tensor {
         val float1 = tensor1.dataAsFloatArray
         val float2 = tensor2.dataAsFloatArray
         val resulting = FloatArray(float1.size)
@@ -54,7 +50,7 @@ class WhiteBalance(context: Context) {
         for (i in resulting.indices) {
             resulting[i] = (scalar * float1[i]) + (float2[i] * (1-scalar))
         }
-        return Tensor.fromBlob(resulting, longArrayOf(1, 3, 800, 600))
+        return Tensor.fromBlob(resulting, longArrayOf(1, 3, tensor1.shape()[2], tensor1.shape()[3]))
     }
 
     private fun colorTempInterpolate(I_T: Tensor, I_S: Tensor): Tensor {

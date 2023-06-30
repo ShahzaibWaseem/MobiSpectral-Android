@@ -33,7 +33,6 @@ import java.util.*
 import kotlin.math.abs
 import kotlin.math.log10
 
-
 class AudioFragment: Fragment() {
     /** Android ViewBinding */
     private var _fragmentAudioBinding: FragmentAudioBinding? = null
