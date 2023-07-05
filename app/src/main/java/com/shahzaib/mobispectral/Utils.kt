@@ -157,7 +157,7 @@ object Utils {
     }
 
     fun cropImage(bitmap: Bitmap, left: Float, top: Float): Bitmap {
-        return Bitmap.createBitmap(bitmap, left.toInt(), top.toInt(), 128, 128, null, true)
+        return Bitmap.createBitmap(bitmap, left.toInt(), top.toInt(), 64, 64, null, true)
     }
 
     fun fixedAlignment(imageRGB: Bitmap): Bitmap{

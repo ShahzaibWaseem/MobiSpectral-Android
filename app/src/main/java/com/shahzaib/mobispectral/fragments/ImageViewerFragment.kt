@@ -179,8 +179,8 @@ class ImageViewerFragment: Fragment() {
                     e.printStackTrace()
                 }
             }
-//            else
-//                rgbImageBitmap = Utils.fixedAlignment(rgbImageBitmap)
+            else
+                rgbImageBitmap = Utils.fixedAlignment(rgbImageBitmap)
 
             Log.i("Bitmap Size", "Decoded RGB: ${rgbImageBitmap.width} x ${rgbImageBitmap.height}")
             Log.i("Bitmap Size", "Decoded NIR: ${nirImageBitmap.width} x ${nirImageBitmap.height}")

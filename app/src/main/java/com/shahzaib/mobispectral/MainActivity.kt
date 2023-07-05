@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity() {
         lateinit var originalImageNIR: String
         lateinit var processedImageRGB: String
         lateinit var processedImageNIR: String
-        lateinit var actualLabel: String
+        var actualLabel: String = ""
         lateinit var predictedLabel: String
         lateinit var reconstructionTime: String
         lateinit var classificationTime: String

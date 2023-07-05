@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 import java.nio.FloatBuffer
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.concurrent.schedule
 import kotlin.math.roundToInt
 import kotlin.properties.Delegates
@@ -83,6 +84,7 @@ class ReconstructionFragment: Fragment() {
     private var bitmapsWidth = Utils.torchWidth
     private var bitmapsHeight = Utils.torchHeight
     private var results = ArrayList<Long> ()
+    private var alreadyMultiLabelInferred = false
 
     private fun imageViewFactory() = ImageView(requireContext()).apply {
         layoutParams = ViewGroup.LayoutParams(
@@ -226,22 +228,22 @@ class ReconstructionFragment: Fragment() {
                         false
                     }
                 }
-//                else {
-//                    Log.i("Simple Mode", "${bitmapsWidth/2F}, ${bitmapsHeight/2F}")
-//                    color = Color.argb(
-//                        255,
-//                        randomColor.nextInt(256),
-//                        randomColor.nextInt(256),
-//                        randomColor.nextInt(256)
-//                    )
-//                    val paint = Paint()
-//                    paint.color = color
-//                    paint.style = Paint.Style.STROKE
-//                    canvas.drawCircle(Utils.torchWidth/2F, Utils.torchHeight/2F, 10F, paint)
-//                    view.setImageBitmap(bitmapOverlay)
-//                    inference()
-//                    addCSVLog(requireContext())
-//                }
+                else {
+                    Log.i("Simple Mode", "${bitmapsWidth/2F}, ${bitmapsHeight/2F}")
+                    color = Color.argb(
+                        255,
+                        randomColor.nextInt(256),
+                        randomColor.nextInt(256),
+                        randomColor.nextInt(256)
+                    )
+                    val paint = Paint()
+                    paint.color = color
+                    paint.style = Paint.Style.STROKE
+                    canvas.drawCircle(Utils.torchWidth/2F, Utils.torchHeight/2F, 10F, paint)
+                    view.setImageBitmap(bitmapOverlay)
+                    inference()
+                    addCSVLog(requireContext())
+                }
                 Glide.with(view).load(item).into(view)
             }
         }
@@ -334,16 +336,41 @@ class ReconstructionFragment: Fragment() {
             clickedX = bitmapsWidth/2F
             clickedY = bitmapsHeight/2F
         }
+        val finalResults = ArrayList<Long> ()
 
-        if (bitmapsWidth == 128 && bitmapsHeight == 128 && !advancedControlOption) {
-            for (i in 1..16)
-                for (j in 1..16)
-                    classifyOneSignature(8*i-4, 8*j-4)
+        if (bitmapsWidth == 64 && bitmapsHeight == 64 && !advancedControlOption && !alreadyMultiLabelInferred) {
+            val multiClassificationThread = Thread {
+//                for (i in 1..16)
+//                    for (j in 1..16)
+//                        classifyOneSignature(8*i-4, 8*j-4)
+                val zoneHeight = 16
+                val zoneWidth = 16
+                val numberOfZones = bitmapsWidth/zoneWidth
 
-            val frequencies = results.groupingBy { it }.eachCount()
-            Log.i("Signatures OneClassify", "$results $frequencies")
+                for (z1 in 0 until numberOfZones) {
+                    for (z2 in 0 until numberOfZones) {
+                        results = ArrayList()
+
+                        for (i in 1 .. zoneWidth) {
+                            for (j in 1 .. zoneHeight) {
+                                classifyOneSignature(z1*zoneWidth+i, z2*zoneHeight+j)
+                            }
+                        }
+                        val frequencies = results.groupingBy { it }.eachCount()
+                        finalResults.add(frequencies.maxBy { it.value }?.key!!)
+                        Log.i("Signatures OneClassify", "Final Results: $finalResults")
+                    }
+
+                }
+            }
+            multiClassificationThread.start()
+            try { multiClassificationThread.join() }
+            catch (exception: InterruptedException) { exception.printStackTrace() }
+
+            val finalFrequencies = finalResults.groupingBy { it }.eachCount()
+            Log.i("Signatures OneClassify", "$finalResults $finalFrequencies")
             var frequenciesString = ""
-            for (item in frequencies) {
+            for (item in finalFrequencies) {
                 val substring = if (Pair(mobiSpectralApplication, item.key) !in classificationLabels)
                     "Something went wrong = ${item.value}\n"
                 else
@@ -351,10 +378,11 @@ class ReconstructionFragment: Fragment() {
 
                 frequenciesString += substring
             }
+            Log.i("Frequency String", frequenciesString)
             fragmentReconstructionBinding.textViewClassTime.text = frequenciesString
             fragmentReconstructionBinding.textViewClassTime.visibility = View.VISIBLE
 //            Toast.makeText(requireContext(), frequenciesString, Toast.LENGTH_LONG).show()
-            results = ArrayList()
+//            results = ArrayList()
         }
 
         val inputSignature = getSignature(predictedHS, clickedX.toInt(), clickedY.toInt())
@@ -368,8 +396,8 @@ class ReconstructionFragment: Fragment() {
 //        addCSVLog(requireContext())
         fragmentReconstructionBinding.textViewClass.text = outputLabelString
         fragmentReconstructionBinding.graphView.title = "$outputLabelString Signature at (x: ${clickedX.toInt()}, y: ${clickedY.toInt()})"
+        alreadyMultiLabelInferred = true
     }
-
     private fun classifyOneSignature(x: Int, y: Int) {
         val ortEnvironment = OrtEnvironment.getEnvironment()
         val ortSession = context?.let { createORTSession(ortEnvironment) }
@@ -390,19 +418,20 @@ class ReconstructionFragment: Fragment() {
 
     private fun getSignature(predictedHS: FloatArray, SignatureX: Int, SignatureY: Int): FloatArray {
         val signature = FloatArray(numberOfBands)
-        Log.i("Touch Coordinates", "$SignatureX, $SignatureY")
+//        Log.i("Touch Coordinates", "$SignatureX, $SignatureY")
         val leftX = bitmapsWidth - SignatureX - 1       // -1 is the pixel itself
         val leftY = bitmapsHeight - SignatureY - 1      // -1 is the pixel itself
 
         var idx = bitmapsWidth*SignatureY
         idx += SignatureX
-        print("Signature is:")
+//        print("Signature is:")
         val series = LineGraphSeries<DataPoint>()
 
         for (i in 0 until numberOfBands) {
             signature[i] = predictedHS[idx]
             print(" ${predictedHS[idx]},")
-            series.appendData(DataPoint(ACTUAL_BAND_WAVELENGTHS[i*bandSpacing], predictedHS[idx].toDouble()), true, numberOfBands)
+            if (advancedControlOption)
+                series.appendData(DataPoint(ACTUAL_BAND_WAVELENGTHS[i*bandSpacing], predictedHS[idx].toDouble()), true, numberOfBands)
             idx += leftX + bitmapsWidth*leftY + (bitmapsWidth*SignatureY + SignatureX)
         }
         val graphView = fragmentReconstructionBinding.graphView
