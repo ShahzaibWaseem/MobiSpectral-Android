@@ -16,6 +16,10 @@ import android.os.VibratorManager
 import android.util.Log
 import androidx.core.net.toUri
 import com.opencsv.CSVWriter
+import com.shahzaib.mobispectral.Utils.MobiSpectralPath
+import com.shahzaib.mobispectral.Utils.croppedImageDirectory
+import com.shahzaib.mobispectral.Utils.processedImageDirectory
+import com.shahzaib.mobispectral.Utils.rawImageDirectory
 import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
@@ -35,6 +39,11 @@ object Utils {
     const val croppedHeight = 400
     const val croppedWidth = 300
     const val MobiSpectralPath = "MobiSpectral/processedImages"
+    const val rawImageDirectory = "rawImages"
+    const val croppedImageDirectory = "croppedImages"
+    const val processedImageDirectory = "processedImages"
+    const val boundingBoxWidth = 32F
+    const val boundingBoxHeight = 32F
 
     // Intrinsic Camera Parameters for Google Pixel 4 IR camera
 //    val K_Pixel = arrayOf(doubleArrayOf(542.6309295733048, 0.0, 232.78423096084575),
@@ -237,14 +246,16 @@ lateinit var csvFile: File
 /** Helper class used as a data holder for each selectable camera format item */
 data class FormatItem(val title: String, val cameraId: String, val format: Int, val orientation: String, val sensorArrangement: Int)
 
-data class MobiSpectralCSVFormat(val fruitID: String, val originalImageRGB: String,
-                                 val originalImageNIR: String, val processedImageRGB: String,
-                                 val processedImageNIR: String, val actualLabel: String,
-                                 val predictedLabel: String, val reconstructionTime: String,
+data class MobiSpectralCSVFormat(val fruitID: String,
+                                 val originalImageRGB: String, val originalImageNIR: String,
+                                 val croppedImageRGB: String, val croppedImageNIR: String,
+                                 val processedImageRGB: String, val processedImageNIR: String,
+                                 val actualLabel: String, val predictedLabel: String,
+                                 val normalizationTime: String, val reconstructionTime: String,
                                  val classificationTime: String) {
     fun csvFormat(): Array<String> {
-        return arrayOf(fruitID, originalImageRGB, originalImageNIR, processedImageRGB, processedImageNIR,
-            actualLabel, predictedLabel, reconstructionTime)
+        return arrayOf(fruitID, originalImageRGB, originalImageNIR, croppedImageRGB, croppedImageNIR,
+            processedImageRGB, processedImageNIR, actualLabel, predictedLabel, normalizationTime, reconstructionTime)
     }
 }
 data class ShelfLifeCSV(val image_path: String, val audio_path: String)
@@ -313,17 +324,17 @@ fun enumerateCameras(cameraManager: CameraManager): MutableList<FormatItem> {
     return availableCameras
 }
 
-fun makeFolderInRoot (directoryPath: String, context: Context) {
+fun makeFolderInRoot(directoryPath: String, context: Context) {
     val externalStorageDirectory = Environment.getExternalStorageDirectory().toString()
     val directory = File(externalStorageDirectory, "/$directoryPath")
-    if (!directory.exists()) {
-        directory.mkdirs()
-    }
+
     csvFile = File(directory.parent, "MobiSpectralLogs.csv")
-    if (! csvFile.exists()) {
+    if (!csvFile.exists()) {
         val header = MobiSpectralCSVFormat("Fruit ID", "Original RGB Path", "Original NIR Path",
+            "Cropped RGB Path", "Cropped NIR Path",
             "Processed RGB Path", "Processed NIR Path",
-            "Actual Label", "Predicted Label", "Reconstruction Time", "Classification Time")
+            "Actual Label", "Predicted Label", "Normalization Time",
+            "Reconstruction Time", "Classification Time")
 
         val writer = CSVWriter(
             FileWriter(csvFile, false),
@@ -338,20 +349,37 @@ fun makeFolderInRoot (directoryPath: String, context: Context) {
     }
 }
 
-fun saveProcessedImages (rgbBitmap: Bitmap, nirBitmap: Bitmap, rgbFileName: String, nirFileName: String) {
+fun makeDirectory(folder: String) {
     val externalStorageDirectory = Environment.getExternalStorageDirectory().toString()
     val rootDirectory = File(externalStorageDirectory, "/MobiSpectral")
-    val imageDirectory = File(rootDirectory, "/processedImages")
-    if (!imageDirectory.exists()) {
-        imageDirectory.mkdirs()
-    }
+    val directory = File(rootDirectory, "/$folder")
+    if (!directory.exists()) { directory.mkdirs() }
+}
+
+fun saveProcessedImages (rgbBitmap: Bitmap, nirBitmap: Bitmap, rgbFileName: String, nirFileName: String, directory: String) {
+    val externalStorageDirectory = Environment.getExternalStorageDirectory().toString()
+    val rootDirectory = File(externalStorageDirectory, "/MobiSpectral")
+    val imageDirectory = File(rootDirectory, "/$directory")
+
     val rgbImage = File(imageDirectory, rgbFileName)
     val nirImage = File(imageDirectory, nirFileName)
 
-    MainActivity.processedImageRGB = rgbImage.absolutePath.toUri().toString()
-    MainActivity.processedImageNIR = nirImage.absolutePath.toUri().toString()
+    when (directory) {
+        rawImageDirectory -> {
+            MainActivity.originalImageRGB = rgbImage.absolutePath.toUri().toString()
+            MainActivity.originalImageNIR = nirImage.absolutePath.toUri().toString()
+        }
+        processedImageDirectory -> {
+            MainActivity.processedImageRGB = rgbImage.absolutePath.toUri().toString()
+            MainActivity.processedImageNIR = nirImage.absolutePath.toUri().toString()
+        }
+        croppedImageDirectory -> {
+            MainActivity.croppedImageRGB = rgbImage.absolutePath.toUri().toString()
+            MainActivity.croppedImageNIR = nirImage.absolutePath.toUri().toString()
+        }
+    }
 
-    Log.i("FilePath", "${MainActivity.originalImageRGB} ${MainActivity.originalImageNIR} ${MainActivity.processedImageRGB}, ${MainActivity.processedImageNIR}")
+    Log.i("FilePath", "${rgbImage.absolutePath.toUri()} ${nirImage.absolutePath.toUri()}")
 
     Thread {
         try {
@@ -373,8 +401,10 @@ fun saveProcessedImages (rgbBitmap: Bitmap, nirBitmap: Bitmap, rgbFileName: Stri
 fun addCSVLog (context: Context) {
     if (csvFile.exists()) {
         val entry = MobiSpectralCSVFormat(MainActivity.fruitID, MainActivity.originalImageRGB, MainActivity.originalImageNIR,
-            MainActivity.processedImageRGB, MainActivity.processedImageNIR, MainActivity.actualLabel,
-            MainActivity.predictedLabel, MainActivity.reconstructionTime, MainActivity.classificationTime)
+            MainActivity.croppedImageRGB, MainActivity.croppedImageNIR,
+            MainActivity.processedImageRGB, MainActivity.processedImageNIR,
+            MainActivity.actualLabel, MainActivity.predictedLabel,
+            MainActivity.normalizationTime, MainActivity.reconstructionTime, MainActivity.classificationTime)
 
         val writer = CSVWriter(
             FileWriter(csvFile, true),
@@ -388,5 +418,5 @@ fun addCSVLog (context: Context) {
         MediaScannerConnection.scanFile(context, arrayOf(csvFile.absolutePath), null, null)
     }
     else
-        makeFolderInRoot(com.shahzaib.mobispectral.Utils.MobiSpectralPath, context)
+        makeFolderInRoot(MobiSpectralPath, context)
 }

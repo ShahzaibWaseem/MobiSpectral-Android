@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioButton
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -21,8 +22,7 @@ import com.shahzaib.mobispectral.databinding.FragmentApplicationselectorBinding
 
 class ApplicationSelectorFragment: Fragment() {
     private lateinit var fragmentApplicationselectorBinding: FragmentApplicationselectorBinding
-    private val applicationArray: Array<String> = arrayOf("Organic Non-Organic Apple Classification",
-        "Olive Oil Adulteration", "Organic Non-Organic Kiwi Classification")
+    private lateinit var applicationArray: Array<String>
 
     /** Host's navigation controller */
     private val navController: NavController by lazy {
@@ -39,6 +39,8 @@ class ApplicationSelectorFragment: Fragment() {
                               savedInstanceState: Bundle?): View {
         fragmentApplicationselectorBinding = FragmentApplicationselectorBinding.inflate(inflater, container, false)
         val applicationPicker = fragmentApplicationselectorBinding.applicationPicker
+        applicationArray = arrayOf(getString(R.string.organic_identification_string),
+            getString(R.string.olive_oil_string), getString(R.string.kiwi_string))
         applicationPicker.minValue = 0
         applicationPicker.maxValue = applicationArray.size-1
         applicationPicker.displayedValues = applicationArray
@@ -49,6 +51,7 @@ class ApplicationSelectorFragment: Fragment() {
     private fun disableButton(cameraIdNIR: String) {
         if (cameraIdNIR == "No NIR Camera") {
             fragmentApplicationselectorBinding.runApplicationButton.isEnabled = false
+            fragmentApplicationselectorBinding.runApplicationButton.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.sfu_dark_gray))
             fragmentApplicationselectorBinding.runApplicationButton.text = resources.getString(R.string.no_nir_warning)
             fragmentApplicationselectorBinding.runApplicationButton.transformationMethod = null
         }
@@ -65,7 +68,7 @@ class ApplicationSelectorFragment: Fragment() {
         var cameraIdNIR = Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).second
         disableButton(cameraIdNIR)
 
-        fragmentApplicationselectorBinding.applicationPicker.setOnValueChangedListener{ _, _, newVal ->
+        fragmentApplicationselectorBinding.applicationPicker.setOnValueChangedListener{_, _, newVal ->
             if (newVal != 3) {
                 disableButton(cameraIdNIR)
             }

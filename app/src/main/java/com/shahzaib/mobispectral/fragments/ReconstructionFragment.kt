@@ -71,19 +71,10 @@ class ReconstructionFragment: Fragment() {
     private lateinit var mobiSpectralControlOption: String
     private var advancedControlOption by Delegates.notNull<Boolean>()
 
-    private val classificationLabels = mapOf(
-        Pair("Organic Non-Organic Apple Classification", 0L) to "Non-Organic Apple",
-        Pair("Organic Non-Organic Apple Classification", 1L) to "Organic Apple",
-        Pair("Organic Non-Organic Kiwi Classification", 0L) to "Non-Organic Kiwi",
-        Pair("Organic Non-Organic Kiwi Classification", 1L) to "Organic Kiwi",
-        Pair("Olive Oil Adulteration", 0L) to "50% EVOO, 50% SFO",
-        Pair("Olive Oil Adulteration", 1L) to "75% EVOO, 25% SFO",
-        Pair("Olive Oil Adulteration", 2L) to "100% EVOO, 0% SFO",
-    )
+    private lateinit var classificationLabels: Map<Pair<String, Long>, String>
 
     private var bitmapsWidth = Utils.torchWidth
     private var bitmapsHeight = Utils.torchHeight
-    private var results = ArrayList<Long> ()
     private var alreadyMultiLabelInferred = false
 
     private fun imageViewFactory() = ImageView(requireContext()).apply {
@@ -104,28 +95,36 @@ class ReconstructionFragment: Fragment() {
         LoadingDialogFragment.text = "Reconstructing Hypercube"
         loadingDialogFragment.isCancelable = false
 
+        classificationLabels = mapOf(
+            Pair(getString(R.string.organic_identification_string), 0L) to "Non-Organic Apple",
+            Pair(getString(R.string.organic_identification_string), 1L) to "Organic Apple",
+            Pair(getString(R.string.kiwi_string), 0L) to "Non-Organic Kiwi",
+            Pair(getString(R.string.kiwi_string), 1L) to "Organic Kiwi",
+            Pair(getString(R.string.olive_oil_string), 0L) to "50% EVOO, 50% SFO",
+            Pair(getString(R.string.olive_oil_string), 1L) to "75% EVOO, 25% SFO",
+            Pair(getString(R.string.olive_oil_string), 2L) to "100% EVOO, 0% SFO",
+        )
+
         sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
-        mobiSpectralApplication = sharedPreferences.getString("application", "Organic Non-Organic Apple Classification")!!
+        mobiSpectralApplication = sharedPreferences.getString("application", getString(R.string.organic_identification_string))!!
         reconstructionFile = when (mobiSpectralApplication) {
-//            "Organic Non-Organic Apple Classification" -> "mobile_mst_apple_wb.pt"
-            "Organic Non-Organic Apple Classification" -> "mobile_mst_apple_kiwi_blueberry.pt"
-            "Olive Oil Adulteration" -> "mobile_mst_oil.pt"
-            "Organic Non-Organic Kiwi Classification" -> "mobile_mst_kiwi_dayl.pt"
-            else -> "mobile_mst_apple_wb.pt"
+            getString(R.string.organic_identification_string) -> getString(R.string.reconstruction_model_identification)
+            getString(R.string.olive_oil_string) -> getString(R.string.reconstruction_model_oil)
+            getString(R.string.kiwi_string) -> getString(R.string.reconstruction_model_kiwi)
+            else -> getString(R.string.reconstruction_model_apple_old)
         }
 
         classificationFile = when (mobiSpectralApplication) {
-            "Organic Non-Organic Apple Classification" -> R.raw.mobile_classifier_apple_kiwi_blueberry
-//            "Organic Non-Organic Apple Classification" -> R.raw.mobile_classifier_apple
-            "Olive Oil Adulteration" -> R.raw.mobile_classifier_oil
-            "Organic Non-Organic Kiwi Classification" -> R.raw.mobile_classifier_kiwi
+            getString(R.string.organic_identification_string) -> R.raw.mobile_classifier_apple_kiwi_blueberry
+            getString(R.string.olive_oil_string) -> R.raw.mobile_classifier_oil
+            getString(R.string.kiwi_string) -> R.raw.mobile_classifier_kiwi
             else -> R.raw.mobile_classifier_apple
         }
-        mobiSpectralControlOption = sharedPreferences.getString("option", "Advanced Option (with Signature Analysis)")!!
+        mobiSpectralControlOption = sharedPreferences.getString("option", getString(R.string.advanced_option_string))!!
 
         advancedControlOption = when (mobiSpectralControlOption) {
-            "Advanced Option (with Signature Analysis)" -> true
-            "Simple Option (no Signature Analysis)" -> false
+            getString(R.string.advanced_option_string) -> true
+            getString(R.string.simple_option_string) -> false
             else -> true
         }
 
@@ -328,6 +327,18 @@ class ReconstructionFragment: Fragment() {
         }
     }
 
+    private fun signatureAverage(signatureList: ArrayList<FloatArray>): FloatArray {
+        val averagedSignature = FloatArray(numberOfBands)
+        for (signature in 0 until signatureList.size) {
+            for (band in 0 until numberOfBands) {
+                averagedSignature[band] += signatureList[signature][band]
+            }
+        }
+        for (band in 0 until numberOfBands)
+            averagedSignature[band] = averagedSignature[band]/signatureList.size
+        return averagedSignature
+    }
+
     private fun inference() {
         val ortEnvironment = OrtEnvironment.getEnvironment()
         val ortSession = context?.let { createORTSession(ortEnvironment) }
@@ -340,27 +351,27 @@ class ReconstructionFragment: Fragment() {
 
         if (bitmapsWidth == 64 && bitmapsHeight == 64 && !advancedControlOption && !alreadyMultiLabelInferred) {
             val multiClassificationThread = Thread {
-//                for (i in 1..16)
-//                    for (j in 1..16)
-//                        classifyOneSignature(8*i-4, 8*j-4)
                 val zoneHeight = 16
                 val zoneWidth = 16
                 val numberOfZones = bitmapsWidth/zoneWidth
 
                 for (z1 in 0 until numberOfZones) {
                     for (z2 in 0 until numberOfZones) {
-                        results = ArrayList()
+                        val results = ArrayList<Long> ()
+                        val signatureList = ArrayList<FloatArray> ()
 
                         for (i in 1 .. zoneWidth) {
                             for (j in 1 .. zoneHeight) {
-                                classifyOneSignature(z1*zoneWidth+i, z2*zoneHeight+j)
+                                // print("(${z1*zoneWidth+i}, ${z2*zoneWidth+j}), ")
+                                signatureList.add(getSignature(predictedHS, z1*zoneWidth+i, z2*zoneWidth+j))
                             }
                         }
+                        // println()
+                        results.add(classifyOneSignature(signatureAverage(signatureList)))
                         val frequencies = results.groupingBy { it }.eachCount()
-                        finalResults.add(frequencies.maxBy { it.value }?.key!!)
+                        finalResults.add(frequencies.maxBy { it.value }.key)
                         Log.i("Signatures OneClassify", "Final Results: $finalResults")
                     }
-
                 }
             }
             multiClassificationThread.start()
@@ -372,9 +383,9 @@ class ReconstructionFragment: Fragment() {
             var frequenciesString = ""
             for (item in finalFrequencies) {
                 val substring = if (Pair(mobiSpectralApplication, item.key) !in classificationLabels)
-                    "Something went wrong = ${item.value}\n"
+                    "Something went wrong = ${item.value.toFloat()/finalResults.size.toFloat()}\n"
                 else
-                    "${classificationLabels[Pair(mobiSpectralApplication, item.key)]!!} = ${item.value}\n"
+                    "${classificationLabels[Pair(mobiSpectralApplication, item.key)]!!} = ${item.value.toFloat()/finalResults.size.toFloat()}\n"
 
                 frequenciesString += substring
             }
@@ -386,7 +397,7 @@ class ReconstructionFragment: Fragment() {
         }
 
         val inputSignature = getSignature(predictedHS, clickedX.toInt(), clickedY.toInt())
-        val outputLabel = ortSession?.let { classifyHypercube(inputSignature, it, ortEnvironment) }
+        val outputLabel = ortSession?.let { classificationInference(inputSignature, it, ortEnvironment) }
         println("Output Label: $outputLabel")
         outputLabelString = if (Pair(mobiSpectralApplication, outputLabel) !in classificationLabels)
             "Something went wrong"
@@ -398,51 +409,53 @@ class ReconstructionFragment: Fragment() {
         fragmentReconstructionBinding.graphView.title = "$outputLabelString Signature at (x: ${clickedX.toInt()}, y: ${clickedY.toInt()})"
         alreadyMultiLabelInferred = true
     }
-    private fun classifyOneSignature(x: Int, y: Int) {
+    private fun classifyOneSignature(signature: FloatArray): Long {
         val ortEnvironment = OrtEnvironment.getEnvironment()
         val ortSession = context?.let { createORTSession(ortEnvironment) }
 
-        val signature = getSignature(predictedHS, x, y)
-        val outputLabel = ortSession?.let { classifyHypercube(signature, it, ortEnvironment) }
-        Log.i("Signatures OneClassify", "$x, $y, $outputLabel")
+        val outputLabel = ortSession?.let { classificationInference(signature, it, ortEnvironment) }
+        Log.i("Signatures OneClassify", "$signature $outputLabel")
 
         outputLabelString = if (Pair(mobiSpectralApplication, outputLabel) !in classificationLabels)
             "Something went wrong"
         else
             classificationLabels[Pair(mobiSpectralApplication, outputLabel)]!!
         if (outputLabel != null) {
-            results.add(outputLabel)
+            return outputLabel
         }
+        return -1L
 //        MainActivity.predictedLabel = outputLabelString
     }
 
     private fun getSignature(predictedHS: FloatArray, SignatureX: Int, SignatureY: Int): FloatArray {
         val signature = FloatArray(numberOfBands)
-//        Log.i("Touch Coordinates", "$SignatureX, $SignatureY")
+        // Log.i("Touch Coordinates", "$SignatureX, $SignatureY")
         val leftX = bitmapsWidth - SignatureX - 1       // -1 is the pixel itself
         val leftY = bitmapsHeight - SignatureY - 1      // -1 is the pixel itself
 
         var idx = bitmapsWidth*SignatureY
         idx += SignatureX
-//        print("Signature is:")
+        // print("Signature is:")
         val series = LineGraphSeries<DataPoint>()
 
         for (i in 0 until numberOfBands) {
             signature[i] = predictedHS[idx]
-            print(" ${predictedHS[idx]},")
             if (advancedControlOption)
                 series.appendData(DataPoint(ACTUAL_BAND_WAVELENGTHS[i*bandSpacing], predictedHS[idx].toDouble()), true, numberOfBands)
             idx += leftX + bitmapsWidth*leftY + (bitmapsWidth*SignatureY + SignatureX)
         }
-        val graphView = fragmentReconstructionBinding.graphView
-//        graphView.removeAllSeries()         // remove all previous series
-        graphView.title = "$outputLabelString Signature at (x: $SignatureX, y: $SignatureY)"
-        graphView.gridLabelRenderer.padding = 50
-        graphView.gridLabelRenderer.textSize = 50F
-        series.dataPointsRadius = 20F
-        series.thickness = 10
-        series.color = color
-        graphView.addSeries(series)
+
+        if (advancedControlOption) {
+            val graphView = fragmentReconstructionBinding.graphView
+            graphView.removeAllSeries()         // remove all previous series
+            graphView.title = "$outputLabelString Signature at (x: $SignatureX, y: $SignatureY)"
+            graphView.gridLabelRenderer.padding = 50
+            graphView.gridLabelRenderer.textSize = 50F
+            series.dataPointsRadius = 20F
+            series.thickness = 10
+            series.color = color
+            graphView.addSeries(series)
+        }
 
         return signature
     }
@@ -474,7 +487,7 @@ class ReconstructionFragment: Fragment() {
         fragmentReconstructionBinding.textViewReconTime.text = getString(R.string.reconstruction_time_string, reconstructionDuration)
     }
 
-    private fun classifyHypercube(input: FloatArray, ortSession: OrtSession,
+    private fun classificationInference(input: FloatArray, ortSession: OrtSession,
                                   ortEnvironment: OrtEnvironment): Long {
         val inputName = ortSession.inputNames?.iterator()?.next()
         val floatBufferInputs = FloatBuffer.wrap(input)
@@ -493,9 +506,7 @@ class ReconstructionFragment: Fragment() {
 //            Log.i("Results", "${results[item].value}")
 //        }
         var output = results[0].value
-        println("Classifier OUTPUT Label" + output.toString() + " result: ${results[0].value}")
         output = output as LongArray
-        println("Classifier OUTPUT Label: " + output[0].toString())
 
         return output[0]
     }

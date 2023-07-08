@@ -15,6 +15,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.os.Environment
 import android.os.Handler
 import android.os.HandlerThread
 import android.provider.MediaStore
@@ -113,7 +114,7 @@ class CameraFragment: Fragment() {
         _fragmentCameraBinding = FragmentCameraBinding.inflate(inflater, container, false)
         sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
         mobiSpectralApplicationID =
-            when(sharedPreferences.getString("application", "Organic Non-Organic Apple Classification")!!) {
+            when(sharedPreferences.getString("application", "Organic Identification")!!) {
             "Shelf Life Prediction" -> MainActivity.SHELF_LIFE_APPLICATION
             else -> MainActivity.MOBISPECTRAL_APPLICATION
         }
@@ -238,7 +239,7 @@ class CameraFragment: Fragment() {
 
                 val beepingTone = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
 
-                object: CountDownTimer(5000, 1000) {
+                object: CountDownTimer(3000, 1000) {
                     override fun onTick(millisUntilFinished: Long) {
                         val secondsRemaining = millisUntilFinished / 1000
                         fragmentCameraBinding.timer.text = "$secondsRemaining"
@@ -507,7 +508,7 @@ class CameraFragment: Fragment() {
                         fragmentCameraBinding.illumination.text = resources.getString(R.string.formatted_illumination_string, "Adequate")
                         fragmentCameraBinding.illumination.setTextColor(ContextCompat.getColor(requireContext(), R.color.design_default_color_secondary))
                     }
-                    val output = createFile(requireContext(), nir)
+                    val output = createFile(nir)
                     FileOutputStream(output).use { it.write(rotatedBytes) }
                     cont.resume(output)
                     Log.i("Filename", output.toString())
@@ -569,11 +570,15 @@ class CameraFragment: Fragment() {
          *
          * @return [File] created.
          */
-        private fun createFile(context: Context, nir: String): File {
+        private fun createFile(nir: String): File {
+            val externalStorageDirectory = Environment.getExternalStorageDirectory().toString()
+            val rootDirectory = File(externalStorageDirectory, "/MobiSpectral")
+            val imageDirectory = File(rootDirectory, "/${Utils.rawImageDirectory}")
+
             val sdf = SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS", Locale.US)
             Log.i("Filename", sdf.toString())
             fileFormat = sdf.format(Date())
-            val file = File(context.filesDir, "IMG_${fileFormat}_$nir.jpg")
+            val file = File(imageDirectory, "IMG_${fileFormat}_$nir.jpg")
             if (nir == "RGB")
                 rgbAbsolutePath = file.absolutePath
             return file

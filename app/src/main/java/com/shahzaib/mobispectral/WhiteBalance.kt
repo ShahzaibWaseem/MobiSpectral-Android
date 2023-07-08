@@ -164,18 +164,16 @@ class WhiteBalance(context: Context) {
 
     fun whiteBalance(rgbBitmap: Bitmap): Bitmap {
         val rgbTensor = TensorImageUtils.bitmapToFloat32Tensor(rgbBitmap, mean, std)
-        val startTime = System.currentTimeMillis()
 
         Log.i("imageShape", "${rgbTensor.shape().toList()}")
 
         val outputs = deepWB(rgbTensor)
         Log.i("White Balancing", "Output Shape: ${outputs.shape().toList()}")
 
-         val whiteBalancedBitmap = floatArrayToBitmap(outputs.dataAsFloatArray, outputs.shape()[3].toInt(), outputs.shape()[2].toInt())
-
-        val duration = System.currentTimeMillis() - startTime
-        Log.i("White Balancing" , "White balancing Duration: $duration ms")
-
-        return whiteBalancedBitmap
+        return floatArrayToBitmap(
+            outputs.dataAsFloatArray,
+            outputs.shape()[3].toInt(),
+            outputs.shape()[2].toInt()
+        )
     }
 }

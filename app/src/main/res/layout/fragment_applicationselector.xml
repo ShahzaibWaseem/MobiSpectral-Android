@@ -17,10 +17,10 @@
         android:text="@string/app_name"
         android:textColor="@color/white"
         android:textSize="70sp"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/guideline"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline"
@@ -37,10 +37,10 @@
         android:text="@string/application_picker_string"
         android:textSize="20sp"
         android:fontFamily="@font/din_pro_condenced"
+        app:layout_constraintTop_toBottomOf="@+id/guideline"
         app:layout_constraintBottom_toTopOf="@+id/applicationPicker"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/Title" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <NumberPicker
         android:id="@+id/applicationPicker"
@@ -48,7 +48,21 @@
         android:layout_height="wrap_content"
         android:textSize="15sp"
         android:backgroundTint="@color/sfu_red"
+        android:descendantFocusability="blocksDescendants"
         app:layout_constraintTop_toBottomOf="@+id/applicationPickerTitle"
+        app:layout_constraintBottom_toTopOf="@+id/chooseModeTextView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/chooseModeTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="@string/choose_mode_string"
+        android:textSize="20sp"
+        android:fontFamily="@font/din_pro_condenced"
+        app:layout_constraintTop_toBottomOf="@+id/applicationPicker"
         app:layout_constraintBottom_toTopOf="@+id/radioGroup"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -57,18 +71,11 @@
         android:id="@+id/radioGroup"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:checkedButton="@+id/advancedOption"
+        android:checkedButton="@+id/laymanOption"
         app:layout_constraintTop_toBottomOf="@+id/applicationPicker"
-        app:layout_constraintBottom_toTopOf="@+id/guideline2"
+        app:layout_constraintBottom_toTopOf="@+id/liveModeCheckMark"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
-
-        <RadioButton
-            android:id="@+id/advancedOption"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:buttonTint="@color/sfu_primary"
-            android:text="@string/advanced_option_string"/>
 
         <RadioButton
             android:id="@+id/laymanOption"
@@ -77,14 +84,32 @@
             android:buttonTint="@color/sfu_primary"
             android:text="@string/simple_option_string"/>
 
+        <RadioButton
+            android:id="@+id/advancedOption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:buttonTint="@color/sfu_primary"
+            android:text="@string/advanced_option_string"/>
+
     </RadioGroup>
+
+    <CheckBox
+        android:id="@+id/liveModeCheckMark"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/offline_mode_string"
+        android:buttonTint="@color/sfu_primary"
+        app:layout_constraintTop_toBottomOf="@+id/radioGroup"
+        app:layout_constraintBottom_toTopOf="@+id/guideline2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.50" />
+        app:layout_constraintGuide_percent="0.65" />
 
     <Button
         android:id="@+id/runApplicationButton"
@@ -131,7 +156,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            app:layout_constraintGuide_percent="0.50" />
+            app:layout_constraintGuide_percent="0.5" />
 
         <TextView
             android:id="@+id/sfuTextView"

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.*
 import android.os.Bundle
+import android.os.Handler
 import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
@@ -22,7 +23,6 @@ import com.bumptech.glide.Glide
 import com.example.android.camera.utils.GenericListAdapter
 import com.google.android.material.tabs.TabLayoutMediator
 import com.shahzaib.mobispectral.*
-import com.shahzaib.mobispectral.WhiteBalance
 import com.shahzaib.mobispectral.Utils.cropImage
 import com.shahzaib.mobispectral.databinding.FragmentImageviewerBinding
 import kotlinx.coroutines.Dispatchers
@@ -72,6 +72,22 @@ class ImageViewerFragment: Fragment() {
     private fun imageViewFactory() = ImageView(requireContext()).apply {
         layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
     }
+
+    private fun cropImage(left: Float, right: Float, top: Float, bottom: Float,
+                          canvas: Canvas, view: ImageView, bitmapOverlay: Bitmap) {
+        val paint = Paint()
+        paint.color = Color.argb(255, 0, 0, 0)
+        paint.strokeWidth = 2.5F
+        paint.style = Paint.Style.STROKE
+
+        Log.i("Crop Location", "$left, $right, $top, $bottom")
+
+        canvas.drawRect(left, top, right, bottom, paint)
+        view.setImageBitmap(bitmapOverlay)
+        MainActivity.tempRGBBitmap = bitmapOverlay
+        MainActivity.tempRectangle = Rect(bottom.toInt(), left.toInt(), right.toInt(), top.toInt())
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View {
@@ -83,7 +99,6 @@ class ImageViewerFragment: Fragment() {
         MainActivity.originalImageRGB = args.filePath
         MainActivity.originalImageNIR = args.filePath2
 
-        val squareColor = Color.argb(255, 0, 0, 0)
         _fragmentImageViewerBinding = FragmentImageviewerBinding.inflate(inflater, container, false)
         fragmentImageViewerBinding.viewpager.apply {
             offscreenPageLimit=2
@@ -91,31 +106,29 @@ class ImageViewerFragment: Fragment() {
                 itemViewFactory = { imageViewFactory() }) { view, item, _ ->
                 view as ImageView
                 view.scaleType = ImageView.ScaleType.FIT_XY
+                val bitmapOverlay = Bitmap.createBitmap(item.width, item.height, item.config)
+                val canvas = Canvas(bitmapOverlay)
+
+                canvas.drawBitmap(item, Matrix(), null)
+                Handler().postDelayed({
+                    cropImage(item.width/2 - Utils.boundingBoxWidth, item.width/2 + Utils.boundingBoxWidth,
+                        item.height/2 - Utils.boundingBoxHeight, item.height/2 + Utils.boundingBoxHeight,
+                        canvas, view, bitmapOverlay)
+                }, 100)
 
                 view.setOnTouchListener { v, event ->
-                    val bitmapOverlay = Bitmap.createBitmap(item.width, item.height, item.config)
-                    val canvas = Canvas(bitmapOverlay)
                     canvas.drawBitmap(item, Matrix(), null)
+
                     val clickedX = (event!!.x / v!!.width) * bitmapsWidth
                     val clickedY = (event.y / v.height) * bitmapsHeight
                     Log.i("View Dimensions", "$clickedX, $clickedY, ${v.width}, ${v.height}")
 
-                    val paint = Paint()
-                    paint.color = squareColor
-                    paint.strokeWidth = 2.5F
-                    paint.style = Paint.Style.STROKE
+                    leftCrop = clickedX - Utils.boundingBoxWidth
+                    topCrop = clickedY - Utils.boundingBoxHeight
+                    rightCrop = clickedX + Utils.boundingBoxWidth
+                    bottomCrop = clickedY + Utils.boundingBoxHeight
+                    cropImage(leftCrop, rightCrop, topCrop, bottomCrop, canvas, view, bitmapOverlay)
 
-                    leftCrop = clickedX - 64F
-                    topCrop = clickedY - 64F
-                    rightCrop = clickedX + 64F
-                    bottomCrop = clickedY + 64F
-
-                    canvas.drawRect(leftCrop, topCrop, rightCrop, bottomCrop, paint)
-                    view.setImageBitmap(bitmapOverlay)
-                    MainActivity.tempRGBBitmap = bitmapOverlay
-                    MainActivity.tempRectangle = Rect(bottomCrop.toInt(),
-                        leftCrop.toInt(), rightCrop.toInt(), topCrop.toInt()
-                    )
                     false
                 }
                 Glide.with(view).load(item).into(view)
@@ -155,7 +168,6 @@ class ImageViewerFragment: Fragment() {
 
     override fun onStart() {
         super.onStart()
-
         lifecycleScope.launch(Dispatchers.IO) {
             // Load input image file
             val (bufferRGB, bufferNIR) = loadInputBuffer()
@@ -186,23 +198,23 @@ class ImageViewerFragment: Fragment() {
             Log.i("Bitmap Size", "Decoded NIR: ${nirImageBitmap.width} x ${nirImageBitmap.height}")
 
             sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
-            val advancedControlOption = when (sharedPreferences.getString("option", "Advanced Option (with Signature Analysis)")!!) {
-                "Advanced Option (with Signature Analysis)" -> true
-                "Simple Option (no Signature Analysis)" -> false
+            val advancedControlOption = when (sharedPreferences.getString("option", getString(R.string.advanced_option_string))!!) {
+                getString(R.string.advanced_option_string) -> true
+                getString(R.string.advanced_option_string) -> false
                 else -> true
             }
             // Crop images to 300x150 if its the simple mode, to speed up the process.
-            if (!advancedControlOption) {
-                val newLeft = (rgbImageBitmap.width - Utils.croppedWidth)/2
-                val newTop = (rgbImageBitmap.height - Utils.croppedHeight)/2
-                Log.i("Crop Dimension", "Width: ${rgbImageBitmap.width/2} - ${Utils.croppedWidth/2} = $newLeft")
-                Log.i("Crop Dimension", "Height: ${rgbImageBitmap.height/2} - ${Utils.croppedHeight/2} = $newTop")
-                Log.i("Crop Dimension", "X + width: $newLeft + ${Utils.croppedWidth} = ${newLeft + Utils.croppedWidth}, rgbBitmap Width: ${rgbImageBitmap.width}")
-                Log.i("Crop Dimension", "Y + height: $newTop + ${Utils.croppedHeight} = ${newTop + Utils.croppedHeight}, rgbBitmap Height: ${rgbImageBitmap.height}")
-
-                rgbImageBitmap = Bitmap.createBitmap(rgbImageBitmap, newLeft, newTop, Utils.croppedWidth, Utils.croppedHeight)
-                nirImageBitmap = Bitmap.createBitmap(nirImageBitmap, newLeft, newTop, Utils.croppedWidth, Utils.croppedHeight)
-            }
+//            if (!advancedControlOption) {
+//                val newLeft = (rgbImageBitmap.width - Utils.croppedWidth)/2
+//                val newTop = (rgbImageBitmap.height - Utils.croppedHeight)/2
+//                Log.i("Crop Dimension", "Width: ${rgbImageBitmap.width/2} - ${Utils.croppedWidth/2} = $newLeft")
+//                Log.i("Crop Dimension", "Height: ${rgbImageBitmap.height/2} - ${Utils.croppedHeight/2} = $newTop")
+//                Log.i("Crop Dimension", "X + width: $newLeft + ${Utils.croppedWidth} = ${newLeft + Utils.croppedWidth}, rgbBitmap Width: ${rgbImageBitmap.width}")
+//                Log.i("Crop Dimension", "Y + height: $newTop + ${Utils.croppedHeight} = ${newTop + Utils.croppedHeight}, rgbBitmap Height: ${rgbImageBitmap.height}")
+//
+//                rgbImageBitmap = Bitmap.createBitmap(rgbImageBitmap, newLeft, newTop, Utils.croppedWidth, Utils.croppedHeight)
+//                nirImageBitmap = Bitmap.createBitmap(nirImageBitmap, newLeft, newTop, Utils.croppedWidth, Utils.croppedHeight)
+//            }
             bitmapsWidth = rgbImageBitmap.width
             bitmapsHeight = rgbImageBitmap.height
             val rgbByteArray = bitmapToByteArray(rgbImageBitmap)
@@ -227,38 +239,28 @@ class ImageViewerFragment: Fragment() {
             val nirImage = File(args.filePath2)
             val nirDirectoryPath = nirImage.absolutePath.split(System.getProperty("file.separator")!!)
             val nirImageFileName = nirDirectoryPath[nirDirectoryPath.size-1]
-            saveProcessedImages(rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName)
+            saveProcessedImages(rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName, Utils.processedImageDirectory)
             var buttonPressed = false
 
             fragmentImageViewerBinding.button.setOnClickListener {
-                val croppedRGBImageBitmap: Bitmap
-                val croppedNIRImageBitmap: Bitmap
-
-                if (leftCrop != 0F && topCrop != 0F) {
-                    croppedRGBImageBitmap = cropImage(rgbImageBitmap, leftCrop, topCrop)
-                    croppedNIRImageBitmap = cropImage(nirImageBitmap, leftCrop, topCrop)
-
-                    addItemToViewPager(fragmentImageViewerBinding.viewpager, croppedRGBImageBitmap, 2)
-                    addItemToViewPager(fragmentImageViewerBinding.viewpager, croppedNIRImageBitmap, 3)
-                    saveProcessedImages(croppedRGBImageBitmap, croppedNIRImageBitmap, rgbImageFileName, nirImageFileName)
+                if (leftCrop == 0F && topCrop == 0F) {
+                    leftCrop = rgbImageBitmap.width/2 - Utils.boundingBoxWidth
+                    topCrop = rgbImageBitmap.height/2 - Utils.boundingBoxWidth
                 }
-                else {
-                    croppedRGBImageBitmap = rgbImageBitmap
-                    croppedNIRImageBitmap = nirImageBitmap
-                }
+                val croppedRGBImageBitmap: Bitmap = cropImage(rgbImageBitmap, leftCrop, topCrop)
+                val croppedNIRImageBitmap: Bitmap = cropImage(nirImageBitmap, leftCrop, topCrop)
 
+                addItemToViewPager(fragmentImageViewerBinding.viewpager, croppedRGBImageBitmap, 2)
+                addItemToViewPager(fragmentImageViewerBinding.viewpager, croppedNIRImageBitmap, 3)
+                saveProcessedImages(croppedRGBImageBitmap, croppedNIRImageBitmap, rgbImageFileName, nirImageFileName, Utils.croppedImageDirectory)
 
                 if (buttonPressed) {
-                    if (leftCrop != 0F && topCrop != 0F) {
-                        rgbImageBitmap = croppedRGBImageBitmap
-                        nirImageBitmap = croppedNIRImageBitmap
-                    }
                     lifecycleScope.launch(Dispatchers.Main) {
                         navController.navigate(
                             ImageViewerFragmentDirections
                                 .actionImageViewerFragmentToReconstructionFragment2(
-                                    serializeByteArrayToString(rgbImageBitmap),
-                                    serializeByteArrayToString(nirImageBitmap))
+                                    serializeByteArrayToString(croppedRGBImageBitmap),
+                                    serializeByteArrayToString(croppedNIRImageBitmap))
                         )
                     }
                 }
@@ -344,8 +346,12 @@ class ImageViewerFragment: Fragment() {
     }
 
     private fun whiteBalance(rgbBitmap: Bitmap): Bitmap {
+        val startTime = System.currentTimeMillis()
         val whiteBalanceModel = WhiteBalance(requireContext())
-        return whiteBalanceModel.whiteBalance(rgbBitmap)
+        val whiteBalancedBitmap = whiteBalanceModel.whiteBalance(rgbBitmap)
+        val endTime = System.currentTimeMillis()
+        MainActivity.normalizationTime = (endTime - startTime).toString()
+        return whiteBalancedBitmap
     }
 
     /** Utility function used to decode a [Bitmap] from a byte array */

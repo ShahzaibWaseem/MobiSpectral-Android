@@ -19,10 +19,11 @@
     <string name="formatted_object_string">Object %s Detected</string>
     <string name="tab_layout_description">Tab layout</string>
     <string name="reload_capture_fragment_string">Re-capture the images</string>
-    <string name="application_picker_string">Select the application you want to launch</string>
-    <string name="advanced_option_string">Advanced Option (with Signature Analysis)</string>
-    <string name="simple_option_string">Simple Option (no Signature Analysis)</string>
-    <string name="launch_application_button">Launch Application</string>
+    <string name="application_picker_string">Choose Application</string>
+    <string name="choose_mode_string">Choose Mode</string>
+    <string name="advanced_option_string">Advanced (Signature Analysis)</string>
+    <string name="simple_option_string">Simple (Organic Identification)</string>
+    <string name="launch_application_button">Start</string>
     <string name="nmsl_string">NMSL @</string>
     <string name="sfu_string">SFU</string>
     <string name="simple_mode_signature_string">"Cropped Center Pixel (x: %1d, y: %2d)"</string>
@@ -35,5 +36,13 @@
     <string name="organic_text_string">Organicity</string>
     <string name="object_side_text_string">Object Side</string>
     <string name="object_id_string">Object ID: %2d</string>
+    <string name="offline_mode_string">Offline Mode</string>
 
+    <string name="organic_identification_string">Organic Identification</string>
+    <string name="olive_oil_string">Olive Oil Adulteration</string>
+    <string name="kiwi_string">Organic Kiwi Identification</string>
+    <string name="reconstruction_model_identification">mobile_mst_apple_kiwi_blueberry.pt</string>
+    <string name="reconstruction_model_oil">mobile_mst_oil.pt</string>
+    <string name="reconstruction_model_kiwi">mobile_mst_kiwi_dayl.pt</string>
+    <string name="reconstruction_model_apple_old">mobile_mst_apple_wb.pt</string>
 </resources>

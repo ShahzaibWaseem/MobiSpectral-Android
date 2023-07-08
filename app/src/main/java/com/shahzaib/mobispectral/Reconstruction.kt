@@ -50,7 +50,6 @@ class Reconstruction(context: Context, modelPath: String) {
         bitmapsWidth = rgbBitmap.width
         bitmapsHeight = rgbBitmap.height
 
-        val startTime = System.currentTimeMillis()
         val rgbTensor: Tensor = preprocess(rgbBitmap)
         val nirTensor: Tensor = getOneBand(preprocess(nirBitmap))
         Log.i("TensorShape", "${rgbTensor.shape().toList()}, ${nirTensor.shape().toList()}")
@@ -63,12 +62,7 @@ class Reconstruction(context: Context, modelPath: String) {
 
         val outputs: Tensor = model?.forward(inputs)?.toTensor()!!
         Log.i("Output Tensor", "${outputs.shape().toList()}")
-        val reconstructedHS: FloatArray = outputs.dataAsFloatArray
-        val endTime = System.currentTimeMillis()
-        val duration = endTime - startTime
 
-        println(duration)
-
-        return reconstructedHS
+        return outputs.dataAsFloatArray
     }
 }
