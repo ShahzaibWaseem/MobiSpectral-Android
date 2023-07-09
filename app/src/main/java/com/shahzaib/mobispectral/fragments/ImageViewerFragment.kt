@@ -168,6 +168,13 @@ class ImageViewerFragment: Fragment() {
 
     override fun onStart() {
         super.onStart()
+        sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
+        val advancedControlOption = when (sharedPreferences.getString("option", getString(R.string.advanced_option_string))!!) {
+            getString(R.string.advanced_option_string) -> true
+            getString(R.string.advanced_option_string) -> false
+            else -> true
+        }
+        val offlineMode = sharedPreferences.getBoolean("offline_mode", false)
         lifecycleScope.launch(Dispatchers.IO) {
             // Load input image file
             val (bufferRGB, bufferNIR) = loadInputBuffer()
@@ -175,20 +182,23 @@ class ImageViewerFragment: Fragment() {
             // Load the main JPEG image
             var rgbImageBitmap = decodeBitmap(bufferRGB, bufferRGB.size, true)
             var nirImageBitmap = decodeBitmap(bufferNIR, bufferNIR.size, false)
-//            val unirImageBitmap = Utils.unwarp(nirImageBitmap)
+            // val unirImageBitmap = Utils.unwarp(nirImageBitmap)
 
             if (rgbImageBitmap.width == nirImageBitmap.width && rgbImageBitmap.height == nirImageBitmap.height) {
-                try {
-                    val alignedNIR = Utils.alignImages(rgbImageBitmap, nirImageBitmap)
-                    val alignedRGB = Utils.alignImages(nirImageBitmap, rgbImageBitmap)
-                    if (alignedNIR.width >= 200 && alignedNIR.height >= 200 && alignedRGB.width >= 200
-                        && alignedRGB.height >= 200) {
-                        nirImageBitmap = alignedNIR
-                        rgbImageBitmap = alignedRGB
+                // TODO: just remove this logic for offline mode (No need for aligning images when choosing from offline mode)
+                if (!offlineMode){
+                    try {
+                        val alignedNIR = Utils.alignImages(rgbImageBitmap, nirImageBitmap)
+                        val alignedRGB = Utils.alignImages(nirImageBitmap, rgbImageBitmap)
+                        if (alignedNIR.width >= 200 && alignedNIR.height >= 200 && alignedRGB.width >= 200
+                            && alignedRGB.height >= 200) {
+                            nirImageBitmap = alignedNIR
+                            rgbImageBitmap = alignedRGB
+                        }
                     }
-                }
-                catch (e: org.opencv.core.CvException) {
-                    e.printStackTrace()
+                    catch (e: org.opencv.core.CvException) {
+                        e.printStackTrace()
+                    }
                 }
             }
             else
@@ -197,24 +207,6 @@ class ImageViewerFragment: Fragment() {
             Log.i("Bitmap Size", "Decoded RGB: ${rgbImageBitmap.width} x ${rgbImageBitmap.height}")
             Log.i("Bitmap Size", "Decoded NIR: ${nirImageBitmap.width} x ${nirImageBitmap.height}")
 
-            sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
-            val advancedControlOption = when (sharedPreferences.getString("option", getString(R.string.advanced_option_string))!!) {
-                getString(R.string.advanced_option_string) -> true
-                getString(R.string.advanced_option_string) -> false
-                else -> true
-            }
-            // Crop images to 300x150 if its the simple mode, to speed up the process.
-//            if (!advancedControlOption) {
-//                val newLeft = (rgbImageBitmap.width - Utils.croppedWidth)/2
-//                val newTop = (rgbImageBitmap.height - Utils.croppedHeight)/2
-//                Log.i("Crop Dimension", "Width: ${rgbImageBitmap.width/2} - ${Utils.croppedWidth/2} = $newLeft")
-//                Log.i("Crop Dimension", "Height: ${rgbImageBitmap.height/2} - ${Utils.croppedHeight/2} = $newTop")
-//                Log.i("Crop Dimension", "X + width: $newLeft + ${Utils.croppedWidth} = ${newLeft + Utils.croppedWidth}, rgbBitmap Width: ${rgbImageBitmap.width}")
-//                Log.i("Crop Dimension", "Y + height: $newTop + ${Utils.croppedHeight} = ${newTop + Utils.croppedHeight}, rgbBitmap Height: ${rgbImageBitmap.height}")
-//
-//                rgbImageBitmap = Bitmap.createBitmap(rgbImageBitmap, newLeft, newTop, Utils.croppedWidth, Utils.croppedHeight)
-//                nirImageBitmap = Bitmap.createBitmap(nirImageBitmap, newLeft, newTop, Utils.croppedWidth, Utils.croppedHeight)
-//            }
             bitmapsWidth = rgbImageBitmap.width
             bitmapsHeight = rgbImageBitmap.height
             val rgbByteArray = bitmapToByteArray(rgbImageBitmap)

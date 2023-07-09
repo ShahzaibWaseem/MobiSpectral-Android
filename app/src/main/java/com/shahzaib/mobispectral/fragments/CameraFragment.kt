@@ -101,12 +101,51 @@ class CameraFragment: Fragment() {
 
     private val myActivityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            fragmentCameraBinding
-            // Handle the result
-            val data: Intent? = result.data
-            Log.i("Image", "Path: ${getRealPathFromURI(data?.data!!)}")
-            nirAbsolutePath = getRealPathFromURI(data.data!!)
+            if (result.data?.clipData != null) {
+                when (result.data?.clipData?.itemCount) {
+                    1 -> {
+                        // Handle the result
+                        val data: Intent? = result.data
+                        nirAbsolutePath = getRealPathFromURI(data?.data!!)
+                        Log.i("Image", "Path: $nirAbsolutePath")
+                    }
+                    2 -> {
+                        val rgbUri: Uri? = result.data!!.clipData?.getItemAt(0)?.uri
+                        rgbAbsolutePath = rgbUri?.let { getRealPathFromURI(it) }.toString()
+                        val nirUri: Uri? = result.data!!.clipData?.getItemAt(1)?.uri
+                        nirAbsolutePath = nirUri?.let { getRealPathFromURI(it) }.toString()
+                        Log.i("Image", "RGB Path: $rgbAbsolutePath, NIR Path: $nirAbsolutePath")
+                        lifecycleScope.launchWhenStarted {
+                            navController.navigate(
+                                CameraFragmentDirections.actionCameraToJpegViewer(rgbAbsolutePath, nirAbsolutePath)
+                            )
+                        }
+                    }
+                    else -> {
+                        val alertDialogBuilder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+                        alertDialogBuilder.setMessage("Cannot select more than 2 images.\nFirst image RGB, Second image NIR")
+                        alertDialogBuilder.setTitle("Number of images exceeded 2")
+                        alertDialogBuilder.setCancelable(false)
+                        alertDialogBuilder.setPositiveButton("Reload") { dialog, which ->
+                            startMyActivityForResult()
+                        }
+                        val alertDialog = alertDialogBuilder.create()
+                        alertDialog.show()
+                    }
+                }
+            }
 
+        }
+        if (result.resultCode == Activity.RESULT_CANCELED) {
+            val alertDialogBuilder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+            alertDialogBuilder.setMessage("Select Images again.\nFirst image RGB, Second image NIR")
+            alertDialogBuilder.setTitle("No Images Selected")
+            alertDialogBuilder.setCancelable(false)
+            alertDialogBuilder.setPositiveButton("Reload") { dialog, which ->
+                startMyActivityForResult()
+            }
+            val alertDialog = alertDialogBuilder.create()
+            alertDialog.show()
         }
     }
 
@@ -314,6 +353,7 @@ class CameraFragment: Fragment() {
 
     private fun startMyActivityForResult() {
         val galleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        galleryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         myActivityResultLauncher.launch(galleryIntent)
     }
 

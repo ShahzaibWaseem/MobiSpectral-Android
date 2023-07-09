@@ -82,21 +82,19 @@ class ApplicationSelectorFragment: Fragment() {
             val selectedApplication = applicationArray[fragmentApplicationselectorBinding.applicationPicker.value]
             val selectedRadio = fragmentApplicationselectorBinding.radioGroup.checkedRadioButtonId
             val selectedOption = requireView().findViewById<RadioButton>(selectedRadio).text.toString()
+            val offlineMode = fragmentApplicationselectorBinding.liveModeCheckMark.isChecked
             val sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
             val editor = sharedPreferences?.edit()
             editor!!.putString("application", selectedApplication)
             editor.putString("option", selectedOption)
+            editor.putBoolean("offline_mode", offlineMode)
             Log.i("Radio Button", "$selectedApplication, $selectedOption")
             editor.apply()
 
             if (selectedApplication != "Shelf Life Prediction") {
                 lifecycleScope.launchWhenStarted {
-                    navController.safeNavigate(
-                        ApplicationSelectorFragmentDirections
-                            .actionAppselectorToCameraFragment(
-                                Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).first,
-                                ImageFormat.JPEG
-                            )
+                    navController.safeNavigate(ApplicationSelectorFragmentDirections.actionAppselectorToCameraFragment(
+                        Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).first, ImageFormat.JPEG)
                     )
                 }
             }
