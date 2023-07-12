@@ -42,7 +42,7 @@ class ReconstructionFragment: Fragment() {
     private lateinit var predictedHS: FloatArray
     private val bandsHS: MutableList<Bitmap> = mutableListOf()
     private val args: ReconstructionFragmentArgs by navArgs()
-    private var reconstructionDuration = 0L
+    private var reconstructionDuration = 0F
     private var classificationDuration = 0L
     private val numberOfBands = 68
     private val bandSpacing = 204 / numberOfBands
@@ -94,10 +94,10 @@ class ReconstructionFragment: Fragment() {
         loadingDialogFragment.isCancelable = false
 
         classificationLabels = mapOf(
-            Pair(getString(R.string.organic_identification_string), 0L) to "Non-Organic Apple",
-            Pair(getString(R.string.organic_identification_string), 1L) to "Organic Apple",
-            Pair(getString(R.string.kiwi_string), 0L) to "Non-Organic Kiwi",
-            Pair(getString(R.string.kiwi_string), 1L) to "Organic Kiwi",
+            Pair(getString(R.string.organic_identification_string), 0L) to "Non-Organic",
+            Pair(getString(R.string.organic_identification_string), 1L) to "Organic",
+            Pair(getString(R.string.kiwi_string), 0L) to "Non-Organic",
+            Pair(getString(R.string.kiwi_string), 1L) to "Organic",
             Pair(getString(R.string.olive_oil_string), 0L) to "50% EVOO, 50% SFO",
             Pair(getString(R.string.olive_oil_string), 1L) to "75% EVOO, 25% SFO",
             Pair(getString(R.string.olive_oil_string), 2L) to "100% EVOO, 0% SFO",
@@ -476,9 +476,9 @@ class ReconstructionFragment: Fragment() {
         Log.i("predictedHS Size", predictedHS.size.toString())
 
         val endTime = System.currentTimeMillis()
-        reconstructionDuration = (endTime - startTime)
+        reconstructionDuration = (endTime - startTime).toFloat() / 1000.0F
         println(getString(R.string.reconstruction_time_string, reconstructionDuration))
-        MainActivity.reconstructionTime = "$reconstructionDuration ms"
+        MainActivity.reconstructionTime = "$reconstructionDuration s"
         fragmentReconstructionBinding.textViewReconTime.text = getString(R.string.reconstruction_time_string, reconstructionDuration)
     }
 

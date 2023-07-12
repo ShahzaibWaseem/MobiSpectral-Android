@@ -69,6 +69,8 @@ class ImageViewerFragment: Fragment() {
     private var rightCrop = 0F
     private val loadingDialogFragment = LoadingDialogFragment()
 
+    private var advancedControlOption: Boolean = false
+
     private fun imageViewFactory() = ImageView(requireContext()).apply {
         layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
     }
@@ -82,7 +84,7 @@ class ImageViewerFragment: Fragment() {
 
         Log.i("Crop Location", "$left, $right, $top, $bottom")
 
-        canvas.drawRect(left, top, right, bottom, paint)
+        canvas.drawRect(left-2.5F, top-2.5F, right+2.5F, bottom+2.5F, paint)
         view.setImageBitmap(bitmapOverlay)
         if (bitmapOverlay.width > 64 && bitmapOverlay.height > 64 && position == 0) {
             MainActivity.tempRGBBitmap = bitmapOverlay
@@ -112,11 +114,15 @@ class ImageViewerFragment: Fragment() {
                 val canvas = Canvas(bitmapOverlay)
 
                 canvas.drawBitmap(item, Matrix(), null)
-                Handler().postDelayed({
-                    cropImage(item.width/2 - Utils.boundingBoxWidth, item.width/2 + Utils.boundingBoxWidth,
-                        item.height/2 - Utils.boundingBoxHeight, item.height/2 + Utils.boundingBoxHeight,
-                        canvas, view, bitmapOverlay, position)
-                }, 100)
+                if (!advancedControlOption)
+                    Handler().postDelayed({
+                        cropImage(item.width/2 - Utils.boundingBoxWidth, item.width/2 + Utils.boundingBoxWidth,
+                            item.height/2 - Utils.boundingBoxHeight, item.height/2 + Utils.boundingBoxHeight,
+                            canvas, view, bitmapOverlay, position)
+                    }, 100)
+                else {
+                    MainActivity.tempRGBBitmap = bitmapOverlay
+                }
 
                 view.setOnTouchListener { v, event ->
                     canvas.drawBitmap(item, Matrix(), null)
@@ -171,12 +177,13 @@ class ImageViewerFragment: Fragment() {
     override fun onStart() {
         super.onStart()
         sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
-        val advancedControlOption = when (sharedPreferences.getString("option", getString(R.string.advanced_option_string))!!) {
+        advancedControlOption = when (sharedPreferences.getString("option", getString(R.string.advanced_option_string))!!) {
             getString(R.string.advanced_option_string) -> true
-            getString(R.string.advanced_option_string) -> false
+            getString(R.string.simple_option_string) -> false
             else -> true
         }
         val offlineMode = sharedPreferences.getBoolean("offline_mode", false)
+
         lifecycleScope.launch(Dispatchers.IO) {
             // Load input image file
             val (bufferRGB, bufferNIR) = loadInputBuffer()
@@ -187,7 +194,6 @@ class ImageViewerFragment: Fragment() {
             // val unirImageBitmap = Utils.unwarp(nirImageBitmap)
 
             if (rgbImageBitmap.width == nirImageBitmap.width && rgbImageBitmap.height == nirImageBitmap.height) {
-                // TODO: just remove this logic for offline mode (No need for aligning images when choosing from offline mode)
                 if (!offlineMode){
                     try {
                         val alignedNIR = Utils.alignImages(rgbImageBitmap, nirImageBitmap)
@@ -237,24 +243,24 @@ class ImageViewerFragment: Fragment() {
             var buttonPressed = false
 
             fragmentImageViewerBinding.button.setOnClickListener {
-                if (leftCrop == 0F && topCrop == 0F) {
+                if (leftCrop == 0F && topCrop == 0F && !advancedControlOption) {
                     leftCrop = rgbImageBitmap.width/2 - Utils.boundingBoxWidth
                     topCrop = rgbImageBitmap.height/2 - Utils.boundingBoxWidth
+                    rgbImageBitmap = cropImage(rgbImageBitmap, leftCrop, topCrop)
+                    nirImageBitmap = cropImage(nirImageBitmap, leftCrop, topCrop)
+                    saveProcessedImages(rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName, Utils.croppedImageDirectory)
                 }
-                val croppedRGBImageBitmap: Bitmap = cropImage(rgbImageBitmap, leftCrop, topCrop)
-                val croppedNIRImageBitmap: Bitmap = cropImage(nirImageBitmap, leftCrop, topCrop)
 
-                addItemToViewPager(fragmentImageViewerBinding.viewpager, croppedRGBImageBitmap, 2)
-                addItemToViewPager(fragmentImageViewerBinding.viewpager, croppedNIRImageBitmap, 3)
-                saveProcessedImages(croppedRGBImageBitmap, croppedNIRImageBitmap, rgbImageFileName, nirImageFileName, Utils.croppedImageDirectory)
+                addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 2)
+                addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 3)
 
                 if (buttonPressed) {
                     lifecycleScope.launch(Dispatchers.Main) {
                         navController.navigate(
                             ImageViewerFragmentDirections
                                 .actionImageViewerFragmentToReconstructionFragment2(
-                                    serializeByteArrayToString(croppedRGBImageBitmap),
-                                    serializeByteArrayToString(croppedNIRImageBitmap))
+                                    serializeByteArrayToString(rgbImageBitmap),
+                                    serializeByteArrayToString(nirImageBitmap))
                         )
                     }
                 }

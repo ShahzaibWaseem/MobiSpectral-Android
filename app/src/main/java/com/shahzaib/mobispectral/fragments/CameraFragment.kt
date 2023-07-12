@@ -104,6 +104,7 @@ class CameraFragment: Fragment() {
 
     private lateinit var sharedPreferences: SharedPreferences
     private var mobiSpectralApplicationID = 0
+    private var offlineMode = false
 
     private val myActivityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -121,11 +122,23 @@ class CameraFragment: Fragment() {
             }
             else {
                 if (result.data?.clipData?.itemCount == 2) {
-                    val rgbUri: Uri? = result.data!!.clipData?.getItemAt(0)?.uri
-                    val nirUri: Uri? = result.data!!.clipData?.getItemAt(1)?.uri
+                    var rgbFile = File(getRealPathFromURI(result.data!!.clipData?.getItemAt(0)?.uri!!))
+                    var nirFile = File(getRealPathFromURI(result.data!!.clipData?.getItemAt(1)?.uri!!))
 
-                    var rgbBitmap = readImage(File(getRealPathFromURI(rgbUri!!)))
-                    var nirBitmap = readImage(File(getRealPathFromURI(nirUri!!)))
+                    if (rgbFile.absoluteFile.toString().contains("NIR")) {
+                        val tempFile = rgbFile
+                        rgbFile = nirFile
+                        nirFile = tempFile
+                    }
+
+                    var rgbBitmap = readImage(rgbFile)
+                    var nirBitmap = readImage(nirFile)
+
+                    if (nirBitmap.width > rgbBitmap.width && nirBitmap.height > rgbBitmap.height) {
+                        val tempBitmap = rgbBitmap
+                        rgbBitmap = nirBitmap
+                        nirBitmap = tempBitmap
+                    }
 
                     rgbBitmap = compressImage(rgbBitmap)
                     nirBitmap = compressImage(nirBitmap)
@@ -193,6 +206,7 @@ class CameraFragment: Fragment() {
             "Shelf Life Prediction" -> MainActivity.SHELF_LIFE_APPLICATION
             else -> MainActivity.MOBISPECTRAL_APPLICATION
         }
+        offlineMode = sharedPreferences.getBoolean("offline_mode", false)
         cameraIdRGB = Utils.getCameraIDs(requireContext(), mobiSpectralApplicationID).first
         cameraIdNIR = Utils.getCameraIDs(requireContext(), mobiSpectralApplicationID).second
 
@@ -215,7 +229,7 @@ class CameraFragment: Fragment() {
             alertDialog.show()
         }
 
-        if (cameraIdNIR == "OnePlus")
+        if (cameraIdNIR == "OnePlus" || offlineMode)
             startMyActivityForResult()
 
         fragmentCameraBinding.viewFinder.holder.addCallback(cameraSurfaceHolderCallback)
@@ -628,8 +642,7 @@ class CameraFragment: Fragment() {
             val sdf = SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS", Locale.US)
             Log.i("Filename", sdf.toString())
             fileFormat = sdf.format(Date())
-            val file = File(imageDirectory, "IMG_${fileFormat}_$nir.jpg")
-            return file
+            return File(imageDirectory, "IMG_${fileFormat}_$nir.jpg")
         }
     }
 }

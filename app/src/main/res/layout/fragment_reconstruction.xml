@@ -66,26 +66,36 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <TextView
-            android:id="@+id/simpleModeSignaturePositionTextView"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/analysisConstraint"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:visibility="invisible"
+            android:layout_height="0dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toTopOf="@+id/textViewClass"/>
+            app:layout_constraintBottom_toTopOf="@+id/textViewClass">
 
-        <Button
-            android:id="@+id/analysisButton"
-            android:text="@string/analysis_button_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:backgroundTint="@color/sfu_primary"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toTopOf="@+id/textViewClass"/>
+            <TextView
+                android:id="@+id/simpleModeSignaturePositionTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="invisible"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+            <Button
+                android:id="@+id/analysisButton"
+                android:text="@string/analysis_button_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/sfu_primary"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"/>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <ImageButton
             android:id="@+id/information"
@@ -96,7 +106,7 @@
             android:src="@android:drawable/ic_menu_info_details"
             app:layout_constraintBottom_toTopOf="@+id/textViewClass"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/analysisButton"
+            app:layout_constraintStart_toEndOf="@+id/analysisConstraint"
             app:layout_constraintTop_toTopOf="parent"
             tools:ignore="ImageContrastCheck" />
 
@@ -107,7 +117,7 @@
             android:fontFamily="@font/din_pro_condenced"
             android:gravity="center"
             android:textSize="22sp"
-            app:layout_constraintTop_toBottomOf="@+id/analysisButton"
+            app:layout_constraintTop_toBottomOf="@+id/analysisConstraint"
             app:layout_constraintBottom_toTopOf="@+id/textViewReconTime"
             tools:layout_editor_absoluteX="0dp" />
 
