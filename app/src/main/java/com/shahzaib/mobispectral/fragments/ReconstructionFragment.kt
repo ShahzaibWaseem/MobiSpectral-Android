@@ -16,7 +16,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -35,7 +34,6 @@ import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 import java.nio.FloatBuffer
 import java.util.*
-import kotlin.collections.ArrayList
 import kotlin.concurrent.schedule
 import kotlin.math.roundToInt
 import kotlin.properties.Delegates
@@ -146,7 +144,7 @@ class ReconstructionFragment: Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         fragmentReconstructionBinding.information.setOnClickListener {
-            val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+            val builder: AlertDialog.Builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
             if (!advancedControlOption)
                 builder.setMessage(R.string.reconstruction_analysis_information_simple_string)
             else
@@ -156,9 +154,6 @@ class ReconstructionFragment: Fragment() {
                     dialog: DialogInterface?, _: Int -> dialog?.cancel()
             }
             val alertDialog = builder.create()
-            alertDialog.setOnShowListener {
-                alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(requireContext(), R.color.sfu_primary))
-            }
             alertDialog.show()
         }
         fragmentReconstructionBinding.viewpager.apply {

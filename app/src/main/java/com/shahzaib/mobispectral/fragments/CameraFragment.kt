@@ -34,7 +34,10 @@ import com.example.android.camera.utils.getPreviewOutputSize
 import com.shahzaib.mobispectral.MainActivity
 import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.Utils
+import com.shahzaib.mobispectral.compressImage
 import com.shahzaib.mobispectral.databinding.FragmentCameraBinding
+import com.shahzaib.mobispectral.readImage
+import com.shahzaib.mobispectral.saveImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -96,71 +99,103 @@ class CameraFragment: Fragment() {
     private lateinit var cameraIdRGB: String
     private lateinit var cameraIdNIR: String
 
+    lateinit var rgbAbsolutePath: String
+    lateinit var nirAbsolutePath: String
+
     private lateinit var sharedPreferences: SharedPreferences
     private var mobiSpectralApplicationID = 0
 
     private val myActivityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            if (result.data?.clipData != null) {
-                when (result.data?.clipData?.itemCount) {
-                    1 -> {
-                        // Handle the result
-                        val data: Intent? = result.data
-                        nirAbsolutePath = getRealPathFromURI(data?.data!!)
-                        Log.i("Image", "Path: $nirAbsolutePath")
-                    }
-                    2 -> {
-                        val rgbUri: Uri? = result.data!!.clipData?.getItemAt(0)?.uri
-                        rgbAbsolutePath = rgbUri?.let { getRealPathFromURI(it) }.toString()
-                        val nirUri: Uri? = result.data!!.clipData?.getItemAt(1)?.uri
-                        nirAbsolutePath = nirUri?.let { getRealPathFromURI(it) }.toString()
-                        Log.i("Image", "RGB Path: $rgbAbsolutePath, NIR Path: $nirAbsolutePath")
-                        lifecycleScope.launchWhenStarted {
-                            navController.navigate(
-                                CameraFragmentDirections.actionCameraToJpegViewer(rgbAbsolutePath, nirAbsolutePath)
-                            )
-                        }
-                    }
-                    else -> {
-                        val alertDialogBuilder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-                        alertDialogBuilder.setMessage("Cannot select more than 2 images.\nFirst image RGB, Second image NIR")
-                        alertDialogBuilder.setTitle("Number of images exceeded 2")
-                        alertDialogBuilder.setCancelable(false)
-                        alertDialogBuilder.setPositiveButton("Reload") { dialog, which ->
-                            startMyActivityForResult()
-                        }
-                        val alertDialog = alertDialogBuilder.create()
-                        alertDialog.show()
-                    }
+            if (result.data?.clipData == null) {
+                if (cameraIdNIR != "OnePlus") {
+                    generateAlertBox("Only One Image Selected", "Cannot select 1 image, Select Two images.\nFirst image RGB, Second image NIR")
+                }
+                else {
+                    // If we have to select one image.
+                    val nirUri: Uri? = result.data!!.data
+                    Log.i("Result Contract", "Got the NIR Result")
+                    nirAbsolutePath = nirUri?.let { getRealPathFromURI(it) }.toString()
+                    Log.i("Image", "Path: $nirAbsolutePath")
                 }
             }
+            else {
+                if (result.data?.clipData?.itemCount == 2) {
+                    val rgbUri: Uri? = result.data!!.clipData?.getItemAt(0)?.uri
+                    val nirUri: Uri? = result.data!!.clipData?.getItemAt(1)?.uri
 
+                    var rgbBitmap = readImage(File(getRealPathFromURI(rgbUri!!)))
+                    var nirBitmap = readImage(File(getRealPathFromURI(nirUri!!)))
+
+                    rgbBitmap = compressImage(rgbBitmap)
+                    nirBitmap = compressImage(nirBitmap)
+
+                    val rgbBitmapOutputFile = createFile("RGB")
+                    val nirBitmapOutputFile = File(rgbBitmapOutputFile.toString().replace("RGB", "NIR"))
+                    rgbAbsolutePath = rgbBitmapOutputFile.absolutePath
+                    nirAbsolutePath = nirBitmapOutputFile.absolutePath
+                    Log.i("Image", "RGB Path: $rgbAbsolutePath, NIR Path: $nirAbsolutePath")
+
+                    lifecycleScope.launchWhenStarted {
+                        saveImage(rgbBitmap, rgbBitmapOutputFile)
+                        saveImage(nirBitmap, nirBitmapOutputFile)
+
+                        navController.navigate(
+                            CameraFragmentDirections.actionCameraToJpegViewer(rgbAbsolutePath, nirAbsolutePath)
+                        )
+                    }
+                }
+                else {
+                    generateAlertBox("Number of images exceeded 2", "Cannot select more than 2 images.\nFirst image RGB, Second image NIR")
+                }
+            }
         }
         if (result.resultCode == Activity.RESULT_CANCELED) {
-            val alertDialogBuilder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-            alertDialogBuilder.setMessage("Select Images again.\nFirst image RGB, Second image NIR")
-            alertDialogBuilder.setTitle("No Images Selected")
-            alertDialogBuilder.setCancelable(false)
-            alertDialogBuilder.setPositiveButton("Reload") { dialog, which ->
-                startMyActivityForResult()
-            }
-            val alertDialog = alertDialogBuilder.create()
-            alertDialog.show()
+            generateAlertBox("No Images Selected", "Select Images again.\nFirst image RGB, Second image NIR")
+        }
+    }
+
+    private fun generateAlertBox(title: String, text: String) {
+        val alertDialogBuilder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+        alertDialogBuilder.setMessage(text)
+        alertDialogBuilder.setTitle(title)
+        alertDialogBuilder.setCancelable(false)
+        alertDialogBuilder.setPositiveButton("Reload") { _, _ ->
+            startMyActivityForResult()
+        }
+        val alertDialog = alertDialogBuilder.create()
+        alertDialog.show()
+    }
+
+    private val cameraSurfaceHolderCallback = object: SurfaceHolder.Callback {
+        override fun surfaceDestroyed(holder: SurfaceHolder) = Unit
+
+        override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) = Unit
+
+        override fun surfaceCreated(holder: SurfaceHolder) {
+            // Selects appropriate preview size and configures view finder
+            val previewSize = getPreviewOutputSize(fragmentCameraBinding.viewFinder.display,
+                characteristics, SurfaceHolder::class.java)
+            // fragmentCameraBinding.viewFinder.setAspectRatio(previewSize.width, previewSize.height)
+            holder.setFixedSize(previewSize.width, previewSize.height)
+
+            Log.i("Preview Size", "AutoFitSurface Holder: Width ${fragmentCameraBinding.viewFinder.width}, Height ${fragmentCameraBinding.viewFinder.height}")
+
+            // To ensure that size is set, initialize camera in the view's thread
+            view?.post { initializeCamera() }
         }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _fragmentCameraBinding = FragmentCameraBinding.inflate(inflater, container, false)
         sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
-        mobiSpectralApplicationID =
-            when(sharedPreferences.getString("application", "Organic Identification")!!) {
+        mobiSpectralApplicationID = when(sharedPreferences.getString("application", "Organic Identification")!!) {
             "Shelf Life Prediction" -> MainActivity.SHELF_LIFE_APPLICATION
             else -> MainActivity.MOBISPECTRAL_APPLICATION
         }
         cameraIdRGB = Utils.getCameraIDs(requireContext(), mobiSpectralApplicationID).first
         cameraIdNIR = Utils.getCameraIDs(requireContext(), mobiSpectralApplicationID).second
-        if (cameraIdNIR == "OnePlus")
-            startMyActivityForResult()
+
         Log.i("CameraIDs Fragment", "RGB $cameraIdRGB, NIR $cameraIdNIR")
         return fragmentCameraBinding.root
     }
@@ -170,56 +205,36 @@ class CameraFragment: Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         fragmentCameraBinding.information.setOnClickListener {
-            val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+            val builder: AlertDialog.Builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
             builder.setMessage(R.string.capture_information_string)
             builder.setTitle("Information")
             builder.setPositiveButton("Okay") {
                 dialog: DialogInterface?, _: Int -> dialog?.cancel()
             }
             val alertDialog = builder.create()
-            alertDialog.setOnShowListener {
-                alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(requireContext(), R.color.sfu_primary))
-            }
             alertDialog.show()
         }
 
-        fragmentCameraBinding.viewFinder.holder.addCallback(object : SurfaceHolder.Callback {
-            override fun surfaceDestroyed(holder: SurfaceHolder) = Unit
+        if (cameraIdNIR == "OnePlus")
+            startMyActivityForResult()
 
-            override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int,
-                                        height: Int) = Unit
-
-            override fun surfaceCreated(holder: SurfaceHolder) {
-                // Selects appropriate preview size and configures view finder
-                val previewSize = getPreviewOutputSize(fragmentCameraBinding.viewFinder.display,
-                    characteristics, SurfaceHolder::class.java)
-//                fragmentCameraBinding.viewFinder.setAspectRatio(previewSize.width, previewSize.height)
-                holder.setFixedSize(previewSize.width, previewSize.height)
-
-                Log.i("Preview Size", "AutoFitSurface Holder: Width ${fragmentCameraBinding.viewFinder.width}, Height ${fragmentCameraBinding.viewFinder.height}")
-
-                // To ensure that size is set, initialize camera in the view's thread
-                view.post { initializeCamera() }
-            }
-        })
+        fragmentCameraBinding.viewFinder.holder.addCallback(cameraSurfaceHolderCallback)
 
         fragmentCameraBinding.Title.setOnClickListener {
             lifecycleScope.launch(Dispatchers.Main) {
-                navController.navigate(
-                    CameraFragmentDirections
-                        .actionCameraToApplicationsTitle()
-                )
+                navController.navigate(CameraFragmentDirections.actionCameraToApplicationsTitle())
             }
         }
 
         fragmentCameraBinding.reloadButton.setOnClickListener {
             lifecycleScope.launch(Dispatchers.Main) {
-                navController.navigate(
-                    CameraFragmentDirections
-                        .actionCameraToApplications()
-                )
+                navController.navigate(CameraFragmentDirections.actionCameraToApplications())
             }
         }
+    }
+    override fun onResume() {
+        super.onResume()
+        fragmentCameraBinding.viewFinder.holder.addCallback(cameraSurfaceHolderCallback)
     }
 
     /**
@@ -234,7 +249,7 @@ class CameraFragment: Fragment() {
         camera = openCamera(cameraManager, args.cameraId, cameraHandler)
 
         val size = if (cameraIdNIR == "OnePlus") Size(Utils.torchHeight, Utils.torchWidth) else Size(Utils.previewWidth, Utils.previewHeight)
-//        val size = Size(Utils.previewWidth, Utils.previewHeight)
+        // val size = Size(Utils.previewWidth, Utils.previewHeight)
         Log.i("Size", "W: ${size.width} H: ${size.height}")
 
         imageReader = ImageReader.newInstance(
@@ -247,12 +262,11 @@ class CameraFragment: Fragment() {
         // Start a capture session using our open camera and list of Surfaces where frames will go
         session = createCaptureSession(camera, targets, cameraHandler)
 
-        val captureRequest = camera.createCaptureRequest(
-            CameraDevice.TEMPLATE_PREVIEW
-        ).apply { addTarget(fragmentCameraBinding.viewFinder.holder.surface)
+        val captureRequest = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
+            .apply { addTarget(fragmentCameraBinding.viewFinder.holder.surface)
             set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
             set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_AUTO) }
-//        Log.i("Surface Holder Size", "${fragmentCameraBinding.viewFinder.holder.surface}")
+        // Log.i("Surface Holder Size", "${fragmentCameraBinding.viewFinder.holder.surface}")
 
         // This will keep sending the capture request as frequently as possible until the
         // This will keep sending the capture request as frequently as possible until the
@@ -325,7 +339,6 @@ class CameraFragment: Fragment() {
                                     CameraFragmentDirections.actionCameraToJpegViewer(rgbAbsolutePath, nirAbsolutePath)
                                 )
                             }
-
                         }
                         else -> {
                             // Display the photo taken to user
@@ -354,7 +367,9 @@ class CameraFragment: Fragment() {
     private fun startMyActivityForResult() {
         val galleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
         galleryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-        myActivityResultLauncher.launch(galleryIntent)
+        lifecycleScope.launch(Dispatchers.Main) {
+            myActivityResultLauncher.launch(galleryIntent)
+        }
     }
 
     private fun getRealPathFromURI(contentUri: Uri): String {
@@ -370,11 +385,8 @@ class CameraFragment: Fragment() {
 
     /** Opens the camera and returns the opened device (as the result of the suspend coroutine) */
     @SuppressLint("MissingPermission")
-    private suspend fun openCamera(
-        manager: CameraManager,
-        cameraId: String,
-        handler: Handler? = null
-    ): CameraDevice = suspendCancellableCoroutine { cont ->
+    private suspend fun openCamera(manager: CameraManager, cameraId: String, handler: Handler? = null):
+            CameraDevice = suspendCancellableCoroutine { cont ->
         Log.i("CameraID", cameraId)
 
         manager.openCamera(cameraId, object: CameraDevice.StateCallback() {
@@ -406,8 +418,8 @@ class CameraFragment: Fragment() {
      * suspend coroutine
      */
     @Suppress("DEPRECATION")
-    private suspend fun createCaptureSession(device: CameraDevice, targets: List<Surface>, handler: Handler? = null)
-            : CameraCaptureSession = suspendCoroutine { cont ->
+    private suspend fun createCaptureSession(device: CameraDevice, targets: List<Surface>, handler: Handler? = null):
+            CameraCaptureSession = suspendCoroutine { cont ->
         // Create a capture session using the predefined targets; this also involves defining the
         // session state callback to be notified of when the session is ready
         device.createCaptureSession(targets, object : CameraCaptureSession.StateCallback() {
@@ -427,7 +439,6 @@ class CameraFragment: Fragment() {
      * from the single capture, and outputs a [CombinedCaptureResult] object.
      */
     private suspend fun takePhoto(): CombinedCaptureResult = suspendCoroutine { cont ->
-
         // Flush any images left in the image reader
         @Suppress("ControlFlowWithEmptyBody")
         while (imageReader.acquireNextImage() != null) {}
@@ -441,9 +452,8 @@ class CameraFragment: Fragment() {
             imageQueue.add(image)
         }, imageReaderHandler)
 
-        val captureRequest = session.device.createCaptureRequest(
-            CameraDevice.TEMPLATE_STILL_CAPTURE
-        ).apply { addTarget(imageReader.surface) }
+        val captureRequest = session.device.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
+            .apply { addTarget(imageReader.surface) }
         session.capture(captureRequest.build(), object : CameraCaptureSession.CaptureCallback() {
             override fun onCaptureCompleted(session: CameraCaptureSession, request: CaptureRequest, result: TotalCaptureResult) {
                 super.onCaptureCompleted(session, request, result)
@@ -517,6 +527,7 @@ class CameraFragment: Fragment() {
         Log.i("Dark", "DarkPixels: $darkPixels")
         return dark
     }
+
     /** Helper function used to save a [CombinedCaptureResult] into a [File] */
     private suspend fun saveResult(result: CombinedCaptureResult): File = suspendCoroutine { cont ->
         when (result.format) {
@@ -549,6 +560,8 @@ class CameraFragment: Fragment() {
                         fragmentCameraBinding.illumination.setTextColor(ContextCompat.getColor(requireContext(), R.color.design_default_color_secondary))
                     }
                     val output = createFile(nir)
+                    if (nir == "RGB")
+                        rgbAbsolutePath = output.absolutePath
                     FileOutputStream(output).use { it.write(rotatedBytes) }
                     cont.resume(output)
                     Log.i("Filename", output.toString())
@@ -583,14 +596,12 @@ class CameraFragment: Fragment() {
     }
 
     override fun onDestroyView() {
-        _fragmentCameraBinding = null
         super.onDestroyView()
+//        _fragmentCameraBinding = null
     }
 
     companion object {
         private val TAG = CameraFragment::class.java.simpleName
-        lateinit var rgbAbsolutePath: String
-        lateinit var nirAbsolutePath: String
         private lateinit var fileFormat: String
 
         /** Maximum number of images that will be held in the reader's buffer */
@@ -600,8 +611,7 @@ class CameraFragment: Fragment() {
         private const val IMAGE_CAPTURE_TIMEOUT_MILLIS: Long = 5000
 
         /** Helper data class used to hold capture metadata with their associated image */
-        data class CombinedCaptureResult(val image: Image, val metadata: CaptureResult, val format: Int)
-            : Closeable {
+        data class CombinedCaptureResult(val image: Image, val metadata: CaptureResult, val format: Int): Closeable {
             override fun close() = image.close()
         }
 
@@ -619,8 +629,6 @@ class CameraFragment: Fragment() {
             Log.i("Filename", sdf.toString())
             fileFormat = sdf.format(Date())
             val file = File(imageDirectory, "IMG_${fileFormat}_$nir.jpg")
-            if (nir == "RGB")
-                rgbAbsolutePath = file.absolutePath
             return file
         }
     }

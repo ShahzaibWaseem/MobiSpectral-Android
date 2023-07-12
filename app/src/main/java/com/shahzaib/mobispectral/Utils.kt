@@ -3,7 +3,9 @@ package com.shahzaib.mobispectral
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
+import android.graphics.Matrix
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
@@ -20,14 +22,20 @@ import com.shahzaib.mobispectral.Utils.MobiSpectralPath
 import com.shahzaib.mobispectral.Utils.croppedImageDirectory
 import com.shahzaib.mobispectral.Utils.processedImageDirectory
 import com.shahzaib.mobispectral.Utils.rawImageDirectory
+import com.shahzaib.mobispectral.Utils.torchHeight
 import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
 import org.opencv.video.Video
+import java.io.BufferedInputStream
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileWriter
 import java.io.IOException
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 object Utils {
     const val previewHeight = 800
@@ -396,6 +404,57 @@ fun saveProcessedImages (rgbBitmap: Bitmap, nirBitmap: Bitmap, rgbFileName: Stri
             e.printStackTrace()
         }
     }.start()
+}
+
+fun resizeBitmap(bitmap: Bitmap, maxSize: Int): Bitmap {
+    var width = bitmap.width
+    var height = bitmap.height
+
+    val aspectRatio = width.toFloat() / height.toFloat()
+    if (aspectRatio > 1) {
+        width = maxSize
+        height = (width / aspectRatio).toInt()
+    }
+    else {
+        height = maxSize
+        width = (height * aspectRatio).toInt()
+    }
+    return Bitmap.createScaledBitmap(bitmap, width, height, true)
+}
+
+fun readImage(inputFile: File): Bitmap {
+    val imageBuffer = BufferedInputStream(inputFile.inputStream()).let { stream ->
+        ByteArray(stream.available()).also {
+            stream.read(it)
+            stream.close()
+        }
+    }
+    val decodedBitmap = BitmapFactory.decodeByteArray(imageBuffer, 0, imageBuffer.size, null)
+    return Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, null, false)
+}
+
+fun compressImage(bmp: Bitmap): Bitmap {
+    var bitmap = resizeBitmap(bmp, torchHeight)
+    Log.i("Utils.copyFile", "${bitmap.height} ${bitmap.width}")
+    if (bitmap.width > bitmap.height) {     // rotate so the image is always up right (portrait)
+        bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, Matrix().apply { postRotate(90F); }, false)
+    }
+    return bitmap
+}
+
+suspend fun saveImage(bitmap: Bitmap, outputFile: File): File = suspendCoroutine { cont ->
+    val stream = ByteArrayOutputStream()
+    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+    val imageBytes = stream.toByteArray()
+
+    try{
+        FileOutputStream(outputFile).use { it.write(imageBytes) }
+        cont.resume(outputFile)
+        Log.i("Filename", outputFile.toString())
+    } catch (exc: IOException) {
+        Log.e("Utils.saveOneImage", "Unable to write JPEG image to file $exc")
+        cont.resumeWithException(exc)
+    }
 }
 
 fun addCSVLog (context: Context) {

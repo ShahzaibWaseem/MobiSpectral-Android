@@ -35,8 +35,7 @@ class ApplicationSelectorFragment: Fragment() {
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentApplicationselectorBinding = FragmentApplicationselectorBinding.inflate(inflater, container, false)
         val applicationPicker = fragmentApplicationselectorBinding.applicationPicker
         applicationArray = arrayOf(getString(R.string.organic_identification_string),

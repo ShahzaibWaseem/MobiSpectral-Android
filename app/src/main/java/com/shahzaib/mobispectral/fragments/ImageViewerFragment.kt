@@ -74,7 +74,7 @@ class ImageViewerFragment: Fragment() {
     }
 
     private fun cropImage(left: Float, right: Float, top: Float, bottom: Float,
-                          canvas: Canvas, view: ImageView, bitmapOverlay: Bitmap) {
+                          canvas: Canvas, view: ImageView, bitmapOverlay: Bitmap, position: Int) {
         val paint = Paint()
         paint.color = Color.argb(255, 0, 0, 0)
         paint.strokeWidth = 2.5F
@@ -84,8 +84,10 @@ class ImageViewerFragment: Fragment() {
 
         canvas.drawRect(left, top, right, bottom, paint)
         view.setImageBitmap(bitmapOverlay)
-        MainActivity.tempRGBBitmap = bitmapOverlay
-        MainActivity.tempRectangle = Rect(bottom.toInt(), left.toInt(), right.toInt(), top.toInt())
+        if (bitmapOverlay.width > 64 && bitmapOverlay.height > 64 && position == 0) {
+            MainActivity.tempRGBBitmap = bitmapOverlay
+            MainActivity.tempRectangle = Rect(bottom.toInt(), left.toInt(), right.toInt(), top.toInt())
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -103,7 +105,7 @@ class ImageViewerFragment: Fragment() {
         fragmentImageViewerBinding.viewpager.apply {
             offscreenPageLimit=2
             adapter = GenericListAdapter(bitmapList,
-                itemViewFactory = { imageViewFactory() }) { view, item, _ ->
+                itemViewFactory = { imageViewFactory() }) { view, item, position ->
                 view as ImageView
                 view.scaleType = ImageView.ScaleType.FIT_XY
                 val bitmapOverlay = Bitmap.createBitmap(item.width, item.height, item.config)
@@ -113,7 +115,7 @@ class ImageViewerFragment: Fragment() {
                 Handler().postDelayed({
                     cropImage(item.width/2 - Utils.boundingBoxWidth, item.width/2 + Utils.boundingBoxWidth,
                         item.height/2 - Utils.boundingBoxHeight, item.height/2 + Utils.boundingBoxHeight,
-                        canvas, view, bitmapOverlay)
+                        canvas, view, bitmapOverlay, position)
                 }, 100)
 
                 view.setOnTouchListener { v, event ->
@@ -127,7 +129,7 @@ class ImageViewerFragment: Fragment() {
                     topCrop = clickedY - Utils.boundingBoxHeight
                     rightCrop = clickedX + Utils.boundingBoxWidth
                     bottomCrop = clickedY + Utils.boundingBoxHeight
-                    cropImage(leftCrop, rightCrop, topCrop, bottomCrop, canvas, view, bitmapOverlay)
+                    cropImage(leftCrop, rightCrop, topCrop, bottomCrop, canvas, view, bitmapOverlay, position)
 
                     false
                 }

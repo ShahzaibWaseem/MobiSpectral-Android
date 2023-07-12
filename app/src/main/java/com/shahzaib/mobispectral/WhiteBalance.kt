@@ -94,7 +94,6 @@ class WhiteBalance(context: Context) {
     }
 
     private fun floatArrayToBitmap(floatArray: FloatArray, width: Int, height: Int) : Bitmap {
-
         // Create empty bitmap in ARGB format
         val bmp: Bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val pixels = IntArray(width * height * 3)
