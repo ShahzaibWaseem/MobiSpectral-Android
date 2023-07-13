@@ -58,6 +58,7 @@ class ApplicationSelectorFragment: Fragment() {
 
     private fun enableButton() {
         fragmentApplicationselectorBinding.runApplicationButton.isEnabled = true
+        fragmentApplicationselectorBinding.runApplicationButton.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.sfu_primary))
         fragmentApplicationselectorBinding.runApplicationButton.text = resources.getString(R.string.launch_application_button).uppercase()
     }
 
@@ -67,7 +68,11 @@ class ApplicationSelectorFragment: Fragment() {
         var cameraIdNIR = Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).second
         disableButton(cameraIdNIR)
 
-        fragmentApplicationselectorBinding.applicationPicker.setOnValueChangedListener{_, _, newVal ->
+        fragmentApplicationselectorBinding.information.setOnClickListener {
+            CameraFragment().generateAlertBox(requireContext(), "Information", getString(R.string.application_selector_information_string))
+        }
+
+        fragmentApplicationselectorBinding.applicationPicker.setOnValueChangedListener{ _, _, newVal ->
             if (newVal != 3) {
                 disableButton(cameraIdNIR)
             }
@@ -75,6 +80,13 @@ class ApplicationSelectorFragment: Fragment() {
                 enableButton()
                 cameraIdNIR = Utils.getCameraIDs(requireContext(), MainActivity.SHELF_LIFE_APPLICATION).second
             }
+        }
+
+        fragmentApplicationselectorBinding.liveModeCheckMark.setOnCheckedChangeListener { _, buttonChecked ->
+            if (buttonChecked)
+                enableButton()
+            else
+                disableButton(cameraIdNIR)
         }
 
         fragmentApplicationselectorBinding.runApplicationButton.setOnTouchListener { _, _ ->

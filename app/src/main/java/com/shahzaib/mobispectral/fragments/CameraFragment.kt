@@ -31,6 +31,7 @@ import androidx.navigation.NavController
 import androidx.navigation.Navigation
 import androidx.navigation.fragment.navArgs
 import com.example.android.camera.utils.getPreviewOutputSize
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.shahzaib.mobispectral.MainActivity
 import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.Utils
@@ -110,7 +111,7 @@ class CameraFragment: Fragment() {
         if (result.resultCode == Activity.RESULT_OK) {
             if (result.data?.clipData == null) {
                 if (cameraIdNIR != "OnePlus") {
-                    generateAlertBox("Only One Image Selected", "Cannot select 1 image, Select Two images.\nFirst image RGB, Second image NIR")
+                    generateAlertBox(requireContext(), "Only One Image Selected", "Cannot select 1 image, Select Two images.\nFirst image RGB, Second image NIR")
                 }
                 else {
                     // If we have to select one image.
@@ -159,23 +160,25 @@ class CameraFragment: Fragment() {
                     }
                 }
                 else {
-                    generateAlertBox("Number of images exceeded 2", "Cannot select more than 2 images.\nFirst image RGB, Second image NIR")
+                    generateAlertBox(requireContext(),"Number of images exceeded 2", "Cannot select more than 2 images.\nFirst image RGB, Second image NIR")
                 }
             }
         }
         if (result.resultCode == Activity.RESULT_CANCELED) {
-            generateAlertBox("No Images Selected", "Select Images again.\nFirst image RGB, Second image NIR")
+            generateAlertBox(requireContext(), "No Images Selected", "Select Images again.\nFirst image RGB, Second image NIR")
         }
     }
 
-    private fun generateAlertBox(title: String, text: String) {
-        val alertDialogBuilder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+    fun generateAlertBox(context: Context, title: String, text: String) {
+        val alertDialogBuilder = MaterialAlertDialogBuilder(context, R.style.AlertDialogTheme)
         alertDialogBuilder.setMessage(text)
         alertDialogBuilder.setTitle(title)
         alertDialogBuilder.setCancelable(false)
-        alertDialogBuilder.setPositiveButton("Reload") { _, _ ->
-            startMyActivityForResult()
-        }
+        if (title == "Information")
+            alertDialogBuilder.setPositiveButton("Okay") { dialog, _ -> dialog?.cancel() }
+        else
+            alertDialogBuilder.setPositiveButton("Reload") { _, _ -> startMyActivityForResult() }
+
         val alertDialog = alertDialogBuilder.create()
         alertDialog.show()
     }
@@ -219,14 +222,7 @@ class CameraFragment: Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         fragmentCameraBinding.information.setOnClickListener {
-            val builder: AlertDialog.Builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-            builder.setMessage(R.string.capture_information_string)
-            builder.setTitle("Information")
-            builder.setPositiveButton("Okay") {
-                dialog: DialogInterface?, _: Int -> dialog?.cancel()
-            }
-            val alertDialog = builder.create()
-            alertDialog.show()
+            generateAlertBox(requireContext(),"Information", resources.getString(R.string.capture_information_string))
         }
 
         if (cameraIdNIR == "OnePlus" || offlineMode)
@@ -329,7 +325,7 @@ class CameraFragment: Fragment() {
 
     private fun savePhoto(cameraId: String) {
         // Perform I/O heavy operations in a different scope
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.Main) {
             takePhoto().use { result ->
                 Log.d(TAG, "Result received: $result")
 

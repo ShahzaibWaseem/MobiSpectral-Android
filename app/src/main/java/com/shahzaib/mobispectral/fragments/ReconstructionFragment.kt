@@ -4,9 +4,7 @@ import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.Context
-import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.graphics.*
 import android.os.Bundle
@@ -37,6 +35,7 @@ import java.util.*
 import kotlin.concurrent.schedule
 import kotlin.math.roundToInt
 import kotlin.properties.Delegates
+import com.shahzaib.mobispectral.fragments.CameraFragment
 
 class ReconstructionFragment: Fragment() {
     private lateinit var predictedHS: FloatArray
@@ -144,17 +143,10 @@ class ReconstructionFragment: Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         fragmentReconstructionBinding.information.setOnClickListener {
-            val builder: AlertDialog.Builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
             if (!advancedControlOption)
-                builder.setMessage(R.string.reconstruction_analysis_information_simple_string)
+                CameraFragment().generateAlertBox(requireContext(), "Information", resources.getString(R.string.reconstruction_analysis_information_simple_string))
             else
-                builder.setMessage(R.string.reconstruction_analysis_information_string)
-            builder.setTitle("Information")
-            builder.setPositiveButton("Okay") {
-                    dialog: DialogInterface?, _: Int -> dialog?.cancel()
-            }
-            val alertDialog = builder.create()
-            alertDialog.show()
+                CameraFragment().generateAlertBox(requireContext(),"Information", resources.getString(R.string.reconstruction_analysis_information_string))
         }
         fragmentReconstructionBinding.viewpager.apply {
             offscreenPageLimit=2
