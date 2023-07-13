@@ -244,7 +244,6 @@ class ImageViewerFragment: Fragment() {
             val nirDirectoryPath = nirImage.absolutePath.split(System.getProperty("file.separator")!!)
             val nirImageFileName = nirDirectoryPath[nirDirectoryPath.size-1]
             saveProcessedImages(rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName, Utils.processedImageDirectory)
-            var buttonPressed = false
 
             fragmentImageViewerBinding.button.setOnClickListener {
                 if (leftCrop == 0F && topCrop == 0F && !advancedControlOption) {
@@ -255,37 +254,17 @@ class ImageViewerFragment: Fragment() {
                     saveProcessedImages(rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName, Utils.croppedImageDirectory)
                 }
 
-                addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 2)
-                addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 3)
+                // addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 2)
+                // addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 3)
 
-                if (buttonPressed) {
-                    lifecycleScope.launch(Dispatchers.Main) {
-                        navController.navigate(
-                            ImageViewerFragmentDirections
-                                .actionImageViewerFragmentToReconstructionFragment2(
-                                    serializeByteArrayToString(rgbImageBitmap),
-                                    serializeByteArrayToString(nirImageBitmap))
-                        )
-                    }
+                lifecycleScope.launch(Dispatchers.Main) {
+                    navController.navigate(
+                        ImageViewerFragmentDirections
+                            .actionImageViewerFragmentToReconstructionFragment2(
+                                serializeByteArrayToString(rgbImageBitmap),
+                                serializeByteArrayToString(nirImageBitmap))
+                    )
                 }
-                buttonPressed = true
-
-//                if(fragmentImageViewerBinding.radioGroup.checkedRadioButtonId == -1) {
-//                    fragmentImageViewerBinding.noRadioSelectedText.visibility = View.VISIBLE
-//                }
-//                else {
-//                    val selectedRadio = fragmentImageViewerBinding.radioGroup.checkedRadioButtonId
-//                    val selectedOption = requireView().findViewById<RadioButton>(selectedRadio).text.toString()
-//                    MainActivity.actualLabel = selectedOption
-//
-//                    if (leftCrop != 0F && topCrop != 0F) {
-//                        rgbImageBitmap = croppedRGBImageBitmap
-//                        nirImageBitmap = croppedNIRImageBitmap
-//                    }
-//
-//                    fragmentImageViewerBinding.noRadioSelectedText.visibility = View.INVISIBLE
-//
-//                }
             }
         }
     }
@@ -367,8 +346,8 @@ class ImageViewerFragment: Fragment() {
         if (isRGB) RGB_DIMENSION = Pair(decodedBitmap.width, decodedBitmap.height)
 
         Log.i("Bitmap Size", "${decodedBitmap.width} x ${decodedBitmap.height} $isRGB")
-//        Log.i("Decode Bitmap", "${Utils.aligningFactorX} + ${Utils.torchWidth} = ${Utils.torchWidth + Utils.aligningFactorX} (${decodedBitmap.width})")
-//        Log.i("Decode Bitmap", "${Utils.aligningFactorY} + ${Utils.torchHeight} = ${Utils.torchHeight + Utils.aligningFactorY} (${decodedBitmap.height})")
+        // Log.i("Decode Bitmap", "${Utils.aligningFactorX} + ${Utils.torchWidth} = ${Utils.torchWidth + Utils.aligningFactorX} (${decodedBitmap.width})")
+        // Log.i("Decode Bitmap", "${Utils.aligningFactorY} + ${Utils.torchHeight} = ${Utils.torchHeight + Utils.aligningFactorY} (${decodedBitmap.height})")
 
         if (isRGB){
             bitmap = Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, null, false)

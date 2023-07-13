@@ -35,7 +35,6 @@ import java.util.*
 import kotlin.concurrent.schedule
 import kotlin.math.roundToInt
 import kotlin.properties.Delegates
-import com.shahzaib.mobispectral.fragments.CameraFragment
 
 class ReconstructionFragment: Fragment() {
     private lateinit var predictedHS: FloatArray
@@ -131,10 +130,10 @@ class ReconstructionFragment: Fragment() {
             fragmentReconstructionBinding.analysisButton.visibility = View.INVISIBLE
             fragmentReconstructionBinding.simpleModeSignaturePositionTextView.visibility = View.VISIBLE
             fragmentReconstructionBinding.graphView.visibility = View.INVISIBLE
-//            fragmentReconstructionBinding.textViewClassTime.text = ""
-            fragmentReconstructionBinding.simpleModeSignaturePositionTextView.text = getString(R.string.simple_mode_signature_string, (Utils.croppedWidth/2F).toInt(), (Utils.croppedHeight/2F).toInt())
-//            fragmentReconstructionBinding.textViewReconTime.visibility = View.INVISIBLE
-//            fragmentReconstructionBinding.textViewClassTime.visibility = View.INVISIBLE
+            // fragmentReconstructionBinding.textViewClassTime.text = ""
+            fragmentReconstructionBinding.simpleModeSignaturePositionTextView.text = getString(R.string.simple_mode_signature_string, MainActivity.tempRectangle.centerX(), MainActivity.tempRectangle.centerY())
+            // fragmentReconstructionBinding.textViewReconTime.visibility = View.INVISIBLE
+            // fragmentReconstructionBinding.textViewClassTime.visibility = View.INVISIBLE
         }
         return fragmentReconstructionBinding.root
     }
@@ -151,7 +150,7 @@ class ReconstructionFragment: Fragment() {
         fragmentReconstructionBinding.viewpager.apply {
             offscreenPageLimit=2
             adapter = GenericListAdapter(bandsHS, itemViewFactory = { imageViewFactory() })
-            { view, item, position ->
+            { view, item, _ ->
                 view as ImageView
                 view.scaleType = ImageView.ScaleType.FIT_XY
                 var bitmapOverlay = Bitmap.createBitmap(item.width, item.height, item.config)
@@ -170,34 +169,22 @@ class ReconstructionFragment: Fragment() {
                             savedClickedY = clickedY
                             itemTouched = true
                             Log.i("View Dimensions", "$clickedX, $clickedY, ${v.width}, ${v.height}")
-                            color = Color.argb(
-                                255,
-                                randomColor.nextInt(256),
-                                randomColor.nextInt(256),
-                                randomColor.nextInt(256)
-                            )
+                            color = Color.argb(255, randomColor.nextInt(256),
+                                randomColor.nextInt(256), randomColor.nextInt(256))
 
                             val paint = Paint()
                             paint.color = color
                             paint.style = Paint.Style.STROKE
                             paint.strokeWidth = 2.5F
-                            val tempRect = MainActivity.tempRectangle
 
-                            if (position == 9 && (clickedX >= tempRect.left || clickedX <= tempRect.right)
-                                && (clickedY >= tempRect.top || clickedY <= tempRect.bottom))
-                            {
-
-                            }
-                            else {
-                                canvas.drawCircle(clickedX, clickedY, 5F, paint)
-                                view.setImageBitmap(bitmapOverlay)
-                                try {
-                                    inference()
-                                    MainActivity.actualLabel = ""
-                                    addCSVLog(requireContext())
-                                } catch (e: NullPointerException) {
-                                    e.printStackTrace()
-                                }
+                            canvas.drawCircle(clickedX, clickedY, 5F, paint)
+                            view.setImageBitmap(bitmapOverlay)
+                            try {
+                                inference()
+                                MainActivity.actualLabel = ""
+                                addCSVLog(requireContext())
+                            } catch (e: NullPointerException) {
+                                e.printStackTrace()
                             }
                         }
                         if (itemTouched && savedClickedX != clickedX && savedClickedY != clickedY)
@@ -309,7 +296,7 @@ class ReconstructionFragment: Fragment() {
             try { viewpagerThread.join() }
             catch (exception: InterruptedException) { exception.printStackTrace() }
             addItemToViewPager(fragmentReconstructionBinding.viewpager, MainActivity.tempRGBBitmap, 5)
-//            fragmentReconstructionBinding.viewpager.currentItem = fragmentReconstructionBinding.viewpager.adapter!!.itemCount - 1
+            // fragmentReconstructionBinding.viewpager.currentItem = fragmentReconstructionBinding.viewpager.adapter!!.itemCount - 1
             loadingDialogFragment.dismissDialog()
         }
     }
@@ -379,8 +366,8 @@ class ReconstructionFragment: Fragment() {
             Log.i("Frequency String", frequenciesString)
             fragmentReconstructionBinding.textViewClassTime.text = frequenciesString
             fragmentReconstructionBinding.textViewClassTime.visibility = View.VISIBLE
-//            Toast.makeText(requireContext(), frequenciesString, Toast.LENGTH_LONG).show()
-//            results = ArrayList()
+            // Toast.makeText(requireContext(), frequenciesString, Toast.LENGTH_LONG).show()
+            // results = ArrayList()
         }
 
         val inputSignature = getSignature(predictedHS, clickedX.toInt(), clickedY.toInt())
@@ -391,11 +378,12 @@ class ReconstructionFragment: Fragment() {
         else
             classificationLabels[Pair(mobiSpectralApplication, outputLabel)]!!
         MainActivity.predictedLabel = outputLabelString
-//        addCSVLog(requireContext())
+        // addCSVLog(requireContext())
         fragmentReconstructionBinding.textViewClass.text = outputLabelString
         fragmentReconstructionBinding.graphView.title = "$outputLabelString Signature at (x: ${clickedX.toInt()}, y: ${clickedY.toInt()})"
         alreadyMultiLabelInferred = true
     }
+
     private fun classifyOneSignature(signature: FloatArray): Long {
         val ortEnvironment = OrtEnvironment.getEnvironment()
         val ortSession = context?.let { createORTSession(ortEnvironment) }
@@ -411,7 +399,7 @@ class ReconstructionFragment: Fragment() {
             return outputLabel
         }
         return -1L
-//        MainActivity.predictedLabel = outputLabelString
+        // MainActivity.predictedLabel = outputLabelString
     }
 
     private fun getSignature(predictedHS: FloatArray, SignatureX: Int, SignatureY: Int): FloatArray {
@@ -434,7 +422,7 @@ class ReconstructionFragment: Fragment() {
 
         if (advancedControlOption) {
             val graphView = fragmentReconstructionBinding.graphView
-            graphView.removeAllSeries()         // remove all previous series
+            // graphView.removeAllSeries()         // remove all previous series
             graphView.title = "$outputLabelString Signature at (x: $SignatureX, y: $SignatureY)"
             graphView.gridLabelRenderer.padding = 50
             graphView.gridLabelRenderer.textSize = 50F
@@ -488,10 +476,10 @@ class ReconstructionFragment: Fragment() {
         classificationDuration = (endTime - startTime)
         MainActivity.classificationTime = "$classificationDuration ms"
         println(getString(R.string.classification_time_string, classificationDuration))
-//        fragmentReconstructionBinding.textViewClassTime.text = getString(R.string.classification_time_string, classificationDuration)
-//        for (item in 0 .. results.size()){
-//            Log.i("Results", "${results[item].value}")
-//        }
+        // fragmentReconstructionBinding.textViewClassTime.text = getString(R.string.classification_time_string, classificationDuration)
+        // for (item in 0 .. results.size()){
+            // Log.i("Results", "${results[item].value}")
+        // }
         var output = results[0].value
         output = output as LongArray
 

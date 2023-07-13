@@ -262,9 +262,7 @@ class CameraFragment: Fragment() {
         // val size = Size(Utils.previewWidth, Utils.previewHeight)
         Log.i("Size", "W: ${size.width} H: ${size.height}")
 
-        imageReader = ImageReader.newInstance(
-            size.width, size.height, args.pixelFormat, IMAGE_BUFFER_SIZE
-        )
+        imageReader = ImageReader.newInstance(size.width, size.height, args.pixelFormat, IMAGE_BUFFER_SIZE)
 
         // Creates list of Surfaces where the camera will output frames
         val targets = listOf(fragmentCameraBinding.viewFinder.holder.surface, imageReader.surface)
@@ -464,7 +462,7 @@ class CameraFragment: Fragment() {
 
         val captureRequest = session.device.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
             .apply { addTarget(imageReader.surface) }
-        session.capture(captureRequest.build(), object : CameraCaptureSession.CaptureCallback() {
+        session.capture(captureRequest.build(), object: CameraCaptureSession.CaptureCallback() {
             override fun onCaptureCompleted(session: CameraCaptureSession, request: CaptureRequest, result: TotalCaptureResult) {
                 super.onCaptureCompleted(session, request, result)
 
@@ -478,7 +476,7 @@ class CameraFragment: Fragment() {
 
                 // Loop in the coroutine's context until an image with matching timestamp comes
                 // We need to launch the coroutine context again because the callback is done in
-                //  the handler provided to the `capture` method, not in our coroutine context
+                // the handler provided to the `capture` method, not in our coroutine context
                 @Suppress("BlockingMethodInNonBlockingContext")
                 lifecycleScope.launch(cont.context) {
                     while (true) {

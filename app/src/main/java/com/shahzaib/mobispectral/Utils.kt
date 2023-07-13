@@ -2,7 +2,6 @@ package com.shahzaib.mobispectral
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.DialogInterface
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
@@ -18,7 +17,6 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
 import androidx.core.net.toUri
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.opencsv.CSVWriter
 import com.shahzaib.mobispectral.Utils.MobiSpectralPath
 import com.shahzaib.mobispectral.Utils.croppedImageDirectory
@@ -56,17 +54,17 @@ object Utils {
     const val boundingBoxHeight = 32F
 
     // Intrinsic Camera Parameters for Google Pixel 4 IR camera
-//    val K_Pixel = arrayOf(doubleArrayOf(542.6309295733048, 0.0, 232.78423096084575),
-//                          doubleArrayOf(0.0, 542.8318136934467, 337.77984524454547),
-//                          doubleArrayOf( 0.0, 0.0, 1.0))
+    // val K_Pixel = arrayOf(doubleArrayOf(542.6309295733048, 0.0, 232.78423096084575),
+    //                       doubleArrayOf(0.0, 542.8318136934467, 337.77984524454547),
+    //                       doubleArrayOf( 0.0, 0.0, 1.0))
 
     private val K_Pixel = doubleArrayOf(542.6309295733048, 0.0, 232.78423096084575,
                                 0.0, 542.8318136934467, 337.77984524454547,
                                 0.0, 0.0, 1.0)
-//    val D_Pixel = arrayOf(doubleArrayOf(-0.04591876756027188),
-//                          doubleArrayOf(0.4810113550965089),
-//                          doubleArrayOf(-1.1137694861149858),
-//                          doubleArrayOf(0.4336328878297329))
+    // val D_Pixel = arrayOf(doubleArrayOf(-0.04591876756027188),
+    //                       doubleArrayOf(0.4810113550965089),
+    //                       doubleArrayOf(-1.1137694861149858),
+    //                       doubleArrayOf(0.4336328878297329))
 
     private val D_Pixel = doubleArrayOf(-0.04591876756027188,
                                 0.4810113550965089,
@@ -162,14 +160,14 @@ object Utils {
         Imgproc.initUndistortRectifyMap(K, D, Mat.eye(3, 3, 0), nk, Size(width, height), CvType.CV_32FC1, map1, map2)
         Imgproc.remap(nirMat, fixedNirMat, map1, map2, Imgproc.INTER_LINEAR, Core.BORDER_CONSTANT)
 
-//        val K: Mat = initializeMats(K_Pixel, 3, 3)
-//        val D: Mat = initializeMats(D_Pixel, 4, 1)
+        // val K: Mat = initializeMats(K_Pixel, 3, 3)
+        // val D: Mat = initializeMats(D_Pixel, 4, 1)
 
         Log.i("Parameters", "${K.dump()} ${D.dump()} ${imageNIR.config}")
 
 
-//        Imgproc.initUndistortRectifyMap(K, D, Mat.eye(3, 3, 0), K, Size(width, height), CvType.CV_16SC2, map1, map2)
-//        Imgproc.remap(nirMat, fixedNirMat, map1, map2, Imgproc.INTER_LINEAR, Core.BORDER_CONSTANT)
+        // Imgproc.initUndistortRectifyMap(K, D, Mat.eye(3, 3, 0), K, Size(width, height), CvType.CV_16SC2, map1, map2)
+        // Imgproc.remap(nirMat, fixedNirMat, map1, map2, Imgproc.INTER_LINEAR, Core.BORDER_CONSTANT)
         val fixedImageBitmap = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
         Utils.matToBitmap(fixedNirMat, fixedImageBitmap)
         return fixedImageBitmap
