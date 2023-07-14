@@ -75,7 +75,7 @@ class ImageViewerFragment: Fragment() {
         layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
     }
 
-    private fun cropImage(left: Float, right: Float, top: Float, bottom: Float,
+    private fun boundingBox(left: Float, right: Float, top: Float, bottom: Float,
                           canvas: Canvas, view: ImageView, bitmapOverlay: Bitmap, position: Int) {
         val paint = Paint()
         paint.color = Color.argb(255, 0, 0, 0)
@@ -116,11 +116,11 @@ class ImageViewerFragment: Fragment() {
                 canvas.drawBitmap(item, Matrix(), null)
                 if (!advancedControlOption)
                     Handler().postDelayed({
-                        cropImage(item.width/2 - Utils.boundingBoxWidth, item.width/2 + Utils.boundingBoxWidth,
+                        boundingBox(item.width/2 - Utils.boundingBoxWidth, item.width/2 + Utils.boundingBoxWidth,
                             item.height/2 - Utils.boundingBoxHeight, item.height/2 + Utils.boundingBoxHeight,
                             canvas, view, bitmapOverlay, position)
                     }, 100)
-                else {
+                else if (advancedControlOption && position == 0) {
                     MainActivity.tempRGBBitmap = bitmapOverlay
                 }
 
@@ -135,7 +135,7 @@ class ImageViewerFragment: Fragment() {
                     topCrop = clickedY - Utils.boundingBoxHeight
                     rightCrop = clickedX + Utils.boundingBoxWidth
                     bottomCrop = clickedY + Utils.boundingBoxHeight
-                    cropImage(leftCrop, rightCrop, topCrop, bottomCrop, canvas, view, bitmapOverlay, position)
+                    boundingBox(leftCrop, rightCrop, topCrop, bottomCrop, canvas, view, bitmapOverlay, position)
 
                     false
                 }
@@ -249,6 +249,9 @@ class ImageViewerFragment: Fragment() {
                 if (leftCrop == 0F && topCrop == 0F && !advancedControlOption) {
                     leftCrop = rgbImageBitmap.width/2 - Utils.boundingBoxWidth
                     topCrop = rgbImageBitmap.height/2 - Utils.boundingBoxWidth
+
+                }
+                if (leftCrop != 0F && topCrop != 0F) {
                     rgbImageBitmap = cropImage(rgbImageBitmap, leftCrop, topCrop)
                     nirImageBitmap = cropImage(nirImageBitmap, leftCrop, topCrop)
                     saveProcessedImages(rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName, Utils.croppedImageDirectory)
