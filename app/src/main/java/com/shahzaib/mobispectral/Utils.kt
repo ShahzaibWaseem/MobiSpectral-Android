@@ -305,8 +305,7 @@ fun enumerateCameras(cameraManager: CameraManager): MutableList<FormatItem> {
         val isNIR = if(characteristics.get(CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT)
             == CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_NIR) "NIR" else "RGB"
 
-        Log.i("ALl Cameras", "${characteristics.physicalCameraIds}")
-        Log.i("All Cameras", "$it, $isNIR, $orientation")
+        Log.i("All Cameras", "Logical: $it, Physical: ${characteristics.physicalCameraIds} RGB: $isNIR, Orientation: $orientation")
 
         val capabilities = characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)
         capabilities?.contains(CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE) ?: false

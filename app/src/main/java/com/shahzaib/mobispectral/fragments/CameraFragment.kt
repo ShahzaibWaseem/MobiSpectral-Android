@@ -2,7 +2,6 @@ package com.shahzaib.mobispectral.fragments
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.*
 import android.database.Cursor
 import android.graphics.*
@@ -99,9 +98,6 @@ class CameraFragment: Fragment() {
 
     private lateinit var cameraIdRGB: String
     private lateinit var cameraIdNIR: String
-
-    lateinit var rgbAbsolutePath: String
-    lateinit var nirAbsolutePath: String
 
     private lateinit var sharedPreferences: SharedPreferences
     private var mobiSpectralApplicationID = 0
@@ -323,50 +319,23 @@ class CameraFragment: Fragment() {
 
     private fun savePhoto(cameraId: String) {
         // Perform I/O heavy operations in a different scope
-        lifecycleScope.launch(Dispatchers.Main) {
+        lifecycleScope.launch(Dispatchers.IO) {
             takePhoto().use { result ->
                 Log.d(TAG, "Result received: $result")
 
                 // Save the result to disk
                 val output = saveResult(result)
                 Log.d(TAG, "Image saved: ${output.absolutePath}")
-
-                if (cameraId == cameraIdRGB){
-                    when (cameraIdNIR) {
-                        "Shelf Life Prediction" -> {
-                            lifecycleScope.launch(Dispatchers.Main) {
-                                navController.navigate(
-                                    CameraFragmentDirections.actionCameraFragmentToAudioFragment(rgbAbsolutePath, fileFormat)
-                                )
-                            }
-                        }
-                        "OnePlus" -> {
-                            // Display the photo taken to user
-                            lifecycleScope.launch(Dispatchers.Main) {
-                                navController.navigate(
-                                    CameraFragmentDirections.actionCameraToJpegViewer(rgbAbsolutePath, nirAbsolutePath)
-                                )
-                            }
-                        }
-                        else -> {
-                            // Display the photo taken to user
-                            lifecycleScope.launch(Dispatchers.Main) {
-                                navController.navigate(
-                                    CameraFragmentDirections.actionCameraFragmentSelf(cameraIdNIR, ImageFormat.JPEG)
-                                )
-                            }
+                lifecycleScope.launch(Dispatchers.Main) {
+                    if (cameraId == cameraIdRGB){
+                        when (cameraIdNIR) {
+                            "Shelf Life Prediction" -> navController.navigate(CameraFragmentDirections.actionCameraFragmentToAudioFragment(rgbAbsolutePath, fileFormat))
+                            "OnePlus" -> navController.navigate(CameraFragmentDirections.actionCameraToJpegViewer(rgbAbsolutePath, nirAbsolutePath))
+                            else -> navController.navigate(CameraFragmentDirections.actionCameraFragmentSelf(cameraIdNIR, ImageFormat.JPEG))
                         }
                     }
-                }
-                else {
-                    // Display the photo taken to user
-                    lifecycleScope.launch(Dispatchers.Main) {
-                        navController.navigate(
-                            CameraFragmentDirections.actionCameraToJpegViewer(rgbAbsolutePath, output.absolutePath)
-                                .setDepth(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-                                            result.format == ImageFormat.DEPTH_JPEG)
-                        )
-                    }
+                    else
+                        navController.navigate(CameraFragmentDirections.actionCameraToJpegViewer(rgbAbsolutePath, output.absolutePath))
                 }
             }
         }
@@ -568,8 +537,6 @@ class CameraFragment: Fragment() {
                         fragmentCameraBinding.illumination.setTextColor(ContextCompat.getColor(requireContext(), R.color.design_default_color_secondary))
                     }
                     val output = createFile(nir)
-                    if (nir == "RGB")
-                        rgbAbsolutePath = output.absolutePath
                     FileOutputStream(output).use { it.write(rotatedBytes) }
                     cont.resume(output)
                     Log.i("Filename", output.toString())
@@ -603,14 +570,11 @@ class CameraFragment: Fragment() {
         imageReaderThread.quitSafely()
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-//        _fragmentCameraBinding = null
-    }
-
     companion object {
         private val TAG = CameraFragment::class.java.simpleName
         private lateinit var fileFormat: String
+        lateinit var rgbAbsolutePath: String
+        lateinit var nirAbsolutePath: String
 
         /** Maximum number of images that will be held in the reader's buffer */
         private const val IMAGE_BUFFER_SIZE: Int = 3
@@ -636,7 +600,10 @@ class CameraFragment: Fragment() {
             val sdf = SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS", Locale.US)
             Log.i("Filename", sdf.toString())
             fileFormat = sdf.format(Date())
-            return File(imageDirectory, "IMG_${fileFormat}_$nir.jpg")
+            val output = File(imageDirectory, "IMG_${fileFormat}_$nir.jpg")
+            if (nir == "RGB")
+                rgbAbsolutePath = output.absolutePath
+            return output
         }
     }
 }
