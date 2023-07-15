@@ -50,8 +50,8 @@ object Utils {
     const val rawImageDirectory = "rawImages"
     const val croppedImageDirectory = "croppedImages"
     const val processedImageDirectory = "processedImages"
-    const val boundingBoxWidth = 32F
-    const val boundingBoxHeight = 32F
+    const val boundingBoxWidth = 64F
+    const val boundingBoxHeight = 64F
 
     // Intrinsic Camera Parameters for Google Pixel 4 IR camera
     // val K_Pixel = arrayOf(doubleArrayOf(542.6309295733048, 0.0, 232.78423096084575),
@@ -174,7 +174,7 @@ object Utils {
     }
 
     fun cropImage(bitmap: Bitmap, left: Float, top: Float): Bitmap {
-        return Bitmap.createBitmap(bitmap, left.toInt(), top.toInt(), 64, 64, null, true)
+        return Bitmap.createBitmap(bitmap, left.toInt(), top.toInt(), (boundingBoxWidth*2).toInt(), (boundingBoxHeight*2).toInt(), null, true)
     }
 
     fun fixedAlignment(imageRGB: Bitmap): Bitmap{

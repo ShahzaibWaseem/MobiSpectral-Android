@@ -86,16 +86,21 @@ class ImageViewerFragment: Fragment() {
 
         canvas.drawRect(left-2.5F, top-2.5F, right+2.5F, bottom+2.5F, paint)
         view.setImageBitmap(bitmapOverlay)
-        if (bitmapOverlay.width > 64 && bitmapOverlay.height > 64 && position == 0) {
+        if (bitmapOverlay.width > Utils.boundingBoxWidth*2 && bitmapOverlay.height > Utils.boundingBoxHeight*2 && position == 0) {
             MainActivity.tempRGBBitmap = bitmapOverlay
             MainActivity.tempRectangle = Rect(bottom.toInt(), left.toInt(), right.toInt(), top.toInt())
         }
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         OpenCVLoader.initDebug()
+        sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
+        advancedControlOption = when (sharedPreferences.getString("option", getString(R.string.advanced_option_string))!!) {
+            getString(R.string.advanced_option_string) -> true
+            getString(R.string.simple_option_string) -> false
+            else -> true
+        }
         LoadingDialogFragment.text = "Normalizing Image"
         loadingDialogFragment.isCancelable = false
         makeFolderInRoot(Utils.MobiSpectralPath, requireContext())
@@ -180,12 +185,6 @@ class ImageViewerFragment: Fragment() {
 
     override fun onStart() {
         super.onStart()
-        sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
-        advancedControlOption = when (sharedPreferences.getString("option", getString(R.string.advanced_option_string))!!) {
-            getString(R.string.advanced_option_string) -> true
-            getString(R.string.simple_option_string) -> false
-            else -> true
-        }
         val offlineMode = sharedPreferences.getBoolean("offline_mode", false)
 
         lifecycleScope.launch(Dispatchers.IO) {

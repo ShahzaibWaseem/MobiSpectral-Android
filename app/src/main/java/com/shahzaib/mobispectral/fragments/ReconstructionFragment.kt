@@ -323,7 +323,7 @@ class ReconstructionFragment: Fragment() {
         }
         val finalResults = ArrayList<Long> ()
 
-        if (bitmapsWidth == 64 && bitmapsHeight == 64 && !advancedControlOption && !alreadyMultiLabelInferred) {
+        if (bitmapsWidth == Utils.boundingBoxWidth.toInt()*2 && bitmapsHeight == Utils.boundingBoxHeight.toInt()*2 && !advancedControlOption && !alreadyMultiLabelInferred) {
             val multiClassificationThread = Thread {
                 val zoneHeight = 16
                 val zoneWidth = 16
@@ -334,13 +334,13 @@ class ReconstructionFragment: Fragment() {
                         val results = ArrayList<Long> ()
                         val signatureList = ArrayList<FloatArray> ()
 
-                        for (i in 1 .. zoneWidth) {
-                            for (j in 1 .. zoneHeight) {
-                                // print("(${z1*zoneWidth+i}, ${z2*zoneWidth+j}), ")
+                        for (i in 0 until zoneWidth) {
+                            for (j in 0 until zoneHeight) {
+                                 print("(${z1*zoneWidth+i}, ${z2*zoneWidth+j}), ")
                                 signatureList.add(getSignature(predictedHS, z1*zoneWidth+i, z2*zoneWidth+j))
                             }
                         }
-                        // println()
+                        println()
                         results.add(classifyOneSignature(signatureAverage(signatureList)))
                         val frequencies = results.groupingBy { it }.eachCount()
                         finalResults.add(frequencies.maxBy { it.value }.key)
@@ -405,8 +405,8 @@ class ReconstructionFragment: Fragment() {
     private fun getSignature(predictedHS: FloatArray, SignatureX: Int, SignatureY: Int): FloatArray {
         val signature = FloatArray(numberOfBands)
         // Log.i("Touch Coordinates", "$SignatureX, $SignatureY")
-        val leftX = bitmapsWidth - SignatureX - 1       // -1 is the pixel itself
-        val leftY = bitmapsHeight - SignatureY - 1      // -1 is the pixel itself
+        val leftX = bitmapsWidth - 1 - SignatureX       // -1 is the pixel itself
+        val leftY = bitmapsHeight - 1 - SignatureY      // -1 is the pixel itself
 
         var idx = bitmapsWidth*SignatureY
         idx += SignatureX
@@ -417,7 +417,7 @@ class ReconstructionFragment: Fragment() {
             signature[i] = predictedHS[idx]
             if (advancedControlOption)
                 series.appendData(DataPoint(ACTUAL_BAND_WAVELENGTHS[i*bandSpacing], predictedHS[idx].toDouble()), true, numberOfBands)
-            idx += leftX + bitmapsWidth*leftY + (bitmapsWidth*SignatureY + SignatureX)
+            idx += leftX + bitmapsWidth*leftY + 1 + (bitmapsWidth*SignatureY + SignatureX)
         }
 
         if (advancedControlOption) {
