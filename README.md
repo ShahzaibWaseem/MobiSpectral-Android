@@ -22,6 +22,8 @@ If your phone does not meet the hardware requirement (NIR camera), the applicati
 ## Download the application
 The application can either be built using Android Studio (or Eclipse) or the pre-built apk can be downloaded from this [link]().
 
+If the application could not be downloaded, disable Play Protect (service from Google that prevents users from installing applications which are not from Play Store) from your phone for the time being. Google Play Store > Click your profile picture (top right) > Play Protect > Settings Cog (top right) > Disable the option "Scan apps with Play Protect".
+
 ## Getting Started
 Fork the repository or download the package from the side pane to get started.
 
