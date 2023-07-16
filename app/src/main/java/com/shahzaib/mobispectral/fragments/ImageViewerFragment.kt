@@ -242,7 +242,7 @@ class ImageViewerFragment: Fragment() {
             val nirImage = File(args.filePath2)
             val nirDirectoryPath = nirImage.absolutePath.split(System.getProperty("file.separator")!!)
             val nirImageFileName = nirDirectoryPath[nirDirectoryPath.size-1]
-            saveProcessedImages(rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName, Utils.processedImageDirectory)
+            saveProcessedImages(requireContext(), rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName, Utils.processedImageDirectory)
 
             fragmentImageViewerBinding.button.setOnClickListener {
                 if (leftCrop == 0F && topCrop == 0F && !advancedControlOption) {
@@ -253,7 +253,7 @@ class ImageViewerFragment: Fragment() {
                 if (leftCrop != 0F && topCrop != 0F) {
                     rgbImageBitmap = cropImage(rgbImageBitmap, leftCrop, topCrop)
                     nirImageBitmap = cropImage(nirImageBitmap, leftCrop, topCrop)
-                    saveProcessedImages(rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName, Utils.croppedImageDirectory)
+                    saveProcessedImages(requireContext(), rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName, Utils.croppedImageDirectory)
                 }
 
                 // addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 2)
@@ -335,7 +335,7 @@ class ImageViewerFragment: Fragment() {
         val whiteBalanceModel = WhiteBalance(requireContext())
         val whiteBalancedBitmap = whiteBalanceModel.whiteBalance(rgbBitmap)
         val endTime = System.currentTimeMillis()
-        MainActivity.normalizationTime = (endTime - startTime).toString()
+        MainActivity.normalizationTime = "${((endTime - startTime).toFloat() / 1000.0F)} s"
         return whiteBalancedBitmap
     }
 

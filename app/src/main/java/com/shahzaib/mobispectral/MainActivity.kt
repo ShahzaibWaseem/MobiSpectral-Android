@@ -19,7 +19,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         const val MOBISPECTRAL_APPLICATION = 0
-        const val SHELF_LIFE_APPLICATION = 1
         lateinit var fruitID: String
         lateinit var originalImageRGB: String
         lateinit var originalImageNIR: String

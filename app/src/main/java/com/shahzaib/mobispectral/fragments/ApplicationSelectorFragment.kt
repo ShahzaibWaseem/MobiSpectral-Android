@@ -19,6 +19,7 @@ import com.shahzaib.mobispectral.MainActivity
 import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.Utils
 import com.shahzaib.mobispectral.databinding.FragmentApplicationselectorBinding
+import com.shahzaib.mobispectral.makeDirectory
 
 class ApplicationSelectorFragment: Fragment() {
     private lateinit var fragmentApplicationselectorBinding: FragmentApplicationselectorBinding
@@ -43,6 +44,10 @@ class ApplicationSelectorFragment: Fragment() {
         applicationPicker.minValue = 0
         applicationPicker.maxValue = applicationArray.size-1
         applicationPicker.displayedValues = applicationArray
+
+        makeDirectory(Utils.rawImageDirectory)
+        makeDirectory(Utils.croppedImageDirectory)
+        makeDirectory(Utils.processedImageDirectory)
 
         return fragmentApplicationselectorBinding.root
     }
@@ -72,16 +77,6 @@ class ApplicationSelectorFragment: Fragment() {
             CameraFragment().generateAlertBox(requireContext(), "Information", getString(R.string.application_selector_information_string))
         }
 
-        fragmentApplicationselectorBinding.applicationPicker.setOnValueChangedListener{ _, _, newVal ->
-            if (newVal != 3) {
-                disableButton(cameraIdNIR)
-            }
-            else {
-                enableButton()
-                cameraIdNIR = Utils.getCameraIDs(requireContext(), MainActivity.SHELF_LIFE_APPLICATION).second
-            }
-        }
-
         fragmentApplicationselectorBinding.liveModeCheckMark.setOnCheckedChangeListener { _, buttonChecked ->
             if (buttonChecked)
                 enableButton()
@@ -101,20 +96,10 @@ class ApplicationSelectorFragment: Fragment() {
             editor.putBoolean("offline_mode", offlineMode)
             Log.i("Radio Button", "$selectedApplication, $selectedOption")
             editor.apply()
-
-            if (selectedApplication != "Shelf Life Prediction") {
-                lifecycleScope.launchWhenStarted {
-                    navController.safeNavigate(ApplicationSelectorFragmentDirections.actionAppselectorToCameraFragment(
-                        Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).first, ImageFormat.JPEG)
-                    )
-                }
-            }
-            else {
-                lifecycleScope.launchWhenStarted {
-                    navController.safeNavigate(
-                        ApplicationSelectorFragmentDirections.actionAppselectorToShelflifeFragment()
-                    )
-                }
+            lifecycleScope.launchWhenStarted {
+                navController.safeNavigate(ApplicationSelectorFragmentDirections.actionAppselectorToCameraFragment(
+                    Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).first, ImageFormat.JPEG)
+                )
             }
             true
         }

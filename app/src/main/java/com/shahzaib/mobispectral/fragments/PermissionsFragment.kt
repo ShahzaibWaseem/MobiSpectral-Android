@@ -38,7 +38,7 @@ class PermissionsFragment: Fragment() {
                 }
                 if (hasPermissions(requireContext()))
                     launchFragments()
-            }.launch(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO))
+            }.launch(arrayOf(Manifest.permission.CAMERA))
         }
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
             if (!Environment.isExternalStorageManager()) {
@@ -71,7 +71,7 @@ class PermissionsFragment: Fragment() {
     }
 
     companion object {
-        private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+        private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.CAMERA)
         /** Convenience method used to check if all permissions required by this app are granted */
         fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED

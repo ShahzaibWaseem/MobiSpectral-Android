@@ -202,7 +202,6 @@ class CameraFragment: Fragment() {
         _fragmentCameraBinding = FragmentCameraBinding.inflate(inflater, container, false)
         sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
         mobiSpectralApplicationID = when(sharedPreferences.getString("application", "Organic Identification")!!) {
-            "Shelf Life Prediction" -> MainActivity.SHELF_LIFE_APPLICATION
             else -> MainActivity.MOBISPECTRAL_APPLICATION
         }
         offlineMode = sharedPreferences.getBoolean("offline_mode", false)
@@ -329,7 +328,6 @@ class CameraFragment: Fragment() {
                 lifecycleScope.launch(Dispatchers.Main) {
                     if (cameraId == cameraIdRGB){
                         when (cameraIdNIR) {
-                            "Shelf Life Prediction" -> navController.navigate(CameraFragmentDirections.actionCameraFragmentToAudioFragment(rgbAbsolutePath, fileFormat))
                             "OnePlus" -> navController.navigate(CameraFragmentDirections.actionCameraToJpegViewer(rgbAbsolutePath, nirAbsolutePath))
                             else -> navController.navigate(CameraFragmentDirections.actionCameraFragmentSelf(cameraIdNIR, ImageFormat.JPEG))
                         }

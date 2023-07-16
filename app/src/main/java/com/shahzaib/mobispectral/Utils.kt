@@ -115,10 +115,6 @@ object Utils {
                 cameraIdRGB = if (Build.PRODUCT == "OnePlus8Pro") "0" else cameraIdRGB
             }
         }
-        else {
-            cameraIdRGB = cameraList[0].cameraId
-            cameraIdNIR = "Shelf Life Prediction"
-        }
         Log.i("Camera", "$cameraIdRGB $cameraIdNIR")
         return Pair(cameraIdRGB, cameraIdNIR)
     }
@@ -266,7 +262,6 @@ data class MobiSpectralCSVFormat(val fruitID: String,
             processedImageRGB, processedImageNIR, actualLabel, predictedLabel, normalizationTime, reconstructionTime)
     }
 }
-data class ShelfLifeCSV(val image_path: String, val audio_path: String)
 
 /** Helper function used to convert a lens orientation enum into a human-readable string */
 private fun lensOrientationString(value: Int) = when(value) {
@@ -363,7 +358,7 @@ fun makeDirectory(folder: String) {
     if (!directory.exists()) { directory.mkdirs() }
 }
 
-fun saveProcessedImages (rgbBitmap: Bitmap, nirBitmap: Bitmap, rgbFileName: String, nirFileName: String, directory: String) {
+fun saveProcessedImages (context: Context, rgbBitmap: Bitmap, nirBitmap: Bitmap, rgbFileName: String, nirFileName: String, directory: String) {
     val externalStorageDirectory = Environment.getExternalStorageDirectory().toString()
     val rootDirectory = File(externalStorageDirectory, "/MobiSpectral")
     val imageDirectory = File(rootDirectory, "/$directory")
@@ -403,6 +398,7 @@ fun saveProcessedImages (rgbBitmap: Bitmap, nirBitmap: Bitmap, rgbFileName: Stri
             e.printStackTrace()
         }
     }.start()
+    MediaScannerConnection.scanFile(context, arrayOf(rgbImage.absolutePath, nirImage.absolutePath), null, null)
 }
 
 fun resizeBitmap(bitmap: Bitmap, maxSize: Int): Bitmap {

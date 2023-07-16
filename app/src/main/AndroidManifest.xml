@@ -5,7 +5,6 @@
 
     <!-- Permission declarations -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
     <!-- Storage Permission for Android 10 and above -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
@@ -43,7 +42,6 @@
         <meta-data
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />
-        <meta-data android:name="com.google.ar.core" android:value="required" />
     </application>
 
 </manifest>

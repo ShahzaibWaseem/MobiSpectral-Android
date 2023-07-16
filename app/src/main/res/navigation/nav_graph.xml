@@ -36,20 +36,8 @@
         <action
             android:id="@+id/action_appselector_to_camera_fragment"
             app:destination="@id/camera_fragment" />
-        <action
-            android:id="@+id/action_appselector_to_shelflife_fragment"
-            app:destination="@id/shelflife_fragment" />
     </fragment>
 
-    <fragment
-        android:id="@+id/shelflife_fragment"
-        android:name="com.shahzaib.mobispectral.fragments.ShelfLifeSelectorFragment"
-        android:label="ShelfLifeSelector">
-
-        <action
-            android:id="@+id/action_shelflife_fragment_to_camera_fragment"
-            app:destination="@+id/camera_fragment" />
-    </fragment>
     <fragment
         android:id="@+id/camera_fragment"
         android:name="com.shahzaib.mobispectral.fragments.CameraFragment"
@@ -82,23 +70,6 @@
             android:id="@+id/action_camera_to_applications"
             app:destination="@id/applicationselector_fragment" />
 
-        <action
-            android:id="@+id/action_camera_fragment_to_audio_fragment"
-            app:destination="@id/audio_fragment" />
-    </fragment>
-
-    <fragment
-        android:id="@+id/audio_fragment"
-        android:name="com.shahzaib.mobispectral.fragments.AudioFragment"
-        android:label="Audio Fragment">
-        <argument
-            android:name="file_path"
-            app:argType="string"
-            app:nullable="false"/>
-        <argument
-            android:name="file_format"
-            app:argType="string"
-            app:nullable="false"/>
     </fragment>
 
     <fragment
