@@ -20,7 +20,7 @@ The project is based on the ability of recent smartphones to capture images beyo
 If your phone does not meet the hardware requirement (NIR camera), the application has an "offline mode" which allows the user to run the provided images through the model to see the functionality and feasibility of such an application. The test set of organic and non-organic fruits consisting of apples, kiwis, blueberries can be found on this [link](https://drive.google.com/file/d/1n3a9339pDgV6Gq013Jl90_L0w76Xu3pp/view?usp=drive_link "Kiwi Test Dataset"). Unzip the images from the link to your phone and select a pair of images, choose RGB first and NIR second (Although the app can correct the order if there is "RGB" or "NIR" sub-string in the filenames).
 
 ## Download the application
-The application can either be built using Android Studio (or Eclipse) or the pre-built apk can be downloaded from this [link](https://drive.google.com/file/d/1mXh3MfAjHpVwVkXyuKLcwiLlh-kfhZh3/view?usp=drive_link "MobiSpectral Android Application (v1.0)").
+The application can either be built using Android Studio (or Eclipse) or the pre-built apk can be downloaded from this [link](https://drive.google.com/file/d/1wo8ZUS3-xoAcLv0q3D-vBJ4dtZhvELC_/view?usp=drive_link "MobiSpectral Android Application").
 
 If the application could not be downloaded, disable Play Protect (service from Google that prevents users from installing applications which are not from Play Store) from your phone for the time being. Google Play Store > Click your profile picture (top right) > Play Protect > Settings Cog (top right) > Disable the option "Scan apps with Play Protect".
 
