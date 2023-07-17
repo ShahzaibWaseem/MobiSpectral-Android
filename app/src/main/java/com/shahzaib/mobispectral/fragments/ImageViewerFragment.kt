@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 import android.graphics.*
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
@@ -93,6 +94,7 @@ class ImageViewerFragment: Fragment() {
     }
 
     @SuppressLint("ClickableViewAccessibility")
+    @Suppress("KotlinConstantConditions")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         OpenCVLoader.initDebug()
         sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
@@ -101,7 +103,7 @@ class ImageViewerFragment: Fragment() {
             getString(R.string.simple_option_string) -> false
             else -> true
         }
-        LoadingDialogFragment.text = "Normalizing Image"
+        LoadingDialogFragment.text = getString(R.string.normalizing_image_string)
         loadingDialogFragment.isCancelable = false
         makeFolderInRoot(Utils.MobiSpectralPath, requireContext())
 
@@ -120,7 +122,7 @@ class ImageViewerFragment: Fragment() {
 
                 canvas.drawBitmap(item, Matrix(), null)
                 if (!advancedControlOption)
-                    Handler().postDelayed({
+                    Handler(Looper.getMainLooper()).postDelayed({
                         boundingBox(item.width/2 - Utils.boundingBoxWidth, item.width/2 + Utils.boundingBoxWidth,
                             item.height/2 - Utils.boundingBoxHeight, item.height/2 + Utils.boundingBoxHeight,
                             canvas, view, bitmapOverlay, position)

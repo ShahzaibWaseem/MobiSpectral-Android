@@ -29,12 +29,6 @@ class LoadingDialogFragment: DialogFragment() {
         return alertDialog
     }
 
-    fun setText(text: String) { _fragmentReconstructionDialogBinding?.textView?.text = text }
-
-    fun hideProgressBar() { progressBar.visibility = View.INVISIBLE }
-
-    fun setTitle(title: String) { alertDialogBuilder.setTitle(title) }
-
     fun dismissDialog() {
         alertDialog.dismiss()
     }

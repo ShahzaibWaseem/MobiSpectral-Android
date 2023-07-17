@@ -74,8 +74,7 @@ class ReconstructionFragment: Fragment() {
     private var alreadyMultiLabelInferred = false
 
     private fun imageViewFactory() = ImageView(requireContext()).apply {
-        layoutParams = ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
     }
 
     private fun createORTSession(ortEnvironment: OrtEnvironment) : OrtSession {
@@ -83,12 +82,11 @@ class ReconstructionFragment: Fragment() {
         return ortEnvironment.createSession(modelBytes)
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         super.onCreateView(inflater, container, savedInstanceState)
         _fragmentReconstructionBinding = FragmentReconstructionBinding.inflate(
             inflater, container, false)
-        LoadingDialogFragment.text = "Reconstructing Hypercube"
+        LoadingDialogFragment.text = getString(R.string.reconstructing_hypercube_string)
         loadingDialogFragment.isCancelable = false
 
         classificationLabels = mapOf(

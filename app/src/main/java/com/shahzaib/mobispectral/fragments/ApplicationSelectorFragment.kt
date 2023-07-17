@@ -12,6 +12,7 @@ import android.widget.RadioButton
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withStarted
 import androidx.navigation.NavController
 import androidx.navigation.NavDirections
 import androidx.navigation.Navigation
@@ -20,6 +21,7 @@ import com.shahzaib.mobispectral.R
 import com.shahzaib.mobispectral.Utils
 import com.shahzaib.mobispectral.databinding.FragmentApplicationselectorBinding
 import com.shahzaib.mobispectral.makeDirectory
+import kotlinx.coroutines.launch
 
 class ApplicationSelectorFragment: Fragment() {
     private lateinit var fragmentApplicationselectorBinding: FragmentApplicationselectorBinding
@@ -70,7 +72,7 @@ class ApplicationSelectorFragment: Fragment() {
     @SuppressLint("ClickableViewAccessibility")
     override fun onStart() {
         super.onStart()
-        var cameraIdNIR = Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).second
+        val cameraIdNIR = Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).second
         disableButton(cameraIdNIR)
 
         fragmentApplicationselectorBinding.information.setOnClickListener {
@@ -96,10 +98,12 @@ class ApplicationSelectorFragment: Fragment() {
             editor.putBoolean("offline_mode", offlineMode)
             Log.i("Radio Button", "$selectedApplication, $selectedOption")
             editor.apply()
-            lifecycleScope.launchWhenStarted {
-                navController.safeNavigate(ApplicationSelectorFragmentDirections.actionAppselectorToCameraFragment(
-                    Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).first, ImageFormat.JPEG)
-                )
+            lifecycleScope.launch {
+                withStarted {
+                    navController.safeNavigate(ApplicationSelectorFragmentDirections.actionAppselectorToCameraFragment(
+                        Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).first, ImageFormat.JPEG)
+                    )
+                }
             }
             true
         }

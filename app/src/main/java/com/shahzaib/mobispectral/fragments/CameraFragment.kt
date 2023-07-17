@@ -146,7 +146,7 @@ class CameraFragment: Fragment() {
                     nirAbsolutePath = nirBitmapOutputFile.absolutePath
                     Log.i("Image", "RGB Path: $rgbAbsolutePath, NIR Path: $nirAbsolutePath")
 
-                    lifecycleScope.launchWhenStarted {
+                    lifecycleScope.launch {
                         saveImage(rgbBitmap, rgbBitmapOutputFile)
                         saveImage(nirBitmap, nirBitmapOutputFile)
 

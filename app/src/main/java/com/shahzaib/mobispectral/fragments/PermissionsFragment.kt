@@ -15,9 +15,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withStarted
 import androidx.navigation.Navigation
 import com.shahzaib.mobispectral.BuildConfig
 import com.shahzaib.mobispectral.R
+import kotlinx.coroutines.launch
 
 /**
  * This [Fragment] requests permissions and, once granted, it will navigate to the next fragment
@@ -64,9 +66,11 @@ class PermissionsFragment: Fragment() {
     }
 
     private fun launchFragments() {
-        lifecycleScope.launchWhenStarted {
-            Navigation.findNavController(requireActivity(), R.id.fragment_container)
-                .navigate(PermissionsFragmentDirections.actionPermissionsFragmentToAppselector())
+        lifecycleScope.launch {
+            withStarted {
+                Navigation.findNavController(requireActivity(), R.id.fragment_container)
+                    .navigate(PermissionsFragmentDirections.actionPermissionsFragmentToAppselector())
+            }
         }
     }
 

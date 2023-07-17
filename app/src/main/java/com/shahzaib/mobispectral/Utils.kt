@@ -44,8 +44,6 @@ object Utils {
     const val torchWidth = 480
     private const val aligningFactorX = 37  //This is 37 if picture captured in portrait [35-41 if un-warped] 83 if landscape
     private const val aligningFactorY = 87  //This is 83 if picture captured in portrait [74 if un-warped] 100 if landscape
-    const val croppedHeight = 400
-    const val croppedWidth = 300
     const val MobiSpectralPath = "MobiSpectral/processedImages"
     const val rawImageDirectory = "rawImages"
     const val croppedImageDirectory = "croppedImages"
@@ -53,23 +51,6 @@ object Utils {
     const val boundingBoxWidth = 64F
     const val boundingBoxHeight = 64F
 
-    // Intrinsic Camera Parameters for Google Pixel 4 IR camera
-    // val K_Pixel = arrayOf(doubleArrayOf(542.6309295733048, 0.0, 232.78423096084575),
-    //                       doubleArrayOf(0.0, 542.8318136934467, 337.77984524454547),
-    //                       doubleArrayOf( 0.0, 0.0, 1.0))
-
-    private val K_Pixel = doubleArrayOf(542.6309295733048, 0.0, 232.78423096084575,
-                                0.0, 542.8318136934467, 337.77984524454547,
-                                0.0, 0.0, 1.0)
-    // val D_Pixel = arrayOf(doubleArrayOf(-0.04591876756027188),
-    //                       doubleArrayOf(0.4810113550965089),
-    //                       doubleArrayOf(-1.1137694861149858),
-    //                       doubleArrayOf(0.4336328878297329))
-
-    private val D_Pixel = doubleArrayOf(-0.04591876756027188,
-                                0.4810113550965089,
-                                -1.1137694861149858,
-                                0.4336328878297329)
     fun assetFilePath(context: Context, assetName: String): String? {
         val file = File(context.filesDir, assetName)
         if (file.exists() && file.length() > 0) {
@@ -119,56 +100,6 @@ object Utils {
         return Pair(cameraIdRGB, cameraIdNIR)
     }
 
-    private fun initializeMats(parameter: DoubleArray, width: Int, height: Int): Mat {
-        val mat = Mat(height, width, CvType.CV_64FC1)
-        var iter = 0
-        for (row in 0 until height) {
-            print("$row ")
-            for (col in 0 until width) {
-                print("$col ")
-
-                mat.put(row, col, parameter[iter])
-                iter+=1
-            }
-        }
-        return mat
-    }
-
-    fun unwarp(imageNIR: Bitmap): Bitmap {
-        val K = Mat(Size(3.0, 3.0), CvType.CV_64F)
-        K.put(0, 0, *K_Pixel)
-        val nk = K.clone()
-        val D = Mat(Size(4.0, 1.0), CvType.CV_64F)
-        val map1 = Mat()
-        val map2 = Mat()
-
-        val nirMat = Mat()
-        Utils.bitmapToMat(imageNIR, nirMat)
-
-        val fixedNirMat = Mat()
-
-        val width = imageNIR.width.toDouble()
-        val height = imageNIR.height.toDouble()
-
-        D.put(0, 0, *D_Pixel)
-        nk.put(0, 0, nk[0, 0][0] / 2.0)
-        nk.put(1, 1, nk[1, 1][0] / 2.0)
-        Imgproc.initUndistortRectifyMap(K, D, Mat.eye(3, 3, 0), nk, Size(width, height), CvType.CV_32FC1, map1, map2)
-        Imgproc.remap(nirMat, fixedNirMat, map1, map2, Imgproc.INTER_LINEAR, Core.BORDER_CONSTANT)
-
-        // val K: Mat = initializeMats(K_Pixel, 3, 3)
-        // val D: Mat = initializeMats(D_Pixel, 4, 1)
-
-        Log.i("Parameters", "${K.dump()} ${D.dump()} ${imageNIR.config}")
-
-
-        // Imgproc.initUndistortRectifyMap(K, D, Mat.eye(3, 3, 0), K, Size(width, height), CvType.CV_16SC2, map1, map2)
-        // Imgproc.remap(nirMat, fixedNirMat, map1, map2, Imgproc.INTER_LINEAR, Core.BORDER_CONSTANT)
-        val fixedImageBitmap = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
-        Utils.matToBitmap(fixedNirMat, fixedImageBitmap)
-        return fixedImageBitmap
-    }
-
     fun cropImage(bitmap: Bitmap, left: Float, top: Float): Bitmap {
         return Bitmap.createBitmap(bitmap, left.toInt(), top.toInt(), (boundingBoxWidth*2).toInt(), (boundingBoxHeight*2).toInt(), null, true)
     }
@@ -181,6 +112,7 @@ object Utils {
         return alignedImageRGB
     }
 
+    @Suppress("KotlinConstantConditions")
     fun alignImages(image1: Bitmap, image2: Bitmap): Bitmap {
         val image1Mat = Mat(image1.height, image1.width, CvType.CV_8UC3)
         val image2Mat = Mat(image2.height, image2.width, CvType.CV_8UC3)
@@ -208,7 +140,7 @@ object Utils {
             Imgproc.warpAffine(image2Mat, image2Aligned, warpMatrix, image1Mat.size(), Imgproc.INTER_LINEAR + Imgproc.WARP_INVERSE_MAP)
 
         val img2Threshold = Mat(image2Gray.height(), image2Gray.width(), CvType.CV_8UC1)
-        val contours: List<MatOfPoint> = ArrayList<MatOfPoint>()
+        val contours: List<MatOfPoint> = ArrayList()
         val hierarchy = Mat()
 
         Imgproc.cvtColor(image2Aligned, image2Gray, Imgproc.COLOR_RGB2GRAY)
