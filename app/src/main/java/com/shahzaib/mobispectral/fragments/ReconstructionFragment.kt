@@ -1,5 +1,6 @@
 package com.shahzaib.mobispectral.fragments
 
+import ai.onnxruntime.OnnxMap
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
@@ -77,7 +78,7 @@ class ReconstructionFragment: Fragment() {
         layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
     }
 
-    private fun createORTSession(ortEnvironment: OrtEnvironment) : OrtSession {
+    private fun createORTSession(ortEnvironment: OrtEnvironment): OrtSession {
         val modelBytes = resources.openRawResource(classificationFile).readBytes()
         return ortEnvironment.createSession(modelBytes)
     }
@@ -312,9 +313,6 @@ class ReconstructionFragment: Fragment() {
     }
 
     private fun inference() {
-        val ortEnvironment = OrtEnvironment.getEnvironment()
-        val ortSession = context?.let { createORTSession(ortEnvironment) }
-
         if (!advancedControlOption) {
             clickedX = bitmapsWidth/2F
             clickedY = bitmapsHeight/2F
@@ -334,11 +332,11 @@ class ReconstructionFragment: Fragment() {
 
                         for (i in 0 until zoneWidth) {
                             for (j in 0 until zoneHeight) {
-                                 print("(${z1*zoneWidth+i}, ${z2*zoneWidth+j}), ")
+                                // print("(${z1*zoneWidth+i}, ${z2*zoneWidth+j}), ")
                                 signatureList.add(getSignature(predictedHS, z1*zoneWidth+i, z2*zoneWidth+j))
                             }
                         }
-                        println()
+                        // println()
                         results.add(classifyOneSignature(signatureAverage(signatureList)))
                         val frequencies = results.groupingBy { it }.eachCount()
                         finalResults.add(frequencies.maxBy { it.value }.key)
@@ -364,21 +362,15 @@ class ReconstructionFragment: Fragment() {
             Log.i("Frequency String", frequenciesString)
             fragmentReconstructionBinding.textViewClassTime.text = frequenciesString
             fragmentReconstructionBinding.textViewClassTime.visibility = View.VISIBLE
-            // Toast.makeText(requireContext(), frequenciesString, Toast.LENGTH_LONG).show()
-            // results = ArrayList()
+            MainActivity.predictedLabel = frequenciesString
         }
 
         val inputSignature = getSignature(predictedHS, clickedX.toInt(), clickedY.toInt())
-        val outputLabel = ortSession?.let { classificationInference(inputSignature, it, ortEnvironment) }
-        println("Output Label: $outputLabel")
-        outputLabelString = if (Pair(mobiSpectralApplication, outputLabel) !in classificationLabels)
-            "Something went wrong"
-        else
-            classificationLabels[Pair(mobiSpectralApplication, outputLabel)]!!
+        classifyOneSignature(inputSignature)
         MainActivity.predictedLabel = outputLabelString
-        // addCSVLog(requireContext())
         fragmentReconstructionBinding.textViewClass.text = outputLabelString
         fragmentReconstructionBinding.graphView.title = "$outputLabelString Signature at (x: ${clickedX.toInt()}, y: ${clickedY.toInt()})"
+        addCSVLog(requireContext())
         alreadyMultiLabelInferred = true
     }
 
@@ -396,8 +388,9 @@ class ReconstructionFragment: Fragment() {
         if (outputLabel != null) {
             return outputLabel
         }
-        return -1L
         // MainActivity.predictedLabel = outputLabelString
+
+        return -1L
     }
 
     private fun getSignature(predictedHS: FloatArray, SignatureX: Int, SignatureY: Int): FloatArray {
@@ -460,12 +453,11 @@ class ReconstructionFragment: Fragment() {
         fragmentReconstructionBinding.textViewReconTime.text = getString(R.string.reconstruction_time_string, reconstructionDuration)
     }
 
-    private fun classificationInference(input: FloatArray, ortSession: OrtSession,
-                                  ortEnvironment: OrtEnvironment): Long {
+    @Suppress("UNCHECKED_CAST")
+    private fun classificationInference(input: FloatArray, ortSession: OrtSession, ortEnvironment: OrtEnvironment): Long {
         val inputName = ortSession.inputNames?.iterator()?.next()
         val floatBufferInputs = FloatBuffer.wrap(input)
-        val inputTensor = OnnxTensor.createTensor(
-            ortEnvironment, floatBufferInputs, longArrayOf(1, numberOfBands.toLong()))
+        val inputTensor = OnnxTensor.createTensor(ortEnvironment, floatBufferInputs, longArrayOf(1, numberOfBands.toLong()))
 
         val startTime = System.currentTimeMillis()
         val results = ortSession.run(mapOf(inputName to inputTensor))
@@ -475,17 +467,21 @@ class ReconstructionFragment: Fragment() {
         MainActivity.classificationTime = "$classificationDuration ms"
         println(getString(R.string.classification_time_string, classificationDuration))
         // fragmentReconstructionBinding.textViewClassTime.text = getString(R.string.classification_time_string, classificationDuration)
-        // for (item in 0 .. results.size()){
-            // Log.i("Results", "${results[item].value}")
-        // }
-        var output = results[0].value
-        output = output as LongArray
-
+         for (item in 0 until results.size()){
+             Log.i("Results", "${results[item].value}")
+         }
+        val output = results[0].value as LongArray
+        val probabilities = results.get(1).value as List<OnnxMap>
+        val probabilitiesString = probabilities[0].value.entries.toString()
+        println("Output: ${output.toList()}")
+        println("Probabilities: $probabilitiesString")
+        if (advancedControlOption)
+            fragmentReconstructionBinding.textViewClassTime.text = getString(R.string.classification_probabilities_string, probabilitiesString)
         return output[0]
     }
 
     private fun getBand(predictedHS: FloatArray, bandNumber: Int, reverseScale: Boolean = false): Bitmap {
-        val alpha :Byte = (255).toByte()
+        val alpha: Byte = (255).toByte()
 
         val byteBuffer = ByteBuffer.allocate((bitmapsWidth + 1) * (bitmapsHeight + 1) * 4)
         var bmp = Bitmap.createBitmap(bitmapsWidth, bitmapsHeight, Bitmap.Config.ARGB_8888)
@@ -497,7 +493,7 @@ class ReconstructionFragment: Fragment() {
         val maxValue = predictedHS.maxOrNull() ?: 1.0f
         val minValue = predictedHS.minOrNull() ?: 0.0f
         val delta = maxValue-minValue
-        var tempValue :Byte
+        var tempValue: Byte
 
         // Define if float min..max will be mapped to 0..255 or 255..0
         val conversion = when(reverseScale) {
