@@ -69,16 +69,16 @@ class Reconstruction(context: Context, modelPath: String) {
 
         var nirTensor: Tensor = getOneBand(preprocess(nirBitmap), 0)
         nirTensor = processTensor(nirTensor.dataAsFloatArray, bitmapsHeight*bitmapsWidth, nirTensor.dataAsFloatArray.min(), nirTensor.dataAsFloatArray.max(), 1)
-        Log.i("TensorShape", "${bgrTensor.shape().toList()}, ${nirTensor.shape().toList()}")
+        Log.i("Input Tensor Shape", "${bgrTensor.shape().toList()}, ${nirTensor.shape().toList()}")
 
         val imageTensor: Tensor = concatenate(bgrTensor, nirTensor, 4)
 
-        Log.i("Concatenated", imageTensor.shape().toList().toString())
+        Log.i("Concatenated Tensor Shape", imageTensor.shape().toList().toString())
 
         val inputs: IValue = IValue.from(imageTensor)
 
         val outputs: Tensor = model?.forward(inputs)?.toTensor()!!
-        Log.i("Output Tensor", "${outputs.shape().toList()}")
+        Log.i("Output Tensor Shape", "${outputs.shape().toList()}")
 
         return outputs.dataAsFloatArray
     }
