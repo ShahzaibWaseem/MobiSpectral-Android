@@ -467,9 +467,9 @@ class ReconstructionFragment: Fragment() {
         MainActivity.classificationTime = "$classificationDuration ms"
         println(getString(R.string.classification_time_string, classificationDuration))
         // fragmentReconstructionBinding.textViewClassTime.text = getString(R.string.classification_time_string, classificationDuration)
-         for (item in 0 until results.size()){
-             Log.i("Results", "${results[item].value}")
-         }
+        for (item in 0 until results.size()){
+            Log.i("Results", "${results[item].value}")
+        }
         val output = results[0].value as LongArray
         val probabilities = results.get(1).value as List<OnnxMap>
         val probabilitiesString = probabilities[0].value.entries.toString()

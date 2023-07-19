@@ -59,20 +59,19 @@ class Reconstruction(context: Context, modelPath: String) {
         bitmapsWidth = rgbBitmap.width
         bitmapsHeight = rgbBitmap.height
 
-        val rgbBitmapTensor = preprocess(rgbBitmap)
-        val redBand: Tensor = getOneBand(rgbBitmapTensor, 0)
-        val greenBand: Tensor = getOneBand(rgbBitmapTensor, 1)
-        val blueBand: Tensor = getOneBand(rgbBitmapTensor, 2)
-        var bgrTensor = concatenate(blueBand, greenBand, 2)
-        bgrTensor = concatenate(bgrTensor, redBand, 3)
-        bgrTensor = processTensor(bgrTensor.dataAsFloatArray, bitmapsHeight*bitmapsWidth*3, bgrTensor.dataAsFloatArray.min(), bgrTensor.dataAsFloatArray.max(), 3)
+        var rgbBitmapTensor = preprocess(rgbBitmap)
+        // val redBand: Tensor = getOneBand(rgbBitmapTensor, 0)
+        // val greenBand: Tensor = getOneBand(rgbBitmapTensor, 1)
+        // val blueBand: Tensor = getOneBand(rgbBitmapTensor, 2)
+        // var bgrTensor = concatenate(blueBand, greenBand, 2)
+        // bgrTensor = concatenate(bgrTensor, redBand, 3)
+        rgbBitmapTensor = processTensor(rgbBitmapTensor.dataAsFloatArray, bitmapsHeight*bitmapsWidth*3, rgbBitmapTensor.dataAsFloatArray.min(), rgbBitmapTensor.dataAsFloatArray.max(), 3)
 
         var nirTensor: Tensor = getOneBand(preprocess(nirBitmap), 0)
         nirTensor = processTensor(nirTensor.dataAsFloatArray, bitmapsHeight*bitmapsWidth, nirTensor.dataAsFloatArray.min(), nirTensor.dataAsFloatArray.max(), 1)
-        Log.i("Input Tensor Shape", "${bgrTensor.shape().toList()}, ${nirTensor.shape().toList()}")
+        Log.i("Input Tensor Shape", "${rgbBitmapTensor.shape().toList()}, ${nirTensor.shape().toList()}")
 
-        val imageTensor: Tensor = concatenate(bgrTensor, nirTensor, 4)
-
+        val imageTensor: Tensor = concatenate(rgbBitmapTensor, nirTensor, 4)
         Log.i("Concatenated Tensor Shape", imageTensor.shape().toList().toString())
 
         val inputs: IValue = IValue.from(imageTensor)

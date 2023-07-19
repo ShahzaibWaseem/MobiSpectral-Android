@@ -24,8 +24,8 @@ class MainActivity : AppCompatActivity() {
         lateinit var originalImageNIR: String
         lateinit var processedImageRGB: String
         lateinit var processedImageNIR: String
-        lateinit var croppedImageRGB: String
-        lateinit var croppedImageNIR: String
+        var croppedImageRGB: String = ""
+        var croppedImageNIR: String = ""
         var actualLabel: String = ""
         lateinit var predictedLabel: String
         lateinit var normalizationTime: String
