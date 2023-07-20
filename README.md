@@ -17,10 +17,31 @@ The project is based on the ability of recent smartphones to capture images beyo
 - Advanced Mode: Advanced Mode allows the user to see more in depth analysis of the hypercube. After Normalizing and Aligning the images, it allows the user to reconstruct the whole hypercube or a part, 128*128, of it (you can select it by tapping on it). After getting the hypercube, you can tap on individual pixels and see what class each pixel (spectral signature) belongs to. On tapping the "Analysis" button the app shows how the spectral signature looks like and shows the predicted output.
 
 ## Download Test Set
-If your phone does not meet the hardware requirement (NIR camera), the application has an "offline mode" which allows the user to run the provided images through the model to see the functionality and feasibility of such an application. The test set of organic and non-organic fruits consisting of apples, kiwis, blueberries can be found on this [link](https://drive.google.com/file/d/1n3a9339pDgV6Gq013Jl90_L0w76Xu3pp/view?usp=drive_link "Kiwi Test Dataset"). Unzip the images from the link to your phone and select a pair of images, choose RGB first and NIR second (Although the app can correct the order if there is "RGB" or "NIR" sub-string in the filenames).
+If your phone does not meet the hardware requirement (NIR camera), the application has an "offline mode" which allows the user to run images provided through the model to see the functionality and feasibility of such an application. The test set of organic and non-organic fruits consisting of apples, [kiwis](https://drive.google.com/file/d/16B9Jnwgo9Xev4db3ROqvL8_64vAr3l-H/view?usp=drive_link "Kiwi Test Dataset"), [blueberries](https://drive.google.com/file/d/1jYHs0Q9rnsx58IaHoR0wSvS4Ep0l7IUO/view?usp=drive_link "Blueberries Test Dataset") can be found in the links. Unzip the images and you'll find the following directory tree:
+```
+dataset_fruit
+│
+└── classification
+│
+└── mobile_data
+│	│
+|	└── nonorganic
+|	│	[num]_NIR.jpg
+|	|	[num]_RGB.jpg
+|	|	...
+|	|
+|	└── organic
+|	│	[num]_NIR.jpg
+|	|	[num]_RGB.jpg
+|	|	...
+|
+└── reconstruction
+	...
+```
+Now expand the `mobile_data` directory you can select images from both organic and nonorganic pool of images and you can test which fruits output which classification label.
 
 ## Download the application
-The application can either be built using Android Studio (or Eclipse) or the pre-built apk can be downloaded from this [link](https://drive.google.com/file/d/1qG7wSfwuXRK1XuHG3kXQq9AMFxMeRqVL/view?usp=drive_link "MobiSpectral Android Application").
+The application can either be built using Android Studio (or Eclipse) or the pre-built apk can be downloaded from here: [MobiSpectral Apk](https://drive.google.com/file/d/19jIPqN58rwz_EDvXRRYmF6Ux-eR5Ns1x/view?usp=sharing "MobiSpectral Android Application").
 
 If the application could not be downloaded, disable Play Protect (service from Google that prevents users from installing applications which are not from Play Store) from your phone for the time being. Google Play Store > Click your profile picture (top right) > Play Protect > Settings Cog (top right) > Disable the option "Scan apps with Play Protect".
 
