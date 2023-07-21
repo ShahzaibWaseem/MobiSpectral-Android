@@ -1,25 +1,46 @@
 # MobiSpectral Android
-This application is written in Kotlin and shows working of our work [MobiSpectral](https://github.com/) on its intended device, Smartphones.
+This application is written in Kotlin and shows working of our work [MobiSpectral](https://github.com/) on its intended device, Smartphones. It works in two modes: Offline and online mode. Offline mode takes pre-captured images and runs it through the system. Online mode captures the images on run time and passes it through the system. In each case you can have Simple Organic and Non-Organic identification and a Detailed Spectral Analysis:
 
-## Hardware Requirements
-The project is based on the ability of recent smartphones to capture images beyond the visible range in the EM spectrum. Recent smartphones come with specialized cameras which are used for robust face authentication systems and these phone cameras capture images in the Near Infrared range. We use the image captured from this special camera as well as a regular RGB image to figure out if the fruit in the pictures is organic or non-organic.
+- Simple Analysis: Simple Analysis is for users who want to tell what class the fruit belongs to. After aligning the two images, the app will ask the user to select a part of the image to test the system on (in order to speed up the testing process; takes around 5 seconds). In the end it shows what category the fruit belongs to: Organic and Non-Organic.
 
-## Pipeline
-1. Image Capturing: RGB followed by NIR.
-3. Image Alignment: Aligning the two images captured.
-4. Deep White Balancing: Android ported models from [[Deep White Balance](https://github.com/mahmoudnafifi/Deep_White_Balance), [Models](https://github.com/mahmoudnafifi/Deep_White_Balance/tree/master/PyTorch/models)].
-5. Patch Selection: Selecting the part of image we want to use.
-6. Hyperspectral Reconstruction: RGB+NIR -> Hypercube.
-7. Classification: based on 1-D signatures selection.
+- Detailed Analysis: Detailed Analysis allows the user to see more in depth analysis of the hypercube. It allows the user to pass the whole images through the system, in order to showcase the capabilities of the app and view spectral characteristics of the reconstructed hypercube. It then asks the user to tap on pixels of hypercube and classifies these points and shows the user the signature constructed by the system [Press "Analysis" button].
 
-## Working Modes
-- Simple Mode: Simple Mode is for users who want to tell what class the produce belong to. After aligning the two images, the app will pre-select a bounding box which is to be used in the reconstruction phase. Although, the user can tap on the images to change the location of the bounding box, to a zone where the fruit actually is in the images. After Reconstructing the hypercube, it will then divide the bounding box into zones of 16*16 pixels and create a signature which is representative of that zone, and classify the averaged signature in non-organic and organic classes.
-- Advanced Mode: Advanced Mode allows the user to see more in depth analysis of the hypercube. After Normalizing and Aligning the images, it allows the user to reconstruct the whole hypercube or a part, 128*128, of it (you can select it by tapping on it). After getting the hypercube, you can tap on individual pixels and see what class each pixel (spectral signature) belongs to. On tapping the "Analysis" button the app shows how the spectral signature looks like and shows the predicted output.
+## Hardware and Software Requirements
+The project is based on the ability of recent smartphones to capture images beyond the visible range in the EM spectrum. Recent smartphones come with specialized cameras which are used for robust face authentication systems and these phone cameras capture images in the Near Infrared  (NIR) range. We use the image captured from this special camera as well as a regular RGB image to figure out if the fruit in the pictures is organic or non-organic.
 
-## Download Test Set
-If your phone does not meet the hardware requirement (NIR camera), the application has an "offline mode" which allows the user to run images provided through the model to see the functionality and feasibility of such an application. The test set of organic and non-organic fruits consisting of apples, [kiwis](https://drive.google.com/file/d/16B9Jnwgo9Xev4db3ROqvL8_64vAr3l-H/view?usp=drive_link "Kiwi Test Dataset"), [blueberries](https://drive.google.com/file/d/1jYHs0Q9rnsx58IaHoR0wSvS4Ep0l7IUO/view?usp=drive_link "Blueberries Test Dataset") can be found in the links. Unzip the images and you'll find the following directory tree:
+- Offline Mode: Any Android based smartphone should work. 
+- Online Mode: Android Phone with NIR camera such as Google Pixel 4 XL and OnePlus 8 Pro.
+
+## Download the App and Datasets
+The apk for the application can be downloaded from here: [MobiSpectral Apk](https://drive.google.com/file/d/19jIPqN58rwz_EDvXRRYmF6Ux-eR5Ns1x/view?usp=sharing "MobiSpectral Android Application"). Steps for installing the application on your phone are as follows:
+
+- Press the apk file to install the application.
+- If the application could not be downloaded, disable Play Protect (service from Google that prevents users from installing applications which are not from Play Store) on your phone for the time being. For doing that follow the steps below:
+	- Open up `Google Play Store`.
+	- Click your Profile Picture (top right).
+	- Open up `Play Protect` option and press the Settings Cog (top right).
+	- Disable the option `Scan apps with Play Protect`
+- After disabling "Play Protect" press apk file and a pop-up will appear, asking you to allow downloading apps from other sources, allow the option to install the application.
+- When the application is installed, the app will ask for permission to access camera and storage on your phone.
+	- Camera Permission: Camera permission is required to capture images using the cameras.
+	- Storage Permission: Storage permission is required to save and load images from the disk.
+- The application will be installed and you will reach the Main page of the application.
+
+You can also build the application from the [Build the application from source code](#build_the_application_from_source_code).
+
+For the offline mode you can acquire one or more of the following datasets to test our application:
+- [Apples 11.39 GB](https://drive.google.com/file/d/1WtogFi1ahG5ejzpcp0GcUs64MEuQDJjT/view?usp=drive_link "Apples Test Dataset")
+- [Kiwis 2.52 GB](https://drive.google.com/file/d/16B9Jnwgo9Xev4db3ROqvL8_64vAr3l-H/view?usp=drive_link "Kiwis Test Dataset")
+- [Blueberries 1.83 GB](https://drive.google.com/file/d/1jYHs0Q9rnsx58IaHoR0wSvS4Ep0l7IUO/view?usp=drive_link "Blueberries Test Dataset")
+- [Strawberries 1.92 GB](https://drive.google.com/file/d/1taaiWVIwjy8PtiuxdxNvr2CTWkuhv_Q4/view?usp=drive_link "Strawberries Test Dataset")
+- [Tomatoes 1.66 GB](https://drive.google.com/file/d/1WbQpNG6GFtvjijb9g27n8QE_yDip8tGH/view?usp=drive_link "Tomatoes Test Dataset")
+
+For the online mode you can take images on the phone and process them in real time, if the phone allows access to the NIR camera.
+
+## Test the Application in Offline Mode
+In the offline mode, you process the images (RGB and NIR) pre-captured when you downloaded the datasets. Each dataset follows the following directory structure:
 ```
-dataset_fruit
+dataset_[fruit]
 │
 └── classification
 │
@@ -38,22 +59,66 @@ dataset_fruit
 └── reconstruction
 	...
 ```
-Now expand the `mobile_data` directory you can select images from both organic and nonorganic pool of images and you can test which fruits output which classification label.
 
-## Download the application
-The application can either be built using Android Studio (or Eclipse) or the pre-built apk can be downloaded from here: [MobiSpectral Apk](https://drive.google.com/file/d/19jIPqN58rwz_EDvXRRYmF6Ux-eR5Ns1x/view?usp=sharing "MobiSpectral Android Application").
+Steps to run the application in offline mode:
+1. Unzip the dataset that you downloaded before
+2. Run the application
+3. Check the offline mode to be used
+	- `mobile_data` directory is where you'll find the folders where you can select images from either organic or nonorganic pool of images and you can test which fruits output which classification label.
+4. Select two images (RGB and NIR) from the Pop-up by tapping
+5. (Optional) Choose the area where the fruit is present in the image
+6. Reconstruct the hypercube
+7. The application shows the predicted classification label for the fruit
 
-If the application could not be downloaded, disable Play Protect (service from Google that prevents users from installing applications which are not from Play Store) from your phone for the time being. Google Play Store > Click your profile picture (top right) > Play Protect > Settings Cog (top right) > Disable the option "Scan apps with Play Protect".
+<!-- ![Screenshots in a table]() -->
 
-## Technical Specifications
+## Test the Application in Online Mode
+NIR cameras is the backbone of this system because it can capture visual information that the simple RGB camera cannot, and it helps the Reconstruction model in accurately predicting what information should be present in a particular band (image whose reflectance map achieved by shining a particular wavelength of light).
+
+Most smartphones with an NIR camera have it on the front because its primary function is facial recognition, which means capturing images of fruits (on a table) in our case is quite difficult for the user. To assist the user in capturing images we added a count down timer with beeping sound. This aural feedback assists the user to correctly capture the images because if the images are very misaligned the results would suffer quite a lot.
+
+Steps to run the application in online mode:
+1. Run the application
+2. Without checking the offline mode tap on run
+3. When you press the capture button, it will beep thrice and capture the images
+4. (Optional) Choose the area where the fruit is present in the image
+6. Reconstruct the hypercube
+7. The application shows the predicted classification label for the fruit
+
+<!-- ![Screenshots in a table]() -->
+
+<!-- ## Pipeline
+
+1. Image Capturing: RGB followed by NIR.
+3. Image Alignment: Aligning the two images captured.
+4. Deep White Balancing: Android ported models from [[Deep White Balance](https://github.com/mahmoudnafifi/Deep_White_Balance), [Models](https://github.com/mahmoudnafifi/Deep_White_Balance/tree/master/PyTorch/models)].
+5. Patch Selection: Selecting the part of image we want to use.
+6. Hyperspectral Reconstruction: RGB+NIR -> Hypercube.
+7. Classification: based on 1-D signatures selection. -->
+
+
+## Build the application from source code
+Download Android Studio on your workstation (see Installation Instructions on [Android Developer website](https://developer.android.com/studio)). After Installing Android Studio, clone the repository onto your workstation. Gradle is a tool which comes pre-installed with Android Studio and is responsible for Dependency management. In the repository, there are also gradle files present, which tell gradle which dependencies to install on your workstation. The major dependencies which we tested and deployed (So please make sure that these dependencies are consistent) our final application are as follows:
+
+- Android Studio Flamingo | 2022.2.1 Patch 2 (tested on previous versions as well)
 - Kotlin 1.8.20 (Also tested on 1.7.21)
-- Gradle: 8.0.2 [Amazon Corretto Version] (Also tested on 7.5.0, 7.4.0, 4.2.2)
-- Java Version: 18 (Also tested on 17, 16)
+- Gradle: 8.0.2 (Also tested on 7.5.0, 7.4.0, 4.2.2)
+- JDK Version: 18.0.2 [Amazon Corretto Version] (Also tested on 17, 16)
 - SDK versions 33 (target), 23 (minimum)
 - AndroidX
 - Dependencies
 	- PyTorch: 1.8.0 (versions above it contain some bugs and uses Lite Interpreter which did not convert models to PyTorch mobile version)
 	- OpenCV: 3.4.3
+
+When Android Studio is set up on your workstation, connect your Android Smartphone. Now enable USB debugging on your phone (first enable Developer options, and then go in there to enable USB debugging). Your device name and model should now appear in the box next to `Run 'app'` button [See Image below]. If it does not appear, allow `File Transfer` on your smartphone and tapping on the USB connection/preferences notification. This [official guide](https://developer.android.com/studio/run/device "Guide to connect your phone to your PC") by Android Developers can be followed for this.
+
+When the project is loaded onto your Android Studio, build the project using `Build` button from the top bar and press `Make Project` [`CTRL + F9`]. Building the project firstly run gradle dependency installer and installs all packages required by the project and then builds the project. After building the project run the project by pressing the `Run 'app'` button as can be seen in the following picture [`SHIFT + F10`]. Simply pressing the Run app button does all previous steps in one go (Installing dependencies, Building Project, Running app on your phone).
+
+![Run Project](images/RunApp.png)
+
+One common issue that can occur while building projects on recently installed Android Studio copy is missmatch of JDK source/target version. You can match this dependency by pressing the "File" button and opening up Settings [`CTRL + ALT + S`] then on the left pane expand `Build, Execution, Deployment` option and under there click on `Gradle` under `Build Tools`. Now on this page press Gradle JDK and set it to 18.0.2 [Amazon Corretto Version], if its not installed, install it using the button below [See image below]. The structure of Android Studio may change and these instructions are true for Android Studio Flamingo | 2022.2.1 Patch 2 version.
+
+![Gradle JDK Version](images/JDKVersion.png)
 
 ## References
 - Picture capturing code using Camera API 2 and was forked from [Android/Camera2Basic](https://github.com/android/camera-samples/tree/main/Camera2Basic) and built upon from there.
