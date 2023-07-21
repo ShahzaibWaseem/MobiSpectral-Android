@@ -28,7 +28,11 @@ import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
 import org.opencv.video.Video
 import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
+import java.io.BufferedWriter
 import java.io.ByteArrayOutputStream
+import java.io.DataOutput
+import java.io.DataOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileWriter
@@ -48,6 +52,7 @@ object Utils {
     const val rawImageDirectory = "rawImages"
     const val croppedImageDirectory = "croppedImages"
     const val processedImageDirectory = "processedImages"
+    const val hypercubeDirectory = "reconstructedHypercubes"
     const val boundingBoxWidth = 64F
     const val boundingBoxHeight = 64F
 
@@ -299,10 +304,10 @@ fun saveProcessedImages (context: Context, rgbBitmap: Bitmap, nirBitmap: Bitmap,
     val nirImage = File(imageDirectory, nirFileName)
 
     when (directory) {
-        rawImageDirectory -> {
-            MainActivity.originalImageRGB = rgbImage.absolutePath.toUri().toString()
-            MainActivity.originalImageNIR = nirImage.absolutePath.toUri().toString()
-        }
+//        rawImageDirectory -> {
+//            MainActivity.originalImageRGB = rgbImage.absolutePath.toUri().toString()
+//            MainActivity.originalImageNIR = nirImage.absolutePath.toUri().toString()
+//        }
         processedImageDirectory -> {
             MainActivity.processedImageRGB = rgbImage.absolutePath.toUri().toString()
             MainActivity.processedImageNIR = nirImage.absolutePath.toUri().toString()
@@ -331,6 +336,30 @@ fun saveProcessedImages (context: Context, rgbBitmap: Bitmap, nirBitmap: Bitmap,
         }
     }.start()
     MediaScannerConnection.scanFile(context, arrayOf(rgbImage.absolutePath, nirImage.absolutePath), null, null)
+}
+
+fun saveHypercube(hypercubeFileName: String, hypercube: FloatArray, directory: String) {
+    val externalStorageDirectory = Environment.getExternalStorageDirectory().toString()
+    val rootDirectory = File(externalStorageDirectory, "/MobiSpectral")
+    val imageDirectory = File(rootDirectory, "/$directory")
+    val hypercubeFile = File(imageDirectory, hypercubeFileName)
+    BufferedWriter(FileWriter(hypercubeFile)).use { stream ->
+        for (value in hypercube) {
+            stream.write(value.toString())
+            stream.write(",")
+        }
+    }
+//    Thread {
+//        try {
+//            val fos = FileWriter(hypercubeFile)
+//            val out = BufferedWriter(fos)
+//            out.write()
+//            out.close()
+//            Log.i("Hypercube Saved", "Hypercube Saved Successfully")
+//        } catch (e: IOException) {
+//            e.printStackTrace()
+//        }
+//    }.start()
 }
 
 fun resizeBitmap(bitmap: Bitmap, maxSize: Int): Bitmap {

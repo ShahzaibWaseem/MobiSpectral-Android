@@ -60,6 +60,7 @@ class Reconstruction(context: Context, modelPath: String) {
         bitmapsHeight = rgbBitmap.height
 
         var rgbBitmapTensor = preprocess(rgbBitmap)
+        Log.i("RGB Bitmap", "${rgbBitmapTensor.dataAsFloatArray.toList()}")
         // val redBand: Tensor = getOneBand(rgbBitmapTensor, 0)
         // val greenBand: Tensor = getOneBand(rgbBitmapTensor, 1)
         // val blueBand: Tensor = getOneBand(rgbBitmapTensor, 2)
@@ -78,6 +79,8 @@ class Reconstruction(context: Context, modelPath: String) {
 
         val outputs: Tensor = model?.forward(inputs)?.toTensor()!!
         Log.i("Output Tensor Shape", "${outputs.shape().toList()}")
+
+        saveHypercube("Output.txt", outputs.dataAsFloatArray, Utils.hypercubeDirectory)
 
         return outputs.dataAsFloatArray
     }

@@ -15,6 +15,7 @@ class MainActivity : AppCompatActivity() {
         makeDirectory(Utils.rawImageDirectory)
         makeDirectory(Utils.croppedImageDirectory)
         makeDirectory(Utils.processedImageDirectory)
+        makeDirectory(Utils.hypercubeDirectory)
     }
 
     companion object {
@@ -28,9 +29,9 @@ class MainActivity : AppCompatActivity() {
         var croppedImageNIR: String = ""
         var actualLabel: String = ""
         lateinit var predictedLabel: String
-        lateinit var normalizationTime: String
-        lateinit var reconstructionTime: String
-        lateinit var classificationTime: String
+        var normalizationTime: String = " s"
+        var reconstructionTime: String = " s"
+        var classificationTime: String = " ms"
         lateinit var tempRGBBitmap: Bitmap
         lateinit var tempRectangle: Rect
     }

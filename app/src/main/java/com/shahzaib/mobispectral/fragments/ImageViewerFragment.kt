@@ -355,12 +355,12 @@ class ImageViewerFragment: Fragment() {
 
         if (isRGB){
             bitmap = Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, null, false)
-            val whiteBalancingThread = Thread {
-                bitmap = whiteBalance(bitmap)
-            }
-            whiteBalancingThread.start()
-            try { whiteBalancingThread.join() }
-            catch (exception: InterruptedException) { exception.printStackTrace() }
+//            val whiteBalancingThread = Thread {
+//                bitmap = whiteBalance(bitmap)
+//            }
+//            whiteBalancingThread.start()
+//            try { whiteBalancingThread.join() }
+//            catch (exception: InterruptedException) { exception.printStackTrace() }
         }
         else {
             bitmap = if (decodedBitmap.width > decodedBitmap.height)

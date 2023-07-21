@@ -50,6 +50,7 @@ class ApplicationSelectorFragment: Fragment() {
         makeDirectory(Utils.rawImageDirectory)
         makeDirectory(Utils.croppedImageDirectory)
         makeDirectory(Utils.processedImageDirectory)
+        makeDirectory(Utils.hypercubeDirectory)
 
         return fragmentApplicationselectorBinding.root
     }
