@@ -69,7 +69,7 @@ class Reconstruction(context: Context, modelPath: String) {
         val outputs: Tensor = model?.forward(inputs)?.toTensor()!!
         Log.i("Reconstruction Tensors", "RGB ${rgbBitmapTensor.shape().toList()} + NIR ${nirTensor.shape().toList()} = Concat ${imageTensor.shape().toList()} -> [Reconstruction] -> ${outputs.shape().toList()}")
 
-        saveHypercube("Output.txt", outputs.dataAsFloatArray, Utils.hypercubeDirectory)
+        //saveHypercube("Output.txt", outputs.dataAsFloatArray, Utils.hypercubeDirectory)
         return outputs.dataAsFloatArray
     }
 }

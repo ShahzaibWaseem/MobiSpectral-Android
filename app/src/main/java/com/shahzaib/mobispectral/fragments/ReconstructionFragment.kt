@@ -90,24 +90,27 @@ class ReconstructionFragment: Fragment() {
         classificationLabels = mapOf(
             Pair(getString(R.string.organic_identification_string), 0L) to "Non-Organic",
             Pair(getString(R.string.organic_identification_string), 1L) to "Organic",
+            Pair(getString(R.string.apple_string), 0L) to "Non-Organic",
+            Pair(getString(R.string.apple_string), 1L) to "Organic",
             Pair(getString(R.string.kiwi_string), 0L) to "Non-Organic",
             Pair(getString(R.string.kiwi_string), 1L) to "Organic",
             Pair(getString(R.string.olive_oil_string), 0L) to "50% EVOO, 50% SFO",
             Pair(getString(R.string.olive_oil_string), 1L) to "75% EVOO, 25% SFO",
-            Pair(getString(R.string.olive_oil_string), 2L) to "100% EVOO, 0% SFO",
+            Pair(getString(R.string.olive_oil_string), 2L) to "100% EVOO, 0% SFO"
         )
 
         sharedPreferences = requireActivity().getSharedPreferences("mobispectral_preferences", Context.MODE_PRIVATE)
-        mobiSpectralApplication = sharedPreferences.getString("application", getString(R.string.organic_identification_string))!!
+        mobiSpectralApplication = sharedPreferences.getString("application", getString(R.string.apple_string))!!
         reconstructionFile = when (mobiSpectralApplication) {
             getString(R.string.organic_identification_string) -> getString(R.string.reconstruction_model_identification)
+            getString(R.string.apple_string) -> getString(R.string.reconstruction_model_identification)
             getString(R.string.olive_oil_string) -> getString(R.string.reconstruction_model_oil)
-            getString(R.string.kiwi_string) -> getString(R.string.reconstruction_model_kiwi)
+            getString(R.string.kiwi_string) -> getString(R.string.reconstruction_model_identification)
             else -> getString(R.string.reconstruction_model_apple_old)
         }
 
         classificationFile = when (mobiSpectralApplication) {
-            getString(R.string.organic_identification_string) -> R.raw.mobile_classifier_apple_kiwi_blueberry
+            getString(R.string.apple_string) -> R.raw.mobile_classifier_apple
             getString(R.string.olive_oil_string) -> R.raw.mobile_classifier_oil
             getString(R.string.kiwi_string) -> R.raw.mobile_classifier_kiwi
             else -> R.raw.mobile_classifier_apple
@@ -357,18 +360,21 @@ class ReconstructionFragment: Fragment() {
                 frequenciesString += substring
             }
             Log.i("Frequency String", frequenciesString)
+            val maxLabel = finalFrequencies.maxBy { it.value }
             fragmentReconstructionBinding.textViewClassTime.text = frequenciesString
             fragmentReconstructionBinding.textViewClassTime.visibility = View.VISIBLE
+            fragmentReconstructionBinding.textViewClass.text = classificationLabels[Pair(mobiSpectralApplication, maxLabel.key)]
             MainActivity.predictedLabel = frequenciesString
         }
-
-        val inputSignature = getSignature(predictedHS, clickedY.toInt(), clickedX.toInt())
-        classifyOneSignature(inputSignature)
-        MainActivity.predictedLabel = outputLabelString
-        fragmentReconstructionBinding.textViewClass.text = outputLabelString
-        fragmentReconstructionBinding.graphView.title = "$outputLabelString Signature at (x: ${clickedX.toInt()}, y: ${clickedY.toInt()})"
-        addCSVLog(requireContext())
+        if (advancedControlOption){
+            val inputSignature = getSignature(predictedHS, clickedY.toInt(), clickedX.toInt())
+            classifyOneSignature(inputSignature)
+            MainActivity.predictedLabel = outputLabelString
+            fragmentReconstructionBinding.textViewClass.text = outputLabelString
+            fragmentReconstructionBinding.graphView.title = "$outputLabelString Signature at (x: ${clickedX.toInt()}, y: ${clickedY.toInt()})"
+        }
         alreadyMultiLabelInferred = true
+        addCSVLog(requireContext())
     }
 
     private fun classifyOneSignature(signature: FloatArray): Long {
@@ -376,7 +382,7 @@ class ReconstructionFragment: Fragment() {
         val ortSession = context?.let { createORTSession(ortEnvironment) }
 
         val outputLabel = ortSession?.let { classificationInference(signature, it, ortEnvironment) }
-        Log.i("Signatures OneClassify", "${signature.toList()} $outputLabel")
+        Log.i("Signatures OneClassify", "${signature.toList()}")
 
         outputLabelString = if (Pair(mobiSpectralApplication, outputLabel) !in classificationLabels)
             "Something went wrong"

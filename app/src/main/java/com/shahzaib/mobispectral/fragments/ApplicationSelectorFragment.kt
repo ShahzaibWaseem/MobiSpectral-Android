@@ -41,8 +41,8 @@ class ApplicationSelectorFragment: Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentApplicationselectorBinding = FragmentApplicationselectorBinding.inflate(inflater, container, false)
         val applicationPicker = fragmentApplicationselectorBinding.applicationPicker
-        applicationArray = arrayOf(getString(R.string.organic_identification_string),
-            getString(R.string.olive_oil_string), getString(R.string.kiwi_string))
+        applicationArray = arrayOf(getString(R.string.apple_string),
+            getString(R.string.kiwi_string) , getString(R.string.olive_oil_string))
         applicationPicker.minValue = 0
         applicationPicker.maxValue = applicationArray.size-1
         applicationPicker.displayedValues = applicationArray
@@ -99,13 +99,16 @@ class ApplicationSelectorFragment: Fragment() {
             editor.putBoolean("offline_mode", offlineMode)
             Log.i("Radio Button", "$selectedApplication, $selectedOption")
             editor.apply()
-            lifecycleScope.launch {
-                withStarted {
-                    navController.safeNavigate(ApplicationSelectorFragmentDirections.actionAppselectorToCameraFragment(
-                        Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).first, ImageFormat.JPEG)
-                    )
+            if (selectedApplication == getString(R.string.olive_oil_string))
+                CameraFragment().generateAlertBox(requireContext(), "Information", getString(R.string.coming_soon_information_string))
+            else
+                lifecycleScope.launch {
+                    withStarted {
+                        navController.safeNavigate(ApplicationSelectorFragmentDirections.actionAppselectorToCameraFragment(
+                            Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).first, ImageFormat.JPEG)
+                        )
+                    }
                 }
-            }
             true
         }
     }
