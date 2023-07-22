@@ -168,7 +168,7 @@ class ReconstructionFragment: Fragment() {
                             savedClickedX = clickedX
                             savedClickedY = clickedY
                             itemTouched = true
-                            Log.i("Pixel Clicked", "X: $clickedX ($bitmapsWidth), Y: $clickedY ($bitmapsHeight)")
+                            Log.i("Pixel Clicked", "X: ${clickedX.toInt()} ($bitmapsWidth), Y: ${clickedY.toInt()} ($bitmapsHeight)")
                             color = Color.argb(255, randomColor.nextInt(256),
                                 randomColor.nextInt(256), randomColor.nextInt(256))
 

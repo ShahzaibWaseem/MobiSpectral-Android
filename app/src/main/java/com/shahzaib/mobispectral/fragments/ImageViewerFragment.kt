@@ -7,7 +7,6 @@ import android.graphics.*
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -30,9 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.opencv.android.OpenCVLoader
 import java.io.BufferedInputStream
-import java.io.ByteArrayOutputStream
 import java.io.File
-import java.nio.ByteBuffer
 import kotlin.math.max
 
 class ImageViewerFragment: Fragment() {
@@ -193,7 +190,6 @@ class ImageViewerFragment: Fragment() {
             // Load the main JPEG image
             var rgbImageBitmap = decodeBitmap(bufferRGB, bufferRGB.size, true)
             var nirImageBitmap = decodeBitmap(bufferNIR, bufferNIR.size, false)
-            // val unirImageBitmap = Utils.unwarp(nirImageBitmap)
 
             if (rgbImageBitmap.width == nirImageBitmap.width && rgbImageBitmap.height == nirImageBitmap.height) {
                 if (!offlineMode){
@@ -218,9 +214,6 @@ class ImageViewerFragment: Fragment() {
 
             bitmapsWidth = rgbImageBitmap.width
             bitmapsHeight = rgbImageBitmap.height
-            val rgbByteArray = bitmapToByteArray(rgbImageBitmap)
-            var nirByteArray = bitmapToByteArray(nirImageBitmap)
-            nirByteArray = getNIRBand(nirByteArray)
             val viewpagerThread = Thread {
                 addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 0)
                 addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 1)
@@ -265,31 +258,6 @@ class ImageViewerFragment: Fragment() {
         }
     }
 
-    private fun bitmapToByteArray(bitmap: Bitmap): ByteArray {
-        val bos = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bos)
-        return bos.toByteArray()
-    }
-
-    private fun getNIRBand(imageBuff: ByteArray): ByteArray {
-        val byteBuffer = ByteBuffer.allocate(imageBuff.size)
-        var buffIdx = 0
-        var pixelValueBuff: Byte
-
-        val startOffset = 0
-        val endOffset = imageBuff.size - 1
-
-        for (i in startOffset .. endOffset) {
-            pixelValueBuff = imageBuff[i]
-            byteBuffer.put(1 * buffIdx, pixelValueBuff)
-            buffIdx += 1
-        }
-
-        val byteArray = ByteArray(byteBuffer.capacity())
-        byteBuffer.get(byteArray)
-        return byteArray
-    }
-
     /** Utility function used to read input file into a byte array */
     private fun loadInputBuffer(): Pair<ByteArray, ByteArray> {
         val rgbFile = File(args.filePath)
@@ -315,6 +283,7 @@ class ImageViewerFragment: Fragment() {
         view.adapter!!.notifyItemChanged(position)
     }
 
+    @Suppress("unused")
     private fun whiteBalance(rgbBitmap: Bitmap): Bitmap {
         val startTime = System.currentTimeMillis()
         val whiteBalanceModel = WhiteBalance(requireContext())

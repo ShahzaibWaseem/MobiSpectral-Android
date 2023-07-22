@@ -303,10 +303,10 @@ fun saveProcessedImages (context: Context, rgbBitmap: Bitmap, nirBitmap: Bitmap,
     val nirImage = File(imageDirectory, nirFileName)
 
     when (directory) {
-//        rawImageDirectory -> {
-//            MainActivity.originalImageRGB = rgbImage.absolutePath.toUri().toString()
-//            MainActivity.originalImageNIR = nirImage.absolutePath.toUri().toString()
-//        }
+        rawImageDirectory -> {
+            MainActivity.originalImageRGB = rgbImage.absolutePath.toUri().toString()
+            MainActivity.originalImageNIR = nirImage.absolutePath.toUri().toString()
+        }
         processedImageDirectory -> {
             MainActivity.processedImageRGB = rgbImage.absolutePath.toUri().toString()
             MainActivity.processedImageNIR = nirImage.absolutePath.toUri().toString()
@@ -348,17 +348,6 @@ fun saveHypercube(hypercubeFileName: String, hypercube: FloatArray, directory: S
             stream.write(",")
         }
     }
-//    Thread {
-//        try {
-//            val fos = FileWriter(hypercubeFile)
-//            val out = BufferedWriter(fos)
-//            out.write()
-//            out.close()
-//            Log.i("Hypercube Saved", "Hypercube Saved Successfully")
-//        } catch (e: IOException) {
-//            e.printStackTrace()
-//        }
-//    }.start()
 }
 
 fun resizeBitmap(bitmap: Bitmap, maxSize: Int): Bitmap {
