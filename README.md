@@ -12,7 +12,7 @@ The project is based on the ability of recent smartphones to capture images beyo
 - Online Mode: Android Phone with NIR camera such as Google Pixel 4 XL and OnePlus 8 Pro.
 
 ## Download the App and Datasets
-The apk for the application can be downloaded from here: [MobiSpectral Apk](https://drive.google.com/file/d/19jIPqN58rwz_EDvXRRYmF6Ux-eR5Ns1x/view?usp=sharing "MobiSpectral Android Application"). Steps for installing the application on your phone are as follows:
+The apk for the application can be downloaded from here: [MobiSpectral Apk](https://drive.google.com/file/d/1DCFMAWoVWyIFdcoK0PsYXiMffz7L4d-G/view?usp=sharing "MobiSpectral Android Application"). Steps for installing the application on your phone are as follows:
 
 - Press the apk file to install the application.
 - If the application could not be downloaded, disable Play Protect (service from Google that prevents users from installing applications which are not from Play Store) on your phone for the time being. For doing that follow the steps below:
