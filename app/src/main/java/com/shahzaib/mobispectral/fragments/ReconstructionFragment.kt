@@ -165,7 +165,7 @@ class ReconstructionFragment: Fragment() {
                             savedClickedX = clickedX
                             savedClickedY = clickedY
                             itemTouched = true
-                            Log.i("Pixel Clicked", "X: $clickedX, Y: $clickedY")
+                            Log.i("Pixel Clicked", "X: $clickedX ($bitmapsWidth), Y: $clickedY ($bitmapsHeight)")
                             color = Color.argb(255, randomColor.nextInt(256),
                                 randomColor.nextInt(256), randomColor.nextInt(256))
 
@@ -199,7 +199,6 @@ class ReconstructionFragment: Fragment() {
                     }
                 }
                 else {
-                    Log.i("Simple Mode", "${bitmapsWidth/2F}, ${bitmapsHeight/2F}")
                     color = Color.argb(
                         255,
                         randomColor.nextInt(256),
@@ -455,14 +454,11 @@ class ReconstructionFragment: Fragment() {
         MainActivity.classificationTime = "$classificationDuration ms"
         println(getString(R.string.classification_time_string, classificationDuration))
         // fragmentReconstructionBinding.textViewClassTime.text = getString(R.string.classification_time_string, classificationDuration)
-        for (item in 0 until results.size()){
-            Log.i("Results", "${results[item].value}")
-        }
+
         val output = results[0].value as LongArray
         val probabilities = results.get(1).value as List<OnnxMap>
         val probabilitiesString = probabilities[0].value.entries.toString()
-        println("Output: ${output.toList()}")
-        println("Probabilities: $probabilitiesString")
+        Log.i("Classifier Result", "Output: ${output.toList()} Probabilities: $probabilitiesString")
         if (advancedControlOption)
             fragmentReconstructionBinding.textViewClassTime.text = getString(R.string.classification_probabilities_string, probabilitiesString)
         return output[0]
@@ -507,7 +503,6 @@ class ReconstructionFragment: Fragment() {
     private fun addItemToViewPager(view: ViewPager2, item: Bitmap, position: Int) = view.post {
         bandsHS.add(item)
         view.adapter!!.notifyItemChanged(position)
-        Log.i("BandHS", "${bandsHS.size} ${bandsChosen.size}")
         Timer().schedule(1000) {
             if (bandsHS.size == bandsChosen.size && !advancedControlOption) {
                 inference()

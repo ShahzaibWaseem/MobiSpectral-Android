@@ -83,7 +83,7 @@ class ImageViewerFragment: Fragment() {
         paint.strokeWidth = 2.5F
         paint.style = Paint.Style.STROKE
 
-        Log.i("Crop Location", "$left, $right, $top, $bottom")
+        Log.i("Crop Location", "L: $left, R: $right, T: $top, B: $bottom")
 
         canvas.drawRect(left-2.5F, top-2.5F, right+2.5F, bottom+2.5F, paint)
         view.setImageBitmap(bitmapOverlay)
@@ -133,7 +133,7 @@ class ImageViewerFragment: Fragment() {
 
                     val clickedX = (event!!.x / v!!.width) * bitmapsWidth
                     val clickedY = (event.y / v.height) * bitmapsHeight
-                    Log.i("View Dimensions", "$clickedX, $clickedY, ${v.width}, ${v.height}")
+                    Log.i("Box Added", "X: $clickedX ($bitmapsWidth), Y: $clickedY ($bitmapsHeight)")
 
                     leftCrop = clickedX - Utils.boundingBoxWidth
                     topCrop = clickedY - Utils.boundingBoxHeight
@@ -214,16 +214,13 @@ class ImageViewerFragment: Fragment() {
             else
                 rgbImageBitmap = Utils.fixedAlignment(rgbImageBitmap)
 
-            Log.i("Bitmap Size", "Decoded RGB: ${rgbImageBitmap.width} x ${rgbImageBitmap.height}")
-            Log.i("Bitmap Size", "Decoded NIR: ${nirImageBitmap.width} x ${nirImageBitmap.height}")
+            Log.i("Bitmap Size", "Decoded RGB: ${rgbImageBitmap.width} x ${rgbImageBitmap.height}, Decoded NIR: ${nirImageBitmap.width} x ${nirImageBitmap.height}")
 
             bitmapsWidth = rgbImageBitmap.width
             bitmapsHeight = rgbImageBitmap.height
             val rgbByteArray = bitmapToByteArray(rgbImageBitmap)
             var nirByteArray = bitmapToByteArray(nirImageBitmap)
-            Log.i("RGB NIR ByteArray Sizes", "${rgbByteArray.size}, ${nirByteArray.size}")
             nirByteArray = getNIRBand(nirByteArray)
-            Log.i("RGB NIR ByteArray Sizes", "${rgbByteArray.size}, ${nirByteArray.size}")
             val viewpagerThread = Thread {
                 addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 0)
                 addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 1)
@@ -282,7 +279,6 @@ class ImageViewerFragment: Fragment() {
         val startOffset = 0
         val endOffset = imageBuff.size - 1
 
-        Log.i("Image Buff Size", "${imageBuff.size}, EndOffset $endOffset, byteBuffer ${byteBuffer.capacity()}")
         for (i in startOffset .. endOffset) {
             pixelValueBuff = imageBuff[i]
             byteBuffer.put(1 * buffIdx, pixelValueBuff)
@@ -335,10 +331,6 @@ class ImageViewerFragment: Fragment() {
         // Load bitmap from given buffer
         val decodedBitmap = BitmapFactory.decodeByteArray(buffer, 0, length, bitmapOptions)
         if (isRGB) RGB_DIMENSION = Pair(decodedBitmap.width, decodedBitmap.height)
-
-        Log.i("Bitmap Size", "${decodedBitmap.width} x ${decodedBitmap.height} $isRGB")
-        // Log.i("Decode Bitmap", "${Utils.aligningFactorX} + ${Utils.torchWidth} = ${Utils.torchWidth + Utils.aligningFactorX} (${decodedBitmap.width})")
-        // Log.i("Decode Bitmap", "${Utils.aligningFactorY} + ${Utils.torchHeight} = ${Utils.torchHeight + Utils.aligningFactorY} (${decodedBitmap.height})")
 
         if (isRGB){
             bitmap = Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, null, false)

@@ -112,9 +112,8 @@ class CameraFragment: Fragment() {
                 else {
                     // If we have to select one image.
                     val nirUri: Uri? = result.data!!.data
-                    Log.i("Result Contract", "Got the NIR Result")
                     nirAbsolutePath = nirUri?.let { getRealPathFromURI(it) }.toString()
-                    Log.i("Image", "Path: $nirAbsolutePath")
+                    Log.i("Images Opened Path", "NIR Path: $nirAbsolutePath")
                 }
             }
             else {
@@ -146,7 +145,7 @@ class CameraFragment: Fragment() {
                     val nirBitmapOutputFile = File(rgbBitmapOutputFile.toString().replace("RGB", "NIR"))
                     rgbAbsolutePath = rgbBitmapOutputFile.absolutePath
                     nirAbsolutePath = nirBitmapOutputFile.absolutePath
-                    Log.i("Image", "RGB Path: $rgbAbsolutePath, NIR Path: $nirAbsolutePath")
+                    Log.i("Images Opened Path", "RGB Path: $rgbAbsolutePath, NIR Path: $nirAbsolutePath")
 
                     lifecycleScope.launch {
                         saveImage(rgbBitmap, rgbBitmapOutputFile)
@@ -210,7 +209,7 @@ class CameraFragment: Fragment() {
         cameraIdRGB = Utils.getCameraIDs(requireContext(), mobiSpectralApplicationID).first
         cameraIdNIR = Utils.getCameraIDs(requireContext(), mobiSpectralApplicationID).second
 
-        Log.i("CameraIDs Fragment", "RGB $cameraIdRGB, NIR $cameraIdNIR")
+        Log.i("Camera IDs", "RGB: $cameraIdRGB, NIR: $cameraIdNIR")
         return fragmentCameraBinding.root
     }
 
@@ -257,7 +256,6 @@ class CameraFragment: Fragment() {
 
         val size = if (cameraIdNIR == "OnePlus") Size(Utils.torchHeight, Utils.torchWidth) else Size(Utils.previewWidth, Utils.previewHeight)
         // val size = Size(Utils.previewWidth, Utils.previewHeight)
-        Log.i("Size", "W: ${size.width} H: ${size.height}")
 
         imageReader = ImageReader.newInstance(size.width, size.height, args.pixelFormat, IMAGE_BUFFER_SIZE)
 
@@ -271,7 +269,6 @@ class CameraFragment: Fragment() {
             .apply { addTarget(fragmentCameraBinding.viewFinder.holder.surface)
             set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
             set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_AUTO) }
-        // Log.i("Surface Holder Size", "${fragmentCameraBinding.viewFinder.holder.surface}")
 
         // This will keep sending the capture request as frequently as possible until the
         // This will keep sending the capture request as frequently as possible until the
@@ -326,7 +323,6 @@ class CameraFragment: Fragment() {
 
                 // Save the result to disk
                 val output = saveResult(result)
-                Log.d(TAG, "Image saved: ${output.absolutePath}")
                 lifecycleScope.launch(Dispatchers.Main) {
                     if (cameraId == cameraIdRGB){
                         when (cameraIdNIR) {
@@ -354,7 +350,6 @@ class CameraFragment: Fragment() {
         val cursor: Cursor = requireContext().contentResolver.query(contentUri, proj, null, null, null)!!
         val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
         cursor.moveToFirst()
-        Log.i("Image", "ContentURI: $contentUri, Cursor: $cursor, Column Index: $columnIndex")
         val absolutePath = cursor.getString(columnIndex)
         cursor.close()
         return absolutePath
@@ -364,8 +359,6 @@ class CameraFragment: Fragment() {
     @SuppressLint("MissingPermission")
     private suspend fun openCamera(manager: CameraManager, cameraId: String, handler: Handler? = null):
             CameraDevice = suspendCancellableCoroutine { cont ->
-        Log.i("CameraID", cameraId)
-
         manager.openCamera(cameraId, object: CameraDevice.StateCallback() {
             override fun onOpened(device: CameraDevice) = cont.resume(device)
 
@@ -598,7 +591,6 @@ class CameraFragment: Fragment() {
             val imageDirectory = File(rootDirectory, "/${Utils.rawImageDirectory}")
 
             val sdf = SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS", Locale.US)
-            Log.i("Filename", sdf.toString())
             fileFormat = sdf.format(Date())
             val output = File(imageDirectory, "IMG_${fileFormat}_$nir.jpg")
             if (nir == "RGB")

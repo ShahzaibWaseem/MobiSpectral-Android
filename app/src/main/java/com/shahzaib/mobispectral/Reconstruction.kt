@@ -36,7 +36,6 @@ class Reconstruction(context: Context, modelPath: String) {
         val tensorDoubleArray = tensor.dataAsFloatArray
         val floatArray = FloatArray((bitmapsHeight*bitmapsWidth))
         val bandOffset = bitmapsHeight*bitmapsWidth*offset
-        Log.i("Tensor size", "${tensorDoubleArray.size}")
         for (i in 0 until (bitmapsHeight*bitmapsWidth)){
             floatArray[i] = tensorDoubleArray[bandOffset+i]
         }
@@ -50,7 +49,6 @@ class Reconstruction(context: Context, modelPath: String) {
         val concatenated = FloatArray(rgbArray.size + nirArray.size)
         System.arraycopy(rgbArray, 0, concatenated, 0, rgbArray.size)
         System.arraycopy(nirArray, 0, concatenated, rgbArray.size, nirArray.size)
-        Log.i("Concatenated Array Size", "${concatenated.size}")
         val size = longArrayOf(1, channels, bitmapsHeight.toLong(), bitmapsWidth.toLong())
         return Tensor.fromBlob(concatenated, size)
     }
@@ -69,7 +67,7 @@ class Reconstruction(context: Context, modelPath: String) {
         val inputs: IValue = IValue.from(imageTensor)
 
         val outputs: Tensor = model?.forward(inputs)?.toTensor()!!
-        Log.i("Reconstruction Tensors", "${rgbBitmapTensor.shape().toList()} + ${nirTensor.shape().toList()} = ${imageTensor.shape().toList()} -> [Reconstruction] -> ${outputs.shape().toList()}")
+        Log.i("Reconstruction Tensors", "RGB ${rgbBitmapTensor.shape().toList()} + NIR ${nirTensor.shape().toList()} = Concat ${imageTensor.shape().toList()} -> [Reconstruction] -> ${outputs.shape().toList()}")
 
         saveHypercube("Output.txt", outputs.dataAsFloatArray, Utils.hypercubeDirectory)
         return outputs.dataAsFloatArray

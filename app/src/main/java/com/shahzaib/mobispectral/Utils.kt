@@ -101,7 +101,6 @@ object Utils {
                 cameraIdRGB = if (Build.PRODUCT == "OnePlus8Pro") "0" else cameraIdRGB
             }
         }
-        Log.i("Camera", "$cameraIdRGB $cameraIdNIR")
         return Pair(cameraIdRGB, cameraIdNIR)
     }
 
