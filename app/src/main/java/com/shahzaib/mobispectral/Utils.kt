@@ -28,11 +28,8 @@ import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
 import org.opencv.video.Video
 import java.io.BufferedInputStream
-import java.io.BufferedOutputStream
 import java.io.BufferedWriter
 import java.io.ByteArrayOutputStream
-import java.io.DataOutput
-import java.io.DataOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileWriter
@@ -337,6 +334,7 @@ fun saveProcessedImages (context: Context, rgbBitmap: Bitmap, nirBitmap: Bitmap,
     MediaScannerConnection.scanFile(context, arrayOf(rgbImage.absolutePath, nirImage.absolutePath), null, null)
 }
 
+@Suppress("unused")
 fun saveHypercube(hypercubeFileName: String, hypercube: FloatArray, directory: String) {
     val externalStorageDirectory = Environment.getExternalStorageDirectory().toString()
     val rootDirectory = File(externalStorageDirectory, "/MobiSpectral")
