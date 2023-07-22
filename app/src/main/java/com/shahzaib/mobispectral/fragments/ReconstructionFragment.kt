@@ -106,7 +106,7 @@ class ReconstructionFragment: Fragment() {
             getString(R.string.apple_string) -> getString(R.string.reconstruction_model_identification)
             getString(R.string.olive_oil_string) -> getString(R.string.reconstruction_model_oil)
             getString(R.string.kiwi_string) -> getString(R.string.reconstruction_model_identification)
-            else -> getString(R.string.reconstruction_model_apple_old)
+            else -> getString(R.string.reconstruction_model_identification)
         }
 
         classificationFile = when (mobiSpectralApplication) {

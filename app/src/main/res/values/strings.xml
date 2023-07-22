@@ -41,5 +41,4 @@
     <string name="reconstruction_model_identification">mobile_mst_apple_kiwi_blueberry.pt</string>
     <string name="reconstruction_model_oil">mobile_mst_oil.pt</string>
     <string name="reconstruction_model_kiwi">mobile_mst_kiwi_dayl.pt</string>
-    <string name="reconstruction_model_apple_old">mobile_mst_apple_wb.pt</string>
 </resources>
