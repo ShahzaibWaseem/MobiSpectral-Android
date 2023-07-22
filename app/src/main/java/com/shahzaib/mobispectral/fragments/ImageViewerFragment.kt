@@ -107,9 +107,6 @@ class ImageViewerFragment: Fragment() {
         loadingDialogFragment.isCancelable = false
         makeFolderInRoot(Utils.MobiSpectralPath, requireContext())
 
-        MainActivity.originalImageRGB = args.filePath
-        MainActivity.originalImageNIR = args.filePath2
-
         _fragmentImageViewerBinding = FragmentImageviewerBinding.inflate(inflater, container, false)
         fragmentImageViewerBinding.viewpager.apply {
             offscreenPageLimit=2
@@ -261,13 +258,11 @@ class ImageViewerFragment: Fragment() {
                 // addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 2)
                 // addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 3)
 
+                MainActivity.originalRGBBitmap = rgbImageBitmap
+                MainActivity.originalNIRBitmap = nirImageBitmap
+
                 lifecycleScope.launch(Dispatchers.Main) {
-                    navController.navigate(
-                        ImageViewerFragmentDirections
-                            .actionImageViewerFragmentToReconstructionFragment2(
-                                serializeByteArrayToString(rgbImageBitmap),
-                                serializeByteArrayToString(nirImageBitmap))
-                    )
+                    navController.navigate(ImageViewerFragmentDirections.actionImageViewerFragmentToReconstructionFragment2())
                 }
             }
         }
@@ -322,14 +317,6 @@ class ImageViewerFragment: Fragment() {
     private fun addItemToViewPager(view: ViewPager2, item: Bitmap, position: Int) = view.post {
         bitmapList.add(item)
         view.adapter!!.notifyItemChanged(position)
-    }
-
-    /** Utility function to convert images into String to be decoded in ReconstructionFragment **/
-    private fun serializeByteArrayToString(bitmap: Bitmap): String {
-        val byteArrayOutputStream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
-        val byteArray = byteArrayOutputStream.toByteArray()
-        return Base64.encodeToString(byteArray, Base64.DEFAULT)
     }
 
     private fun whiteBalance(rgbBitmap: Bitmap): Bitmap {

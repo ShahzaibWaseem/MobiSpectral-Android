@@ -110,11 +110,6 @@
         <action
             android:id="@+id/action_reconstruction_to_application_title"
             app:destination="@id/applicationselector_fragment" />
-
-        <argument android:name="rgbImage"
-            app:argType="string" />
-        <argument android:name="nirImage"
-            app:argType="string" />
     </fragment>
 
 </navigation>

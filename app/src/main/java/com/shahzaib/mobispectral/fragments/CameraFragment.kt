@@ -130,6 +130,8 @@ class CameraFragment: Fragment() {
 
                     var rgbBitmap = readImage(rgbFile)
                     var nirBitmap = readImage(nirFile)
+                    MainActivity.originalImageRGB = rgbFile.absolutePath
+                    MainActivity.originalImageNIR = nirFile.absolutePath
 
                     if (nirBitmap.width > rgbBitmap.width && nirBitmap.height > rgbBitmap.height) {
                         val tempBitmap = rgbBitmap
