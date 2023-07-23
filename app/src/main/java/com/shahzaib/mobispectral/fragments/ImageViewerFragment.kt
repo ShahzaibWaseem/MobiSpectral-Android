@@ -30,7 +30,6 @@ import kotlinx.coroutines.launch
 import org.opencv.android.OpenCVLoader
 import java.io.BufferedInputStream
 import java.io.File
-import kotlin.math.max
 
 class ImageViewerFragment: Fragment() {
     private val correctionMatrix = Matrix().apply { postRotate(90F); }
@@ -48,12 +47,7 @@ class ImageViewerFragment: Fragment() {
     /** Default Bitmap decoding options */
     private val bitmapOptions = BitmapFactory.Options().apply {
         inJustDecodeBounds = false
-        // Keep Bitmaps at less than 1 MP
-        if (max(outHeight, outWidth) > DOWNSAMPLE_SIZE) {
-            val scaleFactorX = outWidth / DOWNSAMPLE_SIZE + 1
-            val scaleFactorY = outHeight / DOWNSAMPLE_SIZE + 1
-            inSampleSize = max(scaleFactorX, scaleFactorY)
-        }
+        inPreferredConfig = Bitmap.Config.ARGB_8888
     }
 
     /** Data backing our Bitmap viewpager */
@@ -323,8 +317,6 @@ class ImageViewerFragment: Fragment() {
     }
 
     companion object {
-        /** Maximum size of [Bitmap] decoded */
-        private const val DOWNSAMPLE_SIZE: Int = 1024  // 1MP
         private lateinit var RGB_DIMENSION: Pair<Int, Int>
     }
 }

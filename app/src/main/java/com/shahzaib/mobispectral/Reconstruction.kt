@@ -31,9 +31,9 @@ class Reconstruction(context: Context, modelPath: String) {
 
         for (i in 0 until pixelCount) {
             val color = pixels[i]
-            val red = color shr 16 and 0xff
-            val green = color shr 8 and 0xff
-            val blue = color and 0xff
+            val red: Int = color shr 16 and 0xFF
+            val green: Int = color shr 8 and 0xFF
+            val blue: Int = color and 0xFF
 
             if (red > max)
                 max = red
@@ -54,16 +54,19 @@ class Reconstruction(context: Context, modelPath: String) {
 
         for (i in 0 until pixelCount) {
             val color = pixels[i]
-            val red = ((color shr 16 and 0xff) - min).toFloat() / diff
-            val green = ((color shr 8 and 0xff) - min).toFloat() / diff
-            val blue = ((color and 0xff) - min).toFloat() / diff
+            val red = ((color shr 16 and 0xFF) - min).toFloat() / diff
+            val green = ((color shr 8 and 0xFF) - min).toFloat() / diff
+            val blue = ((color and 0xFF) - min).toFloat() / diff
+
             outBuffer.put(i, red)
             outBuffer.put(pixelCount + i, green)
             outBuffer.put(pixelCount * 2 + i, blue)
         }
 
+        val firstPixel: Triple<Int, Int, Int> = Triple(pixels[0] shr 16 and 0xFF, pixels[0] shr 8 and 0xFF, pixels[0] and 0xFF)
         Log.i("Normalization", "Min: $min, Max: $max, Delta: $diff")
-        Log.i("Normalization", "First Pixel: [${outBuffer.get(0)}, ${outBuffer.get(pixelCount)}, ${outBuffer.get(pixelCount*2)}]")
+        Log.i("Normalization", "First Pixel: ${firstPixel.first} ${firstPixel.second} ${firstPixel.third}")
+        Log.i("Normalization", "First Pixel Normalized: [${outBuffer.get(0)}, ${outBuffer.get(pixelCount)}, ${outBuffer.get(pixelCount*2)}]")
         return Tensor.fromBlob(outBuffer, longArrayOf(1, 3, height.toLong(), width.toLong()))
     }
 

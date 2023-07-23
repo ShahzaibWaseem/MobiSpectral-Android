@@ -42,6 +42,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.*
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
@@ -118,10 +120,10 @@ class CameraFragment: Fragment() {
             }
             else {
                 if (result.data?.clipData?.itemCount == 2) {
-                    var rgbFile = File(getRealPathFromURI(result.data!!.clipData?.getItemAt(0)?.uri!!))
-                    var nirFile = File(getRealPathFromURI(result.data!!.clipData?.getItemAt(1)?.uri!!))
+                    var rgbFile = getRealPathFromURI(result.data!!.clipData?.getItemAt(0)?.uri!!)
+                    var nirFile = getRealPathFromURI(result.data!!.clipData?.getItemAt(1)?.uri!!)
 
-                    if (rgbFile.absoluteFile.toString().contains("NIR")) {
+                    if (rgbFile.contains("NIR")) {
                         val tempFile = rgbFile
                         rgbFile = nirFile
                         nirFile = tempFile
@@ -129,8 +131,9 @@ class CameraFragment: Fragment() {
 
                     var rgbBitmap = readImage(rgbFile)
                     var nirBitmap = readImage(nirFile)
-                    MainActivity.originalImageRGB = rgbFile.absolutePath
-                    MainActivity.originalImageNIR = nirFile.absolutePath
+
+                    MainActivity.originalImageRGB = rgbFile
+                    MainActivity.originalImageNIR = nirFile
 
                     if (nirBitmap.width > rgbBitmap.width && nirBitmap.height > rgbBitmap.height) {
                         val tempBitmap = rgbBitmap
@@ -506,11 +509,11 @@ class CameraFragment: Fragment() {
                 val buffer = result.image.planes[0].buffer
                 val bytes = ByteArray(buffer.remaining()).apply { buffer.get(this) }
 
-                var rotatedBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null)
+                var rotatedBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888 })
                 val correctionMatrix = Matrix().apply { postRotate(-90F); postScale(-1F, 1F); }
                 val nirCameraID = Utils.getCameraIDs(requireContext(), MainActivity.MOBISPECTRAL_APPLICATION).second
                 rotatedBitmap = Bitmap.createBitmap(rotatedBitmap, 0, 0, rotatedBitmap.width,
-                    rotatedBitmap.height, if (nirCameraID == "OnePlus") Matrix().apply { postRotate(90F) } else correctionMatrix, true)
+                    rotatedBitmap.height, if (nirCameraID == "OnePlus") Matrix().apply { postRotate(90F) } else correctionMatrix, false)
                 val stream = ByteArrayOutputStream()
                 rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
                 val rotatedBytes = stream.toByteArray()

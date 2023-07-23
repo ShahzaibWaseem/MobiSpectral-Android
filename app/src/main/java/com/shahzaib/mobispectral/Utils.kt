@@ -27,7 +27,6 @@ import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
 import org.opencv.video.Video
-import java.io.BufferedInputStream
 import java.io.BufferedWriter
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -102,13 +101,13 @@ object Utils {
     }
 
     fun cropImage(bitmap: Bitmap, left: Float, top: Float): Bitmap {
-        return Bitmap.createBitmap(bitmap, left.toInt(), top.toInt(), (boundingBoxWidth*2).toInt(), (boundingBoxHeight*2).toInt(), null, true)
+        return Bitmap.createBitmap(bitmap, left.toInt(), top.toInt(), (boundingBoxWidth*2).toInt(), (boundingBoxHeight*2).toInt(), null, false)
     }
 
     fun fixedAlignment(imageRGB: Bitmap): Bitmap{
         Log.i("Aligned RGB", "$aligningFactorX + $torchWidth = ${torchWidth + aligningFactorX} (${imageRGB.width})")
         Log.i("Aligned RGB", "$aligningFactorY + $torchHeight = ${torchHeight + aligningFactorY} (${imageRGB.height})")
-        val alignedImageRGB = Bitmap.createBitmap(imageRGB, aligningFactorX, aligningFactorY, torchWidth, torchHeight, null, true)
+        val alignedImageRGB = Bitmap.createBitmap(imageRGB, aligningFactorX, aligningFactorY, torchWidth, torchHeight, null, false)
         Log.i("Aligned RGB", "Resulting Bitmap: W ${alignedImageRGB.width} H ${alignedImageRGB.height}")
         return alignedImageRGB
     }
@@ -149,7 +148,7 @@ object Utils {
         Imgproc.findContours(img2Threshold, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE)
         val cropCoordinates = Imgproc.boundingRect(contours[0])
         val image2AlignedCropped = image2Aligned.submat(cropCoordinates)
-        val image2AlignedCroppedBitmap = Bitmap.createBitmap(image2AlignedCropped.width(), image2AlignedCropped.height(), Bitmap.Config.RGB_565)
+        val image2AlignedCroppedBitmap = Bitmap.createBitmap(image2AlignedCropped.width(), image2AlignedCropped.height(), Bitmap.Config.ARGB_8888)
         Utils.matToBitmap(image2AlignedCropped, image2AlignedCroppedBitmap)
 
         return image2AlignedCroppedBitmap
@@ -319,12 +318,12 @@ fun saveProcessedImages (context: Context, rgbBitmap: Bitmap, nirBitmap: Bitmap,
     Thread {
         try {
             var fos = FileOutputStream(rgbImage)
-            rgbBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+            rgbBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
             fos.flush()
             fos.close()
 
             fos = FileOutputStream(nirImage)
-            nirBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+            nirBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
             fos.flush()
             fos.close()
         } catch (e: IOException) {
@@ -364,15 +363,8 @@ fun resizeBitmap(bitmap: Bitmap, maxSize: Int): Bitmap {
     return Bitmap.createScaledBitmap(bitmap, width, height, true)
 }
 
-fun readImage(inputFile: File): Bitmap {
-    val imageBuffer = BufferedInputStream(inputFile.inputStream()).let { stream ->
-        ByteArray(stream.available()).also {
-            stream.read(it)
-            stream.close()
-        }
-    }
-    val decodedBitmap = BitmapFactory.decodeByteArray(imageBuffer, 0, imageBuffer.size, null)
-    return Bitmap.createBitmap(decodedBitmap, 0, 0, decodedBitmap.width, decodedBitmap.height, null, false)
+fun readImage(inputFile: String): Bitmap {
+    return BitmapFactory.decodeFile(inputFile, BitmapFactory.Options().apply { inJustDecodeBounds = false; inPreferredConfig = Bitmap.Config.ARGB_8888 })
 }
 
 fun compressImage(bmp: Bitmap): Bitmap {
@@ -386,7 +378,7 @@ fun compressImage(bmp: Bitmap): Bitmap {
 
 suspend fun saveImage(bitmap: Bitmap, outputFile: File): File = suspendCoroutine { cont ->
     val stream = ByteArrayOutputStream()
-    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+    bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
     val imageBytes = stream.toByteArray()
 
     try{
