@@ -38,7 +38,7 @@ Download one or more of the following Mobile Image datasets to test the applicat
 - [Kiwis (2.52 GB)](https://drive.google.com/file/d/16B9Jnwgo9Xev4db3ROqvL8_64vAr3l-H/view?usp=drive_link "Kiwis Test Dataset")
 - [Apples (11.39 GB)](https://drive.google.com/file/d/1WtogFi1ahG5ejzpcp0GcUs64MEuQDJjT/view?usp=drive_link "Apples Test Dataset")
 
-The datasets are in pairs of RGB and NIR images. Each dataset has following directory structure, where \'fruit\' is apples, tomatoes, kiwis, ...:
+The datasets are in pairs of RGB and NIR images. Each dataset has the following directory structure, where \'fruit\' is apples, tomatoes, kiwis, ...:
 ```
 dataset_fruit
 │
