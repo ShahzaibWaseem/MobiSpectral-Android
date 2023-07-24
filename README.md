@@ -26,16 +26,16 @@ Steps for installing the application on your phone are as follows:
 	- Storage Permission: required to save and load images from the disk.
 - The application will be installed, and you will reach the Main page of the application.
 
-You can also build the application from the [Build the application from source code](#build_the_application_from_source_code).
+You can also [Build the application from source code](#build_the_application_from_source_code).
 
-For the offline mode you can acquire one or more of the following datasets to test our application:
+For the offline mode, you can acquire one or more of the following Mobile Image Datasets to test our application:
 - [Apples 11.39 GB](https://drive.google.com/file/d/1WtogFi1ahG5ejzpcp0GcUs64MEuQDJjT/view?usp=drive_link "Apples Test Dataset")
 - [Kiwis 2.52 GB](https://drive.google.com/file/d/16B9Jnwgo9Xev4db3ROqvL8_64vAr3l-H/view?usp=drive_link "Kiwis Test Dataset")
 - [Blueberries 1.83 GB](https://drive.google.com/file/d/1jYHs0Q9rnsx58IaHoR0wSvS4Ep0l7IUO/view?usp=drive_link "Blueberries Test Dataset")
 - [Strawberries 1.92 GB](https://drive.google.com/file/d/1taaiWVIwjy8PtiuxdxNvr2CTWkuhv_Q4/view?usp=drive_link "Strawberries Test Dataset")
 - [Tomatoes 1.66 GB](https://drive.google.com/file/d/1WbQpNG6GFtvjijb9g27n8QE_yDip8tGH/view?usp=drive_link "Tomatoes Test Dataset")
 
-For the online mode you can take images on the phone and process them in real time, if the phone allows access to the NIR camera.
+For the online mode, you can take images on the phone and process them in real time, if the phone allows access to the NIR camera.
 
 ## Test the Application in Offline Mode
 In the offline mode, you process the images (RGB and NIR) pre-captured when you downloaded the datasets. Each dataset follows the following directory structure:
