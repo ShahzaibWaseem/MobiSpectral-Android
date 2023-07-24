@@ -64,9 +64,9 @@ Steps to run the application in offline mode:
 1. Unzip the dataset that you downloaded before
 2. Run the application
 3. Check the offline mode to be used
-	- `mobile_data` directory is where you'll find the folders where you can select images from either organic or nonorganic pool of images and you can test which fruits output which classification label.
-4. Select two images (RGB and NIR) from the Pop-up by tapping
-5. (Optional) Choose the area where the fruit is present in the image
+	- `mobile_data` is the folder where you can select images, either from the organic or nonorganic sub-folders
+4. Select two corresponding images (RGB and NIR) from the pop-up by tapping
+5. (Optional) Tap to choose the region that will be used in the analysis (bounding box)
 6. Reconstruct the hypercube
 7. The application shows the predicted classification label for the fruit
 
