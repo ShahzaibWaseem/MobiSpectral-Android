@@ -5,7 +5,7 @@ This application is written in Kotlin for Android phones. It works in two modes:
 
 - Detailed Spectral Analysis: Allows the user to conduct an in-depth analysis of the hyperspectral bands reconstructed from the input RGB+NIR images. When a user taps on an area in the image, the app will compute and display the spectral signature for the pixels in that area. 
 
-## Requirements
+## Requirements 
 - Offline mode: Any Android smartphone should work. 
 - Online mode: Android phones that allow access to the  NIR camera, such as Google Pixel 4 XL and OnePlus 8 Pro.
 
