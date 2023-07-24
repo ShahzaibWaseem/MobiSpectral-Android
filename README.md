@@ -60,7 +60,7 @@ dataset_fruit
 	...
 ```
 
-Steps to run the application in offline mode:
+Steps to run the application in the offline mode:
 1. Unzip the dataset that you downloaded before
 2. Run the application
 3. Check the offline mode to be used
@@ -72,16 +72,14 @@ Steps to run the application in offline mode:
 
 <!-- ![Screenshots in a table]() -->
 
+
 ## Test the Application in Online Mode
-NIR cameras is the backbone of this system because it can capture visual information that the simple RGB camera cannot, and it helps the Reconstruction model in accurately predicting what information should be present in a particular band (image whose reflectance map achieved by shining a particular wavelength of light).
+This mode requires a phone that allows accessing the NIR camera. Most phones with NIR cameras have them on the front because their primary use has so far been face identification. To assist the user in capturing fruit images using front-facing cameras, we added a countdown timer (3 sec) that makes the app issues a beeping sound after it captures the images.  
 
-Most smartphones with an NIR camera have it on the front because its primary function is facial recognition, which means capturing images of fruits (on a table) in our case is quite difficult for the user. To assist the user in capturing images we added a count down timer with beeping sound. This aural feedback assists the user to correctly capture the images because if the images are very misaligned the results would suffer quite a lot.
-
-Steps to run the application in online mode:
-1. Run the application
-2. Without checking the offline mode tap on run
-3. When you press the capture button, it will beep thrice and capture the images
-4. (Optional) Choose the area where the fruit is present in the image
+Steps to run the application in the online mode:
+1. Run the application (ensure the offline mode is checked off) 
+2. Press the capture button, and turn the phone towards the fruit. It will beep after capturing the images
+4. (Optional) Tap to choose the region that will be used in the analysis (bounding box)
 6. Reconstruct the hypercube
 7. The application shows the predicted classification label for the fruit
 
