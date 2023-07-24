@@ -1,15 +1,15 @@
 # MobiSpectral Application on Android
-This application is written in Kotlin for Android phones. It works in two modes: offline and online. The offline mode processes pre-captured images, while the online mode captures and processes the images in real time. The online mode requires a phone that allows accessing the NIR camera, such as the Google Pixel 4 XL. In both offline and online modes, the application offers two functions: 
+This application is written in Kotlin for Android phones. It works in two modes: offline and online. The offline mode processes pre-captured images, while the online mode captures and processes the images in real time. The online mode requires a phone that allows accessing the NIR camera. In both offline and online modes, the application offers two functions: 
 
-- Simple Analysis: Distinguishes organic and non-organic fruits from RGB and NIR images.  The app asks the user to select a region of the image to be used in the analysis: by tapping anywhere in the image, a bounding box will appear. The app will then process the data in the bound box and will display Organic and Non-Organic.
+- Simple Analysis: Distinguishes organic and non-organic fruits from RGB and NIR images.  The app asks the user to select a region of the image to be used in the analysis: by tapping anywhere in the image, a bounding box will appear. The app will then process the data in the bounding box and will display Organic or Non-Organic.
 
-- Detailed Spectral Analysis: Allows the user to conduct an in-depth analysis of the hyperspectral bands reconstructed from the input RGB+NIR images. When a user tap on an area in the image, the app will compute the spectral signature for the pixels in that area. 
+- Detailed Spectral Analysis: Allows the user to conduct an in-depth analysis of the hyperspectral bands reconstructed from the input RGB+NIR images. When a user taps on an area in the image, the app will compute and display the spectral signature for the pixels in that area. 
 
 ## Requirements
-- Offline Mode: Any Android smartphone should work. 
-- Online Mode: Android phones that allow access to the  NIR camera, such as Google Pixel 4 XL and OnePlus 8 Pro.
+- Offline mode: Any Android smartphone should work. 
+- Online mode: Android phones that allow access to the  NIR camera, such as Google Pixel 4 XL and OnePlus 8 Pro.
 
-## Download the App and Datasets
+## Install the App
 The apk for the application can be downloaded from here: [MobiSpectral Apk](https://drive.google.com/file/d/18bQZj7JiFfU4paXye6SbOPJlbtXJHpEB/view?usp=sharing "MobiSpectral Android Application"). 
 
 Steps for installing the application on your phone are as follows:
@@ -28,6 +28,9 @@ Steps for installing the application on your phone are as follows:
 
 You can also [Build the application from source code](#build_the_application_from_source_code).
 
+
+## Download Datasets for Offline Mode
+
 For the offline mode, you can acquire one or more of the following Mobile Image Datasets to test our application:
 
 - [Tomatoes (1.66 GB)](https://drive.google.com/file/d/1WbQpNG6GFtvjijb9g27n8QE_yDip8tGH/view?usp=drive_link "Tomatoes Test Dataset")
@@ -36,7 +39,6 @@ For the offline mode, you can acquire one or more of the following Mobile Image 
 - [Kiwis (2.52 GB)](https://drive.google.com/file/d/16B9Jnwgo9Xev4db3ROqvL8_64vAr3l-H/view?usp=drive_link "Kiwis Test Dataset")
 - [Apples (11.39 GB)](https://drive.google.com/file/d/1WtogFi1ahG5ejzpcp0GcUs64MEuQDJjT/view?usp=drive_link "Apples Test Dataset")
 
-For the online mode, you can take images on the phone and process them in real time, if the phone allows access to the NIR camera.
 
 ## Test the Application in Offline Mode
 In the offline mode, you process the images (RGB and NIR) pre-captured when you downloaded the datasets. Each dataset follows the following directory structure:
