@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
         var croppedImageRGB: String = ""
         var croppedImageNIR: String = ""
         var actualLabel: String = ""
-        lateinit var predictedLabel: String
+        var predictedLabel: String = ""
         var normalizationTime: String = " s"
         var reconstructionTime: String = " s"
         var classificationTime: String = " ms"
