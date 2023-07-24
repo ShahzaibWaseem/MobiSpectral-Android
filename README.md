@@ -16,9 +16,9 @@ Steps for installing the application on your phone are as follows:
 
 - Press the apk file to install the application.
 - If the application could not be downloaded, disable Play Protect (a service from Google that prevents users from installing applications that are not from Play Store) on your phone for the time being. To do that, follow the steps below:
-	- Open up `Google Play Store`.
+	- Open `Google Play Store`.
 	- Click your Profile Picture (top right).
-	- Open up `Play Protect` option and press the Settings Cog (top right).
+	- Open `Play Protect` option and press the Settings Cog (top right).
 	- Disable the option `Scan apps with Play Protect`
 - After disabling "Play Protect" press apk file and, a pop-up will appear, asking you to allow downloading apps from other sources.  
 - When the application is installed, the app will ask for permission to access the camera and storage on your phone.
@@ -29,11 +29,12 @@ Steps for installing the application on your phone are as follows:
 You can also [Build the application from source code](#build_the_application_from_source_code).
 
 For the offline mode, you can acquire one or more of the following Mobile Image Datasets to test our application:
-- [Apples 11.39 GB](https://drive.google.com/file/d/1WtogFi1ahG5ejzpcp0GcUs64MEuQDJjT/view?usp=drive_link "Apples Test Dataset")
-- [Kiwis 2.52 GB](https://drive.google.com/file/d/16B9Jnwgo9Xev4db3ROqvL8_64vAr3l-H/view?usp=drive_link "Kiwis Test Dataset")
+
+- [Tomatoes (1.66 GB)](https://drive.google.com/file/d/1WbQpNG6GFtvjijb9g27n8QE_yDip8tGH/view?usp=drive_link "Tomatoes Test Dataset")
 - [Blueberries 1.83 GB](https://drive.google.com/file/d/1jYHs0Q9rnsx58IaHoR0wSvS4Ep0l7IUO/view?usp=drive_link "Blueberries Test Dataset")
 - [Strawberries 1.92 GB](https://drive.google.com/file/d/1taaiWVIwjy8PtiuxdxNvr2CTWkuhv_Q4/view?usp=drive_link "Strawberries Test Dataset")
-- [Tomatoes 1.66 GB](https://drive.google.com/file/d/1WbQpNG6GFtvjijb9g27n8QE_yDip8tGH/view?usp=drive_link "Tomatoes Test Dataset")
+- [Kiwis (2.52 GB)](https://drive.google.com/file/d/16B9Jnwgo9Xev4db3ROqvL8_64vAr3l-H/view?usp=drive_link "Kiwis Test Dataset")
+- [Apples (11.39 GB)](https://drive.google.com/file/d/1WtogFi1ahG5ejzpcp0GcUs64MEuQDJjT/view?usp=drive_link "Apples Test Dataset")
 
 For the online mode, you can take images on the phone and process them in real time, if the phone allows access to the NIR camera.
 
