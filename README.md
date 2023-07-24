@@ -95,8 +95,8 @@ Steps to run the application in the online mode:
 7. Classification: based on 1-D signatures selection. -->
 
 
-## Build the application from source code
-Download Android Studio on your workstation (see Installation Instructions on [Android Developer website](https://developer.android.com/studio)). After Installing Android Studio, clone the repository onto your workstation. Gradle is a tool which comes pre-installed with Android Studio and is responsible for Dependency management. In the repository, there are also gradle files present, which tell gradle which dependencies to install on your workstation. The major dependencies which we tested and deployed (So please make sure that these dependencies are consistent) our final application are as follows:
+## Build the application from the source code
+Download Android Studio on your workstation (see Installation Instructions on [Android Developer website](https://developer.android.com/studio)). After Installing Android Studio, clone the repository onto your workstation. Gradle is a tool that comes pre-installed with Android Studio and is responsible for Dependency management. In the repository, there are also gradle files that tell gradle which dependencies to install on your workstation. The major dependencies which we tested and deployed are as follows:
 
 - Android Studio Flamingo | 2022.2.1 Patch 2 (tested on previous versions as well)
 - Kotlin 1.8.20 (Also tested on 1.7.21)
@@ -108,13 +108,13 @@ Download Android Studio on your workstation (see Installation Instructions on [A
 	- PyTorch: 1.8.0 (versions above it contain some bugs and uses Lite Interpreter which did not convert models to PyTorch mobile version)
 	- OpenCV: 3.4.3
 
-When Android Studio is set up on your workstation, connect your Android Smartphone. Now enable USB debugging on your phone (first enable Developer options, and then go in there to enable USB debugging). Your device name and model should now appear in the box next to `Run 'app'` button [See Image below]. If it does not appear, allow `File Transfer` on your smartphone and tapping on the USB connection/preferences notification. This [official guide](https://developer.android.com/studio/run/device "Guide to connect your phone to your PC") by Android Developers can be followed for this.
+When Android Studio is set up on your workstation, connect your Android Smartphone. Now enable USB debugging on your phone (first enable Developer options, and then go in there to enable USB debugging). Your device name and model should now appear in the box next to `Run 'app'` button [See Image below]. If it does not appear, allow `File Transfer` on your smartphone and tap on the USB connection/preferences notification. This [official guide](https://developer.android.com/studio/run/device "Guide to connect your phone to your PC") by Android Developers can be followed for this.
 
-When the project is loaded onto your Android Studio, build the project using `Build` button from the top bar and press `Make Project` [`CTRL + F9`]. Building the project firstly run gradle dependency installer and installs all packages required by the project and then builds the project. After building the project run the project by pressing the `Run 'app'` button as can be seen in the following picture [`SHIFT + F10`]. Simply pressing the Run app button does all previous steps in one go (Installing dependencies, Building Project, Running app on your phone).
+When the project is loaded onto your Android Studio, build the project using the `Build` button from the top bar and press `Make Project` [`CTRL + F9`]. To build the project, first run gradle to install all packages required by the project, and then build the project. After building the project, run the project by pressing the `Run 'app'` button as can be seen in the following picture [`SHIFT + F10`]. Simply pressing the Run app button does all previous steps in one go (Installing dependencies, Building Project, Running app on your phone).
 
 ![Run Project](images/RunApp.png)
 
-One common issue that can occur while building projects on recently installed Android Studio copy is missmatch of JDK source/target version. You can match this dependency by pressing the "File" button and opening up Settings [`CTRL + ALT + S`] then on the left pane expand `Build, Execution, Deployment` option and under there click on `Gradle` under `Build Tools`. Now on this page press Gradle JDK and set it to 18.0.2 [Amazon Corretto Version], if its not installed, install it using the button below [See image below]. The structure of Android Studio may change and these instructions are true for Android Studio Flamingo | 2022.2.1 Patch 2 version.
+One common issue that can occur while building projects on a recently installed Android Studio copy is the mismatch of JDK source/target version. You can match this dependency by pressing the "File" button and opening up Settings [`CTRL + ALT + S`]. Then on the left pane, expand `Build, Execution, Deployment` option, and click on `Gradle` under `Build Tools`. Now on this page, press Gradle JDK and set it to 18.0.2 [Amazon Corretto Version]; if its not installed, install it using the button below [See image below]. The structure of Android Studio may change, and these instructions are true for Android Studio Flamingo | 2022.2.1 Patch 2 version.
 
 ![Gradle JDK Version](images/JDKVersion.png)
 
