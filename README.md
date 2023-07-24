@@ -7,40 +7,41 @@ This application is written in Kotlin for Android phones. It works in two modes:
 
 ## Requirements
 - Offline mode: Any Android smartphone should work.
-- Online mode: Android phones that allow access to the  NIR camera, such as Google Pixel 4 XL and OnePlus 8 Pro.
+- Online mode: Android phones that allow access to the  NIR camera, such as Google Pixel 4 XL and OnePlus 8 Pro*.
+
+\* For OnePlus 8 Pro, the camera with NIR information was removed using software due to [privacy concerns](https://www.theverge.com/2020/5/15/21259723/oneplus-8-pro-x-ray-vision-infrared-filter-see-through-plastic). It can be accessed in OxygenOS 11 using [Factory Mode](https://www.xda-developers.com/oneplus-8-pro-color-filter-camera-still-accessible-adb-command/ "How to access Color Filter Camera on OnePlus 8 Pro using adb") or by rooting the phone in OxygenOS 12.
 
 ## Install the App
-The apk for the application can be downloaded from here: [MobiSpectral Apk](https://drive.google.com/file/d/18bQZj7JiFfU4paXye6SbOPJlbtXJHpEB/view?usp=sharing "MobiSpectral Android Application").
+The APK for the application can be downloaded from here: [MobiSpectral APK](https://drive.google.com/file/d/18bQZj7JiFfU4paXye6SbOPJlbtXJHpEB/view?usp=sharing "MobiSpectral Android Application"). There are Information buttons ⓘ on each page (Fragment), which tells the user what to do.
 
 Steps for installing the application on your phone are as follows:
 
-- Press the apk file to install the application.
+- Press the APK file to install the application.
 - If the application could not be downloaded, disable Play Protect (a service from Google that prevents users from installing applications that are not from Play Store) on your phone for the time being. To do that, follow the steps below:
 	- Open `Google Play Store`.
 	- Click your Profile Picture (top right).
 	- Open `Play Protect` option and press the Settings Cog (top right).
 	- Disable the option `Scan apps with Play Protect`
-- After disabling "Play Protect" press apk file and, a pop-up will appear, asking you to allow downloading apps from other sources.
+- After disabling "Play Protect" press APK file and, a pop-up will appear, asking you to allow downloading apps from other sources.
 - When the application is installed, the app will ask for permission to access the camera and storage on your phone.
 	- Camera Permission: required to capture images using the cameras.
 	- Storage Permission: required to save and load images from the disk.
 - The application will be installed, and you will reach the Main page of the application.
 
-You can also [Build the application from source code](#build-the-application-from-the-source-code).
-
+You can also [build the application from source code](#build-the-application-from-the-source-code).
 
 ## Test the Application in Offline Mode
 Download one or more of the following Mobile Image datasets to test the application:
 
-- [Apples ( MB)](https://drive.google.com/file/d/1WtogFi1ahG5ejzpcp0GcUs64MEuQDJjT/view?usp=drive_link "Apples Test Dataset")
+- [Apples (90.2 MB)](https://drive.google.com/file/d/1gV-Y31WzwILBqPNgJcsLAqMJTp7ua0JU/view?usp=drive_link "Apples Test Dataset")
 - [Kiwis (39.1 MB)](https://drive.google.com/file/d/1h2k2gD4A4KZEmmcGJFEAhxpVNv0QSHgF/view?usp=drive_link "Kiwis Test Dataset")
-- [Blueberries (68.6 MB)](https://drive.google.com/file/d/1g_yICRC79qbsJH2hfTdv5RhSIgsOwkOc/view?usp=drive_link "Blueberries Test Dataset")
+<!-- - [Blueberries (68.6 MB)](https://drive.google.com/file/d/1g_yICRC79qbsJH2hfTdv5RhSIgsOwkOc/view?usp=drive_link "Blueberries Test Dataset")
 - [Tomatoes (46.6 MB)](https://drive.google.com/file/d/14XfBuJtO4k_CIRyumhy-Wk77tDJ_BopV/view?usp=drive_link "Tomatoes Test Dataset")
-- [Strawberries (60.1 MB)](https://drive.google.com/file/d/1-nJkoCrELbjaYDh7FrhMUqnB9xe8r1kj/view?usp=drive_link "Strawberries Test Dataset")
+- [Strawberries (60.1 MB)](https://drive.google.com/file/d/1-nJkoCrELbjaYDh7FrhMUqnB9xe8r1kj/view?usp=drive_link "Strawberries Test Dataset") -->
 
-The datasets are in pairs of RGB and NIR images. Each dataset has the following directory structure, where \'fruit\' is apples, tomatoes, kiwis, ...:
+If you have all of the datasets already downloaded (for the reconstruction and classification phase) these `mobile_data` directories are also present in them but if you wish to download just the `mobile_data` you can do so from these links. The datasets are in pairs of RGB and NIR images. Each dataset has the following directory structure, where `[fruit]` is apples, kiwis, ...:
 ```
-dataset_fruit
+dataset_[fruit]
 │
 └── mobile_data
 	│
@@ -66,8 +67,14 @@ Steps to run the application in the offline mode:
 6. Reconstruct the hypercube
 7. The application shows the predicted classification label for the fruit
 
-<!-- ![Screenshots in a table]() -->
+The application screenshots below are captured using a smartphone without an NIR camera:
 
+| | | |
+:-------------------------:|:-------------------------:|:-------------------------:
+| <img src="images/MainPage(NoNIR).jpg" alt="MainPage(NoNIR)" width="200" /> | <img src="images/MainPageOffline.jpg" alt="MainPage" width="200" /> | <img src="images/CameraOffline.jpg" alt="Camera" width="200" /> |
+| Main Page if No NIR Camera is found | Selecting Offline Mode | Gallery Opening Intent |
+| <img src="images/ImageLoader.jpg" alt="ImageLoader" width="200" /> | <img src="images/ImageViewer.jpg" alt="ImageViewer" width="200" /> | <img src="images/Classification.jpg" alt="Classification" width="200" /> |
+| Selecting Images | Image Viewer | Classification Result |
 
 ## Test the Application in Online Mode
 This mode requires a phone that allows accessing the NIR camera. Most phones with NIR cameras have them on the front because their primary use has so far been face identification. To assist the user in capturing fruit images using front-facing cameras, we added a countdown timer (3 sec) that makes the app issues a beeping sound after it captures the images. The Online mode also makes sure that the scene is well lit before the user can capture any picture.
@@ -79,17 +86,28 @@ Steps to run the application in the online mode:
 6. Reconstruct the hypercube
 7. The application shows the predicted classification label for the fruit
 
-<!-- ![Screenshots in a table]() -->
+Here are the screenshots from the android application (captured using Google Pixel 4XL):
+
+| | | |
+:-------------------------:|:-------------------------:|:-------------------------:
+| <img src="images/MainPageOnline.jpg" alt="MainPage" width="200" /> | <img src="images/CameraOnline.png" alt="Camera" width="200" /> | <img src="images/Classification.jpg" alt="Classification" width="200" /> |
+| Main Page | Camera Fragment | Classification Results |
+
+## Simple and Detailed Analysis
+The difference between Simple and Detailed Analysis, as mentioned in [Section 1](#mobispectral-application-on-android), is that Detailed analysis allows (the user can also tap to get a smaller working area) the user to reconstruct the whole Hypercube. Reconstructing whole hypercube takes takes a lot more time. In the Detailed Analysis, you can tap on parts of the reconstructed hypercube bands, to get the signatures of that pixels and their predicted organic/nonorganic class. The images shown in the image sets above are for simple analysis where as the images below show their differences to detailed analysis:
+
+| | | |
+:-------------------------:|:-------------------------:|:-------------------------:
+| <img src="images/ImageViewer(Detailed).jpg" alt="ImageViewer Detailed" width="200" /> | <img src="images/Reconstruction(Detailed).jpg" alt="Reconstructed" width="200" /> | <img src="images/SignatureAnalysis(Detailed).jpg" alt="Classification" width="200" /> |
+| Image Viewer in Detailed Analysis | Reconstructed Hypercube | Signature Analysis and Class Prediction |
 
 <!-- ## Pipeline
-
 1. Image Capturing: RGB followed by NIR.
 3. Image Alignment: Aligning the two images captured.
 4. Deep White Balancing: Android ported models from [[Deep White Balance](https://github.com/mahmoudnafifi/Deep_White_Balance), [Models](https://github.com/mahmoudnafifi/Deep_White_Balance/tree/master/PyTorch/models)].
 5. Patch Selection: Selecting the part of image we want to use.
 6. Hyperspectral Reconstruction: RGB+NIR -> Hypercube.
 7. Classification: based on 1-D signatures selection. -->
-
 
 ## Build the application from the source code
 Download Android Studio on your workstation (see Installation Instructions on [Android Developer website](https://developer.android.com/studio)). After Installing Android Studio, clone the repository onto your workstation. Gradle is a tool that comes pre-installed with Android Studio and is responsible for Dependency management. In the repository, there are also gradle files that tell gradle which dependencies to install on your workstation. The major dependencies which we tested and deployed are as follows:
