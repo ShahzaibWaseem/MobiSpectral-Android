@@ -1,30 +1,30 @@
 # MobiSpectral Application on Android
-This application is written in Kotlin for Android phones. It works in two modes: offline and online. The offline mode processes pre-captured images, while the online mode captures and processes the images in real time. The online mode requires a phone that allows accessing the NIR camera, such as the Google Pixel 4XL. In both offline and online modes, the application offers two functions: 
+This application is written in Kotlin for Android phones. It works in two modes: offline and online. The offline mode processes pre-captured images, while the online mode captures and processes the images in real time. The online mode requires a phone that allows accessing the NIR camera, such as the Google Pixel 4 XL. In both offline and online modes, the application offers two functions: 
 
 - Simple Analysis: Distinguishes organic and non-organic fruits from RGB and NIR images.  The app asks the user to select a region of the image to be used in the analysis: by tapping anywhere in the image, a bounding box will appear. The app will then process the data in the bound box and will display Organic and Non-Organic.
 
-- Detailed Spectral Analysis: This function allows the user to conduct an in-depth analysis of the hyperspectral bands reconstructed from the input RGB+NIR images. When a user tap on an area in the image, the app will compute the spectral signature for the pixels in that area. 
+- Detailed Spectral Analysis: Allows the user to conduct an in-depth analysis of the hyperspectral bands reconstructed from the input RGB+NIR images. When a user tap on an area in the image, the app will compute the spectral signature for the pixels in that area. 
 
-## Hardware and Software Requirements
-The project is based on the ability of recent smartphones to capture images beyond the visible range in the EM spectrum. Recent smartphones come with specialized cameras which are used for robust face authentication systems and these phone cameras capture images in the Near Infrared  (NIR) range. We use the image captured from this special camera as well as a regular RGB image to figure out if the fruit in the pictures is organic or non-organic.
-
-- Offline Mode: Any Android based smartphone should work. 
-- Online Mode: Android Phone with NIR camera such as Google Pixel 4 XL and OnePlus 8 Pro.
+## Requirements
+- Offline Mode: Any Android smartphone should work. 
+- Online Mode: Android phones that allow access to the  NIR camera, such as Google Pixel 4 XL and OnePlus 8 Pro.
 
 ## Download the App and Datasets
-The apk for the application can be downloaded from here: [MobiSpectral Apk](https://drive.google.com/file/d/18bQZj7JiFfU4paXye6SbOPJlbtXJHpEB/view?usp=sharing "MobiSpectral Android Application"). Steps for installing the application on your phone are as follows:
+The apk for the application can be downloaded from here: [MobiSpectral Apk](https://drive.google.com/file/d/18bQZj7JiFfU4paXye6SbOPJlbtXJHpEB/view?usp=sharing "MobiSpectral Android Application"). 
+
+Steps for installing the application on your phone are as follows:
 
 - Press the apk file to install the application.
-- If the application could not be downloaded, disable Play Protect (service from Google that prevents users from installing applications which are not from Play Store) on your phone for the time being. For doing that follow the steps below:
+- If the application could not be downloaded, disable Play Protect (a service from Google that prevents users from installing applications that are not from Play Store) on your phone for the time being. To do that, follow the steps below:
 	- Open up `Google Play Store`.
 	- Click your Profile Picture (top right).
 	- Open up `Play Protect` option and press the Settings Cog (top right).
 	- Disable the option `Scan apps with Play Protect`
-- After disabling "Play Protect" press apk file and a pop-up will appear, asking you to allow downloading apps from other sources, allow the option to install the application.
-- When the application is installed, the app will ask for permission to access camera and storage on your phone.
-	- Camera Permission: Camera permission is required to capture images using the cameras.
-	- Storage Permission: Storage permission is required to save and load images from the disk.
-- The application will be installed and you will reach the Main page of the application.
+- After disabling "Play Protect" press apk file and, a pop-up will appear, asking you to allow downloading apps from other sources.  
+- When the application is installed, the app will ask for permission to access the camera and storage on your phone.
+	- Camera Permission: required to capture images using the cameras.
+	- Storage Permission: required to save and load images from the disk.
+- The application will be installed, and you will reach the Main page of the application.
 
 You can also build the application from the [Build the application from source code](#build_the_application_from_source_code).
 
