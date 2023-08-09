@@ -168,7 +168,7 @@ class ReconstructionFragment: Fragment() {
                             savedClickedX = clickedX
                             savedClickedY = clickedY
                             itemTouched = true
-                            Log.i("Pixel Clicked", "X: $clickedX ($bitmapsWidth), Y: $clickedY ($bitmapsHeight)")
+                            Log.i("Pixel Clicked", "X: ${clickedX.toInt()} ($bitmapsWidth), Y: ${clickedY.toInt()} ($bitmapsHeight)")
                             color = Color.argb(255, randomColor.nextInt(256),
                                 randomColor.nextInt(256), randomColor.nextInt(256))
 
@@ -182,7 +182,7 @@ class ReconstructionFragment: Fragment() {
                             try {
                                 inference()
                                 MainActivity.actualLabel = ""
-                                addCSVLog(requireContext())
+//                                addCSVLog(requireContext())
                             } catch (e: NullPointerException) {
                                 e.printStackTrace()
                             }
@@ -214,7 +214,7 @@ class ReconstructionFragment: Fragment() {
                     canvas.drawCircle(Utils.torchWidth/2F, Utils.torchHeight/2F, 10F, paint)
                     view.setImageBitmap(bitmapOverlay)
                     inference()
-                    addCSVLog(requireContext())
+//                    addCSVLog(requireContext())
                 }
                 Glide.with(view).load(item).into(view)
             }
@@ -297,18 +297,21 @@ class ReconstructionFragment: Fragment() {
             addItemToViewPager(fragmentReconstructionBinding.viewpager, MainActivity.tempRGBBitmap, 5)
             // fragmentReconstructionBinding.viewpager.currentItem = fragmentReconstructionBinding.viewpager.adapter!!.itemCount - 1
             loadingDialogFragment.dismissDialog()
+
+            inference()
         }
     }
 
     private fun signatureAverage(signatureList: ArrayList<FloatArray>): FloatArray {
         val averagedSignature = FloatArray(numberOfBands)
-        for (signature in 0 until signatureList.size) {
-            for (band in 0 until numberOfBands) {
-                averagedSignature[band] += signatureList[signature][band]
-            }
+//        for (signature in 0 until signatureList.size) {
+        for (band in 0 until numberOfBands) {
+            averagedSignature[band] = signatureList[7][band]
         }
-        for (band in 0 until numberOfBands)
-            averagedSignature[band] = averagedSignature[band]/signatureList.size
+//        }
+
+//        for (band in 0 until numberOfBands)
+//            averagedSignature[band] = averagedSignature[band]/signatureList.size
         return averagedSignature
     }
 
@@ -319,25 +322,28 @@ class ReconstructionFragment: Fragment() {
         }
         val finalResults = ArrayList<Long> ()
 
-        if (bitmapsWidth == Utils.boundingBoxWidth.toInt()*2 && bitmapsHeight == Utils.boundingBoxHeight.toInt()*2 && !advancedControlOption && !alreadyMultiLabelInferred) {
+        if (bitmapsWidth == Utils.boundingBoxWidth.toInt()*2 && bitmapsHeight == Utils.boundingBoxHeight.toInt()*2 && !alreadyMultiLabelInferred) {
             val multiClassificationThread = Thread {
-                val zoneHeight = 16
-                val zoneWidth = 16
+                val zoneHeight = 8
+                val zoneWidth = 8
                 val numberOfZones = bitmapsWidth/zoneWidth
 
                 for (z1 in 0 until numberOfZones) {
                     for (z2 in 0 until numberOfZones) {
                         val results = ArrayList<Long> ()
-                        val signatureList = ArrayList<FloatArray> ()
+//                        val signatureList = ArrayList<FloatArray> ()
+                        Log.i("Number of Zones", "Zones $numberOfZones ${z2*zoneWidth} ${z1*zoneHeight}")
 
-                        for (i in 0 until zoneWidth) {
-                            for (j in 0 until zoneHeight) {
-                                // print("(${z1*zoneWidth+i}, ${z2*zoneWidth+j}), ")
-                                signatureList.add(getSignature(predictedHS, z2*zoneWidth+j, z1*zoneWidth+i))
-                            }
-                        }
+//                        signatureList.add(getSignature(predictedHS, z2*zoneWidth+8, z1*zoneWidth+8))
+
+//                        for (i in 0 until zoneWidth) {
+//                            for (j in 0 until zoneHeight) {
+//                                // print("(${z1*zoneWidth+i}, ${z2*zoneWidth+j}), ")
+//                                signatureList.add(getSignature(predictedHS, z2*zoneWidth+j, z1*zoneWidth+i))
+//                            }
+//                        }
                         // println()
-                        results.add(classifyOneSignature(signatureAverage(signatureList)))
+                        results.add(classifyOneSignature(getSignature(predictedHS, z2*zoneWidth, z1*zoneWidth)))
                         val frequencies = results.groupingBy { it }.eachCount()
                         finalResults.add(frequencies.maxBy { it.value }.key)
                         Log.i("Signatures OneClassify", "Final Results: $finalResults")
@@ -361,7 +367,7 @@ class ReconstructionFragment: Fragment() {
             }
             Log.i("Frequency String", frequenciesString)
             val maxLabel = finalFrequencies.maxBy { it.value }
-            fragmentReconstructionBinding.textViewClassTime.text = frequenciesString
+//            fragmentReconstructionBinding.textViewClassTime.text = frequenciesString
             fragmentReconstructionBinding.textViewClassTime.visibility = View.VISIBLE
             fragmentReconstructionBinding.textViewClass.text = classificationLabels[Pair(mobiSpectralApplication, maxLabel.key)]
             MainActivity.predictedLabel = frequenciesString
@@ -370,11 +376,11 @@ class ReconstructionFragment: Fragment() {
             val inputSignature = getSignature(predictedHS, clickedY.toInt(), clickedX.toInt())
             classifyOneSignature(inputSignature)
             MainActivity.predictedLabel = outputLabelString
-            fragmentReconstructionBinding.textViewClass.text = outputLabelString
+//            fragmentReconstructionBinding.textViewClass.text = outputLabelString
             fragmentReconstructionBinding.graphView.title = "$outputLabelString Signature at (x: ${clickedX.toInt()}, y: ${clickedY.toInt()})"
         }
         alreadyMultiLabelInferred = true
-        addCSVLog(requireContext())
+//        addCSVLog(requireContext())
     }
 
     private fun classifyOneSignature(signature: FloatArray): Long {
@@ -501,7 +507,7 @@ class ReconstructionFragment: Fragment() {
         }
 
         bmp.copyPixelsFromBuffer(byteBuffer)
-        bmp = Bitmap.createBitmap(bmp, 0, 0, bitmapsWidth, bitmapsHeight, null, true)
+        bmp = Bitmap.createBitmap(bmp, 0, 0, bitmapsWidth, bitmapsHeight, null, false)
         return bmp
     }
 
@@ -512,7 +518,7 @@ class ReconstructionFragment: Fragment() {
         Timer().schedule(1000) {
             if (bandsHS.size == bandsChosen.size && !advancedControlOption) {
                 inference()
-                addCSVLog(requireContext())
+//                addCSVLog(requireContext())
             }
         }
     }

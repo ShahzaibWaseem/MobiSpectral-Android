@@ -71,38 +71,27 @@
         android:id="@+id/radioGroup"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:checkedButton="@+id/laymanOption"
+        android:checkedButton="@+id/offlineMode"
         app:layout_constraintTop_toBottomOf="@+id/applicationPicker"
-        app:layout_constraintBottom_toTopOf="@+id/liveModeCheckMark"
+        app:layout_constraintBottom_toTopOf="@+id/guideline2"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
         <RadioButton
-            android:id="@+id/laymanOption"
+            android:id="@+id/offlineMode"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:buttonTint="@color/sfu_primary"
-            android:text="@string/simple_option_string"/>
+            android:text="@string/offline_mode_string"/>
 
         <RadioButton
-            android:id="@+id/advancedOption"
+            android:id="@+id/onlineMode"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:buttonTint="@color/sfu_primary"
-            android:text="@string/advanced_option_string"/>
+            android:text="@string/online_mode_string"/>
 
     </RadioGroup>
-
-    <CheckBox
-        android:id="@+id/liveModeCheckMark"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/offline_mode_string"
-        android:buttonTint="@color/sfu_primary"
-        app:layout_constraintTop_toBottomOf="@+id/radioGroup"
-        app:layout_constraintBottom_toTopOf="@+id/guideline2"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline2"
@@ -144,52 +133,52 @@
         android:orientation="horizontal"
         app:layout_constraintGuide_percent="0.75" />
 
-<!--    <androidx.constraintlayout.widget.ConstraintLayout-->
-<!--        android:layout_width="0dp"-->
-<!--        android:layout_height="0dp"-->
-<!--        app:layout_constraintTop_toBottomOf="@+id/guideline3"-->
-<!--        app:layout_constraintBottom_toBottomOf="parent"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintEnd_toEndOf="parent">-->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintTop_toBottomOf="@+id/guideline3"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
 
-<!--        <TextView-->
-<!--            android:id="@+id/labTextView"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="60dp"-->
-<!--            android:text="@string/lab_string"-->
-<!--            android:textSize="30sp"-->
-<!--            android:gravity="center"-->
-<!--            android:fontFamily="@font/countach_regular"-->
-<!--            app:layout_constraintTop_toTopOf="parent"-->
-<!--            app:layout_constraintBottom_toBottomOf="parent"-->
-<!--            app:layout_constraintEnd_toStartOf="@+id/guideline4"/>-->
+            <TextView
+                android:id="@+id/labTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="60dp"
+                android:text="@string/lab_string"
+                android:textSize="30sp"
+                android:gravity="center"
+                android:fontFamily="@font/countach_regular"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/guideline4"/>
 
-<!--        <androidx.constraintlayout.widget.Guideline-->
-<!--            android:id="@+id/guideline4"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:orientation="vertical"-->
-<!--            app:layout_constraintGuide_percent="0.5" />-->
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guideline4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.5" />
 
-<!--        <TextView-->
-<!--            android:id="@+id/sfuTextView"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="60dp"-->
-<!--            android:layout_marginStart="5dp"-->
-<!--            android:background="@color/sfu_red"-->
-<!--            android:fontFamily="@font/d_din_pro_semibold"-->
-<!--            android:gravity="end|bottom"-->
-<!--            android:paddingEnd="2.5dp"-->
-<!--            android:paddingStart="50dp"-->
-<!--            android:paddingTop="20dp"-->
-<!--            android:text="@string/school_string"-->
-<!--            android:textColor="@color/white"-->
-<!--            android:textSize="30sp"-->
-<!--            app:layout_constraintBottom_toBottomOf="parent"-->
-<!--            app:layout_constraintStart_toEndOf="@+id/guideline4"-->
-<!--            app:layout_constraintTop_toTopOf="parent"-->
-<!--            tools:ignore="RtlSymmetry" />-->
+            <TextView
+                android:id="@+id/sfuTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="60dp"
+                android:layout_marginStart="5dp"
+                android:background="@color/sfu_red"
+                android:fontFamily="@font/d_din_pro_semibold"
+                android:gravity="end|bottom"
+                android:paddingEnd="2.5dp"
+                android:paddingStart="50dp"
+                android:paddingTop="20dp"
+                android:text="@string/school_string"
+                android:textColor="@color/white"
+                android:textSize="30sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/guideline4"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="RtlSymmetry" />
 
-<!--    </androidx.constraintlayout.widget.ConstraintLayout>-->
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

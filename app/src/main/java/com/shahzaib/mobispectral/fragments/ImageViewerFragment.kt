@@ -7,7 +7,6 @@ import android.graphics.*
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -30,10 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.opencv.android.OpenCVLoader
 import java.io.BufferedInputStream
-import java.io.ByteArrayOutputStream
 import java.io.File
-import java.nio.ByteBuffer
-import kotlin.math.max
 
 class ImageViewerFragment: Fragment() {
     private val correctionMatrix = Matrix().apply { postRotate(90F); }
@@ -51,12 +47,7 @@ class ImageViewerFragment: Fragment() {
     /** Default Bitmap decoding options */
     private val bitmapOptions = BitmapFactory.Options().apply {
         inJustDecodeBounds = false
-        // Keep Bitmaps at less than 1 MP
-        if (max(outHeight, outWidth) > DOWNSAMPLE_SIZE) {
-            val scaleFactorX = outWidth / DOWNSAMPLE_SIZE + 1
-            val scaleFactorY = outHeight / DOWNSAMPLE_SIZE + 1
-            inSampleSize = max(scaleFactorX, scaleFactorY)
-        }
+        inPreferredConfig = Bitmap.Config.ARGB_8888
     }
 
     /** Data backing our Bitmap viewpager */
@@ -64,10 +55,10 @@ class ImageViewerFragment: Fragment() {
     private var bitmapsWidth = Utils.torchWidth
     private var bitmapsHeight = Utils.torchHeight
 
-    private var topCrop = 0F
-    private var bottomCrop = 0F
-    private var leftCrop = 0F
-    private var rightCrop = 0F
+    private var topCrop = -1F
+    private var bottomCrop = -1F
+    private var leftCrop = -1F
+    private var rightCrop = -1F
     private val loadingDialogFragment = LoadingDialogFragment()
 
     private var advancedControlOption: Boolean = false
@@ -77,7 +68,7 @@ class ImageViewerFragment: Fragment() {
     }
 
     private fun boundingBox(left: Float, right: Float, top: Float, bottom: Float,
-                          canvas: Canvas, view: ImageView, bitmapOverlay: Bitmap, position: Int) {
+                            canvas: Canvas, view: ImageView, bitmapOverlay: Bitmap, position: Int) {
         val paint = Paint()
         paint.color = Color.argb(255, 0, 0, 0)
         paint.strokeWidth = 2.5F
@@ -106,6 +97,7 @@ class ImageViewerFragment: Fragment() {
         LoadingDialogFragment.text = getString(R.string.normalizing_image_string)
         loadingDialogFragment.isCancelable = false
         makeFolderInRoot(Utils.MobiSpectralPath, requireContext())
+        var firstTap = false
 
         _fragmentImageViewerBinding = FragmentImageviewerBinding.inflate(inflater, container, false)
         fragmentImageViewerBinding.viewpager.apply {
@@ -131,14 +123,35 @@ class ImageViewerFragment: Fragment() {
                 view.setOnTouchListener { v, event ->
                     canvas.drawBitmap(item, Matrix(), null)
 
-                    val clickedX = (event!!.x / v!!.width) * bitmapsWidth
-                    val clickedY = (event.y / v.height) * bitmapsHeight
+                    var clickedX = ((event!!.x / v!!.width) * bitmapsWidth).toInt()
+                    var clickedY = ((event.y / v.height) * bitmapsHeight).toInt()
+
+                    // Make sure the bounding box doesn't go outside the bounds of the image
+                    if (clickedX + Utils.boundingBoxWidth > item.width)
+                        clickedX = (item.width - Utils.boundingBoxWidth).toInt()
+                    if (clickedY + Utils.boundingBoxHeight > item.width)
+                        clickedY = (item.height - Utils.boundingBoxHeight).toInt()
+
+                    if (clickedX - Utils.boundingBoxWidth < 0)
+                        clickedX = (0 + Utils.boundingBoxWidth).toInt()
+                    if (clickedY - Utils.boundingBoxHeight < 0)
+                        clickedY = (0 + Utils.boundingBoxHeight).toInt()
+
                     Log.i("Box Added", "X: $clickedX ($bitmapsWidth), Y: $clickedY ($bitmapsHeight)")
 
-                    leftCrop = clickedX - Utils.boundingBoxWidth
-                    topCrop = clickedY - Utils.boundingBoxHeight
-                    rightCrop = clickedX + Utils.boundingBoxWidth
-                    bottomCrop = clickedY + Utils.boundingBoxHeight
+                    if (!firstTap) {
+                        leftCrop = item.width/2 - Utils.boundingBoxWidth
+                        topCrop = item.height/2 - Utils.boundingBoxHeight
+                        rightCrop = item.width/2 + Utils.boundingBoxWidth
+                        bottomCrop = item.height/2 + Utils.boundingBoxHeight
+                        firstTap = true
+                    }
+                    else {
+                        leftCrop = clickedX - Utils.boundingBoxWidth
+                        topCrop = clickedY - Utils.boundingBoxHeight
+                        rightCrop = clickedX + Utils.boundingBoxWidth
+                        bottomCrop = clickedY + Utils.boundingBoxHeight
+                    }
                     boundingBox(leftCrop, rightCrop, topCrop, bottomCrop, canvas, view, bitmapOverlay, position)
 
                     false
@@ -193,7 +206,6 @@ class ImageViewerFragment: Fragment() {
             // Load the main JPEG image
             var rgbImageBitmap = decodeBitmap(bufferRGB, bufferRGB.size, true)
             var nirImageBitmap = decodeBitmap(bufferNIR, bufferNIR.size, false)
-            // val unirImageBitmap = Utils.unwarp(nirImageBitmap)
 
             if (rgbImageBitmap.width == nirImageBitmap.width && rgbImageBitmap.height == nirImageBitmap.height) {
                 if (!offlineMode){
@@ -218,9 +230,6 @@ class ImageViewerFragment: Fragment() {
 
             bitmapsWidth = rgbImageBitmap.width
             bitmapsHeight = rgbImageBitmap.height
-            val rgbByteArray = bitmapToByteArray(rgbImageBitmap)
-            var nirByteArray = bitmapToByteArray(nirImageBitmap)
-            nirByteArray = getNIRBand(nirByteArray)
             val viewpagerThread = Thread {
                 addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 0)
                 addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 1)
@@ -241,14 +250,18 @@ class ImageViewerFragment: Fragment() {
             saveProcessedImages(requireContext(), rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName, Utils.processedImageDirectory)
 
             fragmentImageViewerBinding.button.setOnClickListener {
-                if (leftCrop == 0F && topCrop == 0F && !advancedControlOption) {
+                // if crop isn't initialized for simple mode
+                if (leftCrop == -1F && topCrop == -1F && !advancedControlOption) {
                     leftCrop = rgbImageBitmap.width/2 - Utils.boundingBoxWidth
                     topCrop = rgbImageBitmap.height/2 - Utils.boundingBoxWidth
-
                 }
-                if (leftCrop != 0F && topCrop != 0F) {
+                Log.i("Cropped Image", "$leftCrop $topCrop")
+                // if the app is asked to crop the image
+                if (leftCrop != -1F && topCrop != -1F) {
                     rgbImageBitmap = cropImage(rgbImageBitmap, leftCrop, topCrop)
                     nirImageBitmap = cropImage(nirImageBitmap, leftCrop, topCrop)
+                    Log.i("Cropped Image", "${rgbImageBitmap.width} ${rgbImageBitmap.height}")
+                    Log.i("Cropped Image", "${nirImageBitmap.width} ${nirImageBitmap.height}")
                     saveProcessedImages(requireContext(), rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName, Utils.croppedImageDirectory)
                 }
 
@@ -263,31 +276,6 @@ class ImageViewerFragment: Fragment() {
                 }
             }
         }
-    }
-
-    private fun bitmapToByteArray(bitmap: Bitmap): ByteArray {
-        val bos = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bos)
-        return bos.toByteArray()
-    }
-
-    private fun getNIRBand(imageBuff: ByteArray): ByteArray {
-        val byteBuffer = ByteBuffer.allocate(imageBuff.size)
-        var buffIdx = 0
-        var pixelValueBuff: Byte
-
-        val startOffset = 0
-        val endOffset = imageBuff.size - 1
-
-        for (i in startOffset .. endOffset) {
-            pixelValueBuff = imageBuff[i]
-            byteBuffer.put(1 * buffIdx, pixelValueBuff)
-            buffIdx += 1
-        }
-
-        val byteArray = ByteArray(byteBuffer.capacity())
-        byteBuffer.get(byteArray)
-        return byteArray
     }
 
     /** Utility function used to read input file into a byte array */
@@ -315,6 +303,7 @@ class ImageViewerFragment: Fragment() {
         view.adapter!!.notifyItemChanged(position)
     }
 
+    @Suppress("unused")
     private fun whiteBalance(rgbBitmap: Bitmap): Bitmap {
         val startTime = System.currentTimeMillis()
         val whiteBalanceModel = WhiteBalance(requireContext())
@@ -354,8 +343,6 @@ class ImageViewerFragment: Fragment() {
     }
 
     companion object {
-        /** Maximum size of [Bitmap] decoded */
-        private const val DOWNSAMPLE_SIZE: Int = 1024  // 1MP
         private lateinit var RGB_DIMENSION: Pair<Int, Int>
     }
 }
