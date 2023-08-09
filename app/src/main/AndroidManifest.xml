@@ -4,6 +4,9 @@
     android:requestLegacyExternalStorage="true">
 
     <!-- Permission declarations -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
     <uses-permission android:name="android.permission.CAMERA" />
 
     <!-- Storage Permission for Android 10 and above -->
