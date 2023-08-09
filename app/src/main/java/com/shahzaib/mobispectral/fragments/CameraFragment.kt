@@ -268,8 +268,8 @@ class CameraFragment: Fragment() {
 
         val captureRequest = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
             .apply { addTarget(fragmentCameraBinding.viewFinder.holder.surface)
-            set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
-            set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_AUTO) }
+                set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
+                set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_AUTO) }
 
         // This will keep sending the capture request as frequently as possible until the
         // This will keep sending the capture request as frequently as possible until the

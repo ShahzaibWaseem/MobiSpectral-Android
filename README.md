@@ -1,18 +1,17 @@
 # MobiSpectral Application on Android
-This application is written in Kotlin for Android phones. It works in two modes: offline and online. The offline mode processes pre-captured images, while the online mode captures and processes the images in real time. The online mode requires a phone that allows accessing the NIR camera. In both offline and online modes, the application offers two functions:
+This application is written in Kotlin for Android phones. It works in two modes: offline and online. The offline mode processes pre-captured images, while the online mode captures and processes the images in real time. The online mode requires a phone that allows accessing the NIR camera. The app allows the user to conduct an in-depth analysis of the hyperspectral bands reconstructed from the input RGB+NIR images. When a user taps on an area in the image, the app will compute and display the spectral signature for the pixels in that area.
 
-- Simple Analysis: Distinguishes organic and non-organic fruits from RGB and NIR images.  The app asks the user to select a region of the image to be used in the analysis: by tapping anywhere in the image, a bounding box will appear. The app will then process the data in the bounding box and will display Organic or Non-Organic.
-
-- Detailed Spectral Analysis: Allows the user to conduct an in-depth analysis of the hyperspectral bands reconstructed from the input RGB+NIR images. When a user taps on an area in the image, the app will compute and display the spectral signature for the pixels in that area.
+<!--In both offline and online modes, the application offers two functions:-->
+<!--- Simple Analysis: Distinguishes organic and non-organic fruits from RGB and NIR images.  The app asks the user to select a region of the image to be used in the analysis: by tapping anywhere in the image, a bounding box will appear. The app will then process the data in the bounding box and will display Organic or Non-Organic.-->
 
 ## Requirements
 - Offline mode: Any Android smartphone should work.
-- Online mode: Android phones that allow access to the  NIR camera, such as Google Pixel 4 XL and OnePlus 8 Pro*.
+- (Optional) Online mode: An Android phone that allows access to the  NIR camera, such as Google Pixel 4 XL.
 
-\* For OnePlus 8 Pro, the camera with NIR information was removed using software due to [privacy concerns](https://www.theverge.com/2020/5/15/21259723/oneplus-8-pro-x-ray-vision-infrared-filter-see-through-plastic). It can be accessed in OxygenOS 11 using [Factory Mode](https://www.xda-developers.com/oneplus-8-pro-color-filter-camera-still-accessible-adb-command/ "How to access Color Filter Camera on OnePlus 8 Pro using adb") or by rooting the phone in OxygenOS 12.
+For OnePlus 8 Pro, the camera with NIR information was removed using software due to [privacy concerns](https://www.theverge.com/2020/5/15/21259723/oneplus-8-pro-x-ray-vision-infrared-filter-see-through-plastic). It can be accessed in OxygenOS 11 using [Factory Mode](https://www.xda-developers.com/oneplus-8-pro-color-filter-camera-still-accessible-adb-command/ "How to access Color Filter Camera on OnePlus 8 Pro using adb") or by rooting the phone in OxygenOS 12.
 
 ## Install the App
-The APK for the application can be downloaded from here: [MobiSpectral APK](https://drive.google.com/file/d/18bQZj7JiFfU4paXye6SbOPJlbtXJHpEB/view?usp=sharing "MobiSpectral Android Application"). There are Information buttons ⓘ on each page (Fragment), which tells the user what to do.
+The APK for the application can be downloaded from here: [MobiSpectral APK](https://drive.google.com/file/d/1YjatiJ-GrJiGm5pF_XPlY1D7tFRrw1MK/view?usp=drive_link "MobiSpectral Android Application"). There are Information buttons ⓘ on each page (Fragment), which tells the user what to do.
 
 Steps for installing the application on your phone are as follows:
 
@@ -39,13 +38,13 @@ Download one or more of the following Mobile Image datasets to test the applicat
 - [Tomatoes (46.6 MB)](https://drive.google.com/file/d/14XfBuJtO4k_CIRyumhy-Wk77tDJ_BopV/view?usp=drive_link "Tomatoes Test Dataset")
 - [Strawberries (60.1 MB)](https://drive.google.com/file/d/1-nJkoCrELbjaYDh7FrhMUqnB9xe8r1kj/view?usp=drive_link "Strawberries Test Dataset") -->
 
-If you have all of the datasets already downloaded (for the reconstruction and classification phase) these `mobile_data` directories are also present in them but if you wish to download just the `mobile_data` you can do so from these links. The datasets are in pairs of RGB and NIR images. Each dataset has the following directory structure, where `[fruit]` is apples, kiwis, ...:
+The datasets are in pairs of RGB and NIR images. Each dataset has the following directory structure, where `[fruit]` is e.g. apples.
 ```
 dataset_[fruit]
 │
 └── mobile_data
 	│
-	└── nonorganic
+	└── non-organic
 	│	[num]_NIR.jpg
 	|	[num]_RGB.jpg
 	|	...
@@ -61,7 +60,7 @@ Steps to run the application in the offline mode:
 1. Unzip the dataset that you downloaded before
 2. Run the application
 3. Check the offline mode to be used
-	- `mobile_data` is the folder where you can select images, either from the organic or nonorganic sub-folders
+	- `mobile_data` is the folder where you can select images, either from the organic or non-organic sub-folders
 4. Select two corresponding images (RGB and NIR) from the pop-up by tapping
 5. (Optional) Tap to choose the region that will be used in the analysis (bounding box)
 6. Reconstruct the hypercube
@@ -69,12 +68,15 @@ Steps to run the application in the offline mode:
 
 The application screenshots below are captured using a smartphone without an NIR camera:
 
-| | | |
-:-------------------------:|:-------------------------:|:-------------------------:
-| <img src="images/MainPage(NoNIR).jpg" alt="MainPage(NoNIR)" width="200" /> | <img src="images/MainPageOffline.jpg" alt="MainPage" width="200" /> | <img src="images/CameraOffline.jpg" alt="Camera" width="200" /> |
-| Main Page if No NIR Camera is found | Selecting Offline Mode | Gallery Opening Intent |
-| <img src="images/ImageLoader.jpg" alt="ImageLoader" width="200" /> | <img src="images/ImageViewer.jpg" alt="ImageViewer" width="200" /> | <img src="images/Classification.jpg" alt="Classification" width="200" /> |
-| Selecting Images | Image Viewer | Classification Result |
+|                                                                            |                                                                                    |                                                                                  |
+|:--------------------------------------------------------------------------:|:----------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------:|
+| <img src="images/MainPage(NoNIR).jpg" alt="MainPage(NoNIR)" width="200" /> |        <img src="images/MainPageOffline.png" alt="MainPage" width="200" />         |         <img src="images/CameraOffline.jpg" alt="Camera" width="200" />          |
+|                               No NIR Camera                                |                               Selecting Offline Mode                               |                              Gallery Opening Intent                              |
+|     <img src="images/ImageLoader.jpg" alt="ImageLoader" width="200" />     | <img src="images/Reconstruction(Detailed).jpg" alt="Reconstruction" width="200" /> | <img src="images/SignatureAnalysis(Detailed).jpg" alt="Signature" width="200" /> |
+|                              Selecting Images                              |                                   Reconstruction                                   |                   Classification Result and Signature Analysis                   |
+
+### Demo for Offline Mode
+Here is a [Demo](https://drive.google.com/file/d/101vXVksUWyim7D_Bnn2vmlKWfbBqijzr/view?usp=drive_link "Offline Mode Demo Video 75 MBs") of offline mode in effect.
 
 ## Test the Application in Online Mode
 This mode requires a phone that allows accessing the NIR camera. Most phones with NIR cameras have them on the front because their primary use has so far been face identification. To assist the user in capturing fruit images using front-facing cameras, we added a countdown timer (3 sec) that makes the app issues a beeping sound after it captures the images. The Online mode also makes sure that the scene is well lit before the user can capture any picture.
@@ -82,24 +84,29 @@ This mode requires a phone that allows accessing the NIR camera. Most phones wit
 Steps to run the application in the online mode:
 1. Run the application (ensure the offline mode is checked off)
 2. Press the capture button, and turn the phone towards the fruit. It will beep after capturing the images
-4. (Optional) Tap to choose the region that will be used in the analysis (bounding box)
-6. Reconstruct the hypercube
-7. The application shows the predicted classification label for the fruit
+3. (Optional) Tap to choose the region that will be used in the analysis (bounding box)
+4. Reconstruct the hypercube
+5. The application shows the predicted classification label for the fruit
 
 Here are the screenshots from the android application (captured using Google Pixel 4XL):
 
-| | | |
-:-------------------------:|:-------------------------:|:-------------------------:
-| <img src="images/MainPageOnline.jpg" alt="MainPage" width="200" /> | <img src="images/CameraOnline.png" alt="Camera" width="200" /> | <img src="images/Classification.jpg" alt="Classification" width="200" /> |
-| Main Page | Camera Fragment | Classification Results |
+|                                                                                          |                                                                                       |                                                                          |
+|:----------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------:|:------------------------------------------------------------------------:|
+|            <img src="images/MainPageOnline.png" alt="MainPage" width="200" />            |            <img src="images/CameraOnline.png" alt="Camera" width="200" />             | <img src="images/ImageViewerOnline.png" alt="ImageViewer" width="200" /> |
+|                                        Main Page                                         |                                    Camera Fragment                                    |                               Image Viewer                               |
+| <img src="images/ReconstructionOnline(Detailed).png" alt="Reconstruction" width="200" /> | <img src="images/SignatureAnalysis(Detailed).png" alt="Classification" width="200" /> |                                                                          |
+|                                      Reconstruction                                      |                     Classification Results and Spectral Analysis                      |                                                                          |
 
-## Simple and Detailed Analysis
-The difference between Simple and Detailed Analysis, as mentioned in [Section 1](#mobispectral-application-on-android), is that Detailed analysis allows (the user can also tap to get a smaller working area) the user to reconstruct the whole Hypercube. Reconstructing whole hypercube takes takes a lot more time. In the Detailed Analysis, you can tap on parts of the reconstructed hypercube bands, to get the signatures of that pixels and their predicted organic/nonorganic class. The images shown in the image sets above are for simple analysis where as the images below show their differences to detailed analysis:
+### Demo for Online Mode
+Here is a [Demo](https://drive.google.com/file/d/1-ViHUEgqdd_PcOUKrsnfX4SxVYuLF1ih/view?usp=drive_link "Online Mode Demo Video 102.1 MBs") of online mode in effect.
 
-| | | |
-:-------------------------:|:-------------------------:|:-------------------------:
+<!--## Simple and Detailed Analysis
+The difference between Simple and Detailed Analysis, as mentioned in [Section 1](#mobispectral-application-on-android), is that Detailed analysis allows (the user can also tap to get a smaller working area) the user to reconstruct the whole Hypercube. Reconstructing whole hypercube takes takes a lot more time. In the Detailed Analysis, you can tap on parts of the reconstructed hypercube bands, to get the signatures of that pixels and their predicted organic/non-organic class. The images shown in the image sets above are for simple analysis where as the images below show their differences to detailed analysis:
+|                                                                                       |                                                                                   |                                                                                       |
+|:-------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------:|
 | <img src="images/ImageViewer(Detailed).jpg" alt="ImageViewer Detailed" width="200" /> | <img src="images/Reconstruction(Detailed).jpg" alt="Reconstructed" width="200" /> | <img src="images/SignatureAnalysis(Detailed).jpg" alt="Classification" width="200" /> |
-| Image Viewer in Detailed Analysis | Reconstructed Hypercube | Signature Analysis and Class Prediction |
+|                           Image Viewer in Detailed Analysis                           |                              Reconstructed Hypercube                              |                        Signature Analysis and Class Prediction                        |
+-->
 
 <!-- ## Pipeline
 1. Image Capturing: RGB followed by NIR.
