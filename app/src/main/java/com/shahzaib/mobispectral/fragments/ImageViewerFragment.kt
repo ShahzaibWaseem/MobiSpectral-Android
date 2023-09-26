@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import org.opencv.android.OpenCVLoader
 import java.io.BufferedInputStream
 import java.io.File
+import java.nio.ByteBuffer
 
 class ImageViewerFragment: Fragment() {
     private val correctionMatrix = Matrix().apply { postRotate(-90F); }
@@ -211,6 +212,9 @@ class ImageViewerFragment: Fragment() {
             if (rgbImageBitmap.width != nirImageBitmap.width && rgbImageBitmap.height != nirImageBitmap.height)
                 rgbImageBitmap = Utils.fixedAlignment(rgbImageBitmap)
 
+            saveMinMax(rgbImageBitmap, isRGB=true)
+            saveMinMax(nirImageBitmap, isRGB=false)
+
             Log.i("Bitmap Size", "Decoded RGB: ${rgbImageBitmap.width} x ${rgbImageBitmap.height}, Decoded NIR: ${nirImageBitmap.width} x ${nirImageBitmap.height}")
 
             bitmapsWidth = rgbImageBitmap.width
@@ -296,6 +300,28 @@ class ImageViewerFragment: Fragment() {
         val endTime = System.currentTimeMillis()
         MainActivity.normalizationTime = "${((endTime - startTime).toFloat() / 1000.0F)} s"
         return whiteBalancedBitmap
+    }
+
+    private fun saveMinMax(bitmap: Bitmap, isRGB: Boolean) {
+        val width = bitmap.width
+        val height = bitmap.height
+        val intArrayPixels = IntArray(width * height)
+        val intArrayValues = IntArray(width * height * 3)
+        bitmap.getPixels(intArrayPixels, 0, width, 0, 0, width, height)
+        for (idx in intArrayPixels.indices) {
+            val color = intArrayPixels[idx]
+            intArrayValues[3 * idx] = Color.red(color)
+            intArrayValues[3 * idx + 1] = Color.green(color)
+            intArrayValues[3 * idx + 2] = Color.blue(color)
+        }
+        val min = intArrayValues.min()
+        val max = intArrayValues.max()
+
+        if (isRGB)
+            MainActivity.minMaxRGB = Pair(min, max)
+        else
+            MainActivity.minMaxNIR = Pair(min, max)
+        Log.i("MinMax", "isRGB: $isRGB\tMin: $min\tMax: $max")
     }
 
     /** Utility function used to decode a [Bitmap] from a byte array */
