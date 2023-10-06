@@ -239,6 +239,9 @@ class ImageViewerFragment: Fragment() {
             saveProcessedImages(requireContext(), rgbImageBitmap, nirImageBitmap, rgbImageFileName, nirImageFileName, Utils.processedImageDirectory)
 
             fragmentImageViewerBinding.button.setOnClickListener {
+                MainActivity.originalRGBBitmap = rgbImageBitmap
+                MainActivity.originalNIRBitmap = nirImageBitmap
+
                 // if crop isn't initialized for simple mode
                 if (leftCrop == -1F && topCrop == -1F && !advancedControlOption) {
                     leftCrop = rgbImageBitmap.width/2 - Utils.boundingBoxWidth
@@ -256,9 +259,6 @@ class ImageViewerFragment: Fragment() {
 
                 // addItemToViewPager(fragmentImageViewerBinding.viewpager, rgbImageBitmap, 2)
                 // addItemToViewPager(fragmentImageViewerBinding.viewpager, nirImageBitmap, 3)
-
-                MainActivity.originalRGBBitmap = rgbImageBitmap
-                MainActivity.originalNIRBitmap = nirImageBitmap
 
                 lifecycleScope.launch(Dispatchers.Main) {
                     navController.navigate(ImageViewerFragmentDirections.actionImageViewerFragmentToReconstructionFragment2())
