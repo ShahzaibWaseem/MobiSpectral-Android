@@ -89,10 +89,10 @@ class ReconstructionFragment: Fragment() {
         loadingDialogFragment.isCancelable = false
 
         classificationLabels = mapOf(
-            Pair(getString(R.string.organic_identification_string), 0L) to "Non-Organic",
-            Pair(getString(R.string.organic_identification_string), 1L) to "Organic",
-            Pair(getString(R.string.apple_string), 0L) to "Non-Organic",
-            Pair(getString(R.string.apple_string), 1L) to "Organic",
+            Pair(getString(R.string.organic_identification_string), 0L) to "Organic",
+            Pair(getString(R.string.organic_identification_string), 1L) to "Non-Organic",
+            Pair(getString(R.string.apple_string), 0L) to "Organic",
+            Pair(getString(R.string.apple_string), 1L) to "Non-Organic",
             Pair(getString(R.string.kiwi_string), 0L) to "Non-Organic",
             Pair(getString(R.string.kiwi_string), 1L) to "Organic",
             Pair(getString(R.string.olive_oil_string), 0L) to "50% EVOO, 50% SFO",
@@ -362,7 +362,15 @@ class ReconstructionFragment: Fragment() {
                     for (z2 in 0 until numberOfZones) {
                         val results = ArrayList<Long> ()
 //                        val signatureList = ArrayList<FloatArray> ()
-                        Log.i("Number of Zones", "Zones $numberOfZones ${offsetX+z2*zoneWidth} ${offsetY+z1*zoneHeight}")
+
+
+
+                        Log.i("Number of Zones", "Zones $numberOfZones X: ${offsetY+z1*zoneHeight} Y:  ${offsetX+z2*zoneWidth} ")
+
+                        results.add(classifyOneSignature(getSignature(predictedHS, offsetY+z1*zoneWidth, offsetX+z2*zoneWidth)))
+
+
+//                        Log.i("Number of Zones", "Zones $numberOfZones ${offsetX+z2*zoneWidth} ${offsetY+z1*zoneHeight}")
 
 //                        signatureList.add(getSignature(predictedHS, z2*zoneWidth+8, z1*zoneWidth+8))
 
@@ -373,7 +381,7 @@ class ReconstructionFragment: Fragment() {
 //                            }
 //                        }
                         // println()
-                        results.add(classifyOneSignature(getSignature(predictedHS, offsetX+z2*zoneWidth, offsetY+z1*zoneWidth)))
+//                        results.add(classifyOneSignature(getSignature(predictedHS, offsetX+z2*zoneWidth, offsetY+z1*zoneWidth)))
                         val frequencies = results.groupingBy { it }.eachCount()
                         finalResults.add(frequencies.maxBy { it.value }.key)
                         Log.i("Signatures OneClassify", "Final Results: $finalResults")
