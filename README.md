@@ -1,4 +1,6 @@
 # MobiSpectral Application on Android
+This repository describes the detailed steps to run the android application presented in the paper titled: [``MobiSpectral: Hyperspectral Imaging on Mobile Devices``](https://dl.acm.org/doi/10.1145/3570361.3613296) published in ACM MobiCom'23.
+
 This application is written in Kotlin for Android phones. It works in two modes: offline and online. The offline mode processes pre-captured images, while the online mode captures and processes the images in real time. The online mode requires a phone that allows accessing the NIR camera. The app allows the user to conduct an in-depth analysis of the hyperspectral bands reconstructed from the input RGB+NIR images. When a user taps on an area in the image, the app will compute and display the spectral signature for the pixels in that area.
 
 <!--In both offline and online modes, the application offers two functions:-->
@@ -34,11 +36,8 @@ Download one or more of the following Mobile Image datasets to test the applicat
 
 - [Apples (90.2 MB)](https://drive.google.com/file/d/1gV-Y31WzwILBqPNgJcsLAqMJTp7ua0JU/view?usp=drive_link "Apples Test Dataset")
 - [Kiwis (39.1 MB)](https://drive.google.com/file/d/1h2k2gD4A4KZEmmcGJFEAhxpVNv0QSHgF/view?usp=drive_link "Kiwis Test Dataset")
-<!--
-- [Blueberries (68.6 MB)](https://drive.google.com/file/d/1g_yICRC79qbsJH2hfTdv5RhSIgsOwkOc/view?usp=drive_link "Blueberries Test Dataset")
-- [Tomatoes (46.6 MB)](https://drive.google.com/file/d/14XfBuJtO4k_CIRyumhy-Wk77tDJ_BopV/view?usp=drive_link "Tomatoes Test Dataset")
-- [Strawberries (60.1 MB)](https://drive.google.com/file/d/1-nJkoCrELbjaYDh7FrhMUqnB9xe8r1kj/view?usp=drive_link "Strawberries Test Dataset")
--->
+
+You can also download [all datasets together](https://drive.google.com/file/d/1_eqR_6f7-9-aIvSTpYazc1dadU7tTVCT/view?usp=sharing) (27 GB).
 
 The datasets are in pairs of RGB and NIR images. Each dataset has the following directory structure, where `[fruit]` is e.g. apples.
 ```
@@ -144,3 +143,25 @@ One common issue that can occur while building projects on a recently installed 
 ## References
 - Picture capturing code using Camera API 2 and was forked from [Android/Camera2Basic](https://github.com/android/camera-samples/tree/main/Camera2Basic) and built upon from there.
 - Models from [Deep White Balancing](https://github.com/mahmoudnafifi/Deep_White_Balance) were ported to PyTorch Android.
+
+## Citation
+If you use our code or dataset for your research, please cite our paper.
+
+```
+@inproceedings{10.1145/3570361.3613296,
+	author = {Sharma, Neha and Waseem, Muhammad Shahzaib and Mirzaei, Shahrzad and Hefeeda, Mohamed},
+	title = {MobiSpectral: Hyperspectral Imaging on Mobile Devices},
+	year = {2023},
+	isbn = {9781450399906},
+	publisher = {Association for Computing Machinery},
+	address = {New York, NY, USA},
+	url = {https://doi.org/10.1145/3570361.3613296},
+	doi = {10.1145/3570361.3613296},
+	booktitle = {Proceedings of the 29th Annual International Conference on Mobile Computing and Networking},
+	articleno = {82},
+	numpages = {15},
+	keywords = {mobile applications, food fraud, hyperspectral imaging},
+	location = {Madrid, Spain},
+	series = {ACM MobiCom '23}
+}
+```
